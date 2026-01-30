@@ -282,6 +282,39 @@ docker run -d \
 
 The application will be available at http://localhost:3001. Both the frontend and backend are served from the same port, making it easy to deploy behind a reverse proxy.
 
+## Reverse Proxy (Subpath Hosting)
+
+You can host the app under a subpath (for example `https://example.com/ai-usage/`). The frontend detects its runtime base path and will call the backend using that same prefix.
+
+Important: your reverse proxy should *strip the prefix* when forwarding requests upstream so that:
+- external `GET /ai-usage/` maps to upstream `GET /`
+- external `GET /ai-usage/api/...` maps to upstream `GET /api/...`
+- external `GET /ai-usage/version` maps to upstream `GET /version`
+
+Make sure WebSocket upgrades are enabled for the same subpath.
+
+Example nginx config:
+
+```nginx
+map $http_upgrade $connection_upgrade {
+  default upgrade;
+  '' close;
+}
+
+server {
+  # ...
+
+  location /ai-usage/ {
+    proxy_pass http://127.0.0.1:3001/;
+    proxy_http_version 1.1;
+    proxy_set_header Host $host;
+    proxy_set_header X-Forwarded-Proto $scheme;
+    proxy_set_header Upgrade $http_upgrade;
+    proxy_set_header Connection $connection_upgrade;
+  }
+}
+```
+
 **Environment Variables:**
 You can customize the configuration by passing environment variables:
 

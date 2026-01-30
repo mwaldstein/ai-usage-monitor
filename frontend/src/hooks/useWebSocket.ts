@@ -1,7 +1,10 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { ServiceStatus } from '../types';
 
-const WS_URL = process.env.NODE_ENV === 'production' ? `${window.location.protocol === 'https:' ? 'wss:' : 'ws:'}//${window.location.host}` : `ws://localhost:3001`;
+import { getApiBaseUrl, getWebSocketUrl } from '../services/backendUrls';
+
+const WS_URL = getWebSocketUrl();
+const API_URL = getApiBaseUrl();
 
 type MergeMode = 'full' | 'partial';
 
@@ -182,7 +185,7 @@ export function useWebSocket() {
   }, [connect, disconnect]);
 
   const reloadCached = useCallback(() => {
-    fetch(`${process.env.NODE_ENV === 'production' ? '/api/status/cached' : 'http://localhost:3001/api/status/cached'}`)
+    fetch(`${API_URL}/status/cached`)
       .then(response => response.json())
       .then(data => {
         setStatuses(prevStatuses => mergeStatuses(prevStatuses, normalizeStatuses(data as ServiceStatus[]), 'full'));
@@ -192,7 +195,7 @@ export function useWebSocket() {
   }, []);
 
   const refresh = useCallback(() => {
-    fetch(`${process.env.NODE_ENV === 'production' ? '/api/quotas/refresh' : 'http://localhost:3001/api/quotas/refresh'}`, { method: 'POST' })
+    fetch(`${API_URL}/quotas/refresh`, { method: 'POST' })
       .then(response => response.json())
       .then(data => {
         setStatuses(prevStatuses => mergeStatuses(prevStatuses, normalizeStatuses(data as ServiceStatus[]), 'full'));
@@ -202,7 +205,7 @@ export function useWebSocket() {
   }, []);
 
   const refreshService = useCallback((serviceId: string) => {
-    fetch(`${process.env.NODE_ENV === 'production' ? `/api/quotas/refresh/${serviceId}` : `http://localhost:3001/api/quotas/refresh/${serviceId}`}`, { method: 'POST' })
+    fetch(`${API_URL}/quotas/refresh/${serviceId}`, { method: 'POST' })
       .then(response => response.json())
       .then(data => {
         // Endpoint returns a single ServiceStatus

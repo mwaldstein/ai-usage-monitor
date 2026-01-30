@@ -3,6 +3,9 @@ import react from '@vitejs/plugin-react'
 
 // https://vite.dev/config/
 export default defineConfig({
+  // Relative base makes the built frontend work behind a reverse proxy subpath
+  // without requiring a rebuild for each deployment path.
+  base: './',
   plugins: [react()],
   server: {
     port: 3000,

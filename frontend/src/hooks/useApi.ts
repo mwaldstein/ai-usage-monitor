@@ -1,7 +1,9 @@
 import { useState, useEffect, useCallback } from 'react';
 import { AIService, UsageHistory, UsageAnalytics, ProviderAnalytics } from '../types';
 
-const API_URL = process.env.NODE_ENV === 'production' ? '/api' : 'http://localhost:3001/api';
+import { getApiBaseUrl, getVersionUrl } from '../services/backendUrls';
+
+const API_URL = getApiBaseUrl();
 
 export function useServices() {
   const [services, setServices] = useState<AIService[]>([]);
@@ -230,7 +232,7 @@ export function useVersion() {
   useEffect(() => {
     const fetchVersion = async () => {
       try {
-        const response = await fetch(`${API_URL}/version`);
+        const response = await fetch(getVersionUrl());
         if (!response.ok) throw new Error('Failed to fetch version');
         const data = await response.json();
         setVersion(data.version);
