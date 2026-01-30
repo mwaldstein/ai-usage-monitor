@@ -1,9 +1,9 @@
-import { useState, useCallback, useEffect } from 'react';
-import { useWebSocket } from './hooks/useWebSocket';
-import { useServices, useUsageHistory, useVersion } from './hooks/useApi';
-import { ServiceCard } from './components/ServiceCard';
-import { AddServiceModal } from './components/AddServiceModal';
-import { AnalyticsView } from './components/AnalyticsView';
+import { useState, useCallback, useEffect } from 'react'
+import { useWebSocket } from './hooks/useWebSocket'
+import { useServices, useUsageHistory, useVersion } from './hooks/useApi'
+import { ServiceCard } from './components/ServiceCard'
+import { AddServiceModal } from './components/AddServiceModal'
+import { AnalyticsView } from './components/AnalyticsView'
 import {
   Plus,
   RefreshCw,
@@ -19,85 +19,110 @@ import {
   ArrowUp,
   ArrowDown,
   AlertCircle,
-  BarChart3
-} from 'lucide-react';
-import { AIService } from './types';
+  BarChart3,
+} from 'lucide-react'
+import { AIService } from './types'
 
 function App() {
-  const { statuses, isConnected, isReconnecting, lastUpdate, reloadCached, refresh, refreshService } = useWebSocket();
-  const { services, addService, updateService, deleteService, reorderServices, refresh: refreshServices } = useServices();
-  const { history, refresh: refreshHistory } = useUsageHistory(undefined, 2); // Fetch 2 hours of history for comparisons
-  const { version, commitSha } = useVersion();
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [showSettings, setShowSettings] = useState(false);
-  const [editingService, setEditingService] = useState<AIService | null>(null);
-  const [viewMode, setViewMode] = useState<'compact' | 'expanded'>('compact');
-  const [selectedService, setSelectedService] = useState<string | null>(null);
-  const [currentView, setCurrentView] = useState<'dashboard' | 'analytics'>('dashboard');
+  const {
+    statuses,
+    isConnected,
+    isReconnecting,
+    lastUpdate,
+    reloadCached,
+    refresh,
+    refreshService,
+  } = useWebSocket()
+  const {
+    services,
+    addService,
+    updateService,
+    deleteService,
+    reorderServices,
+    refresh: refreshServices,
+  } = useServices()
+  const { history, refresh: refreshHistory } = useUsageHistory(undefined, 2) // Fetch 2 hours of history for comparisons
+  const { version, commitSha } = useVersion()
+  const [isModalOpen, setIsModalOpen] = useState(false)
+  const [showSettings, setShowSettings] = useState(false)
+  const [editingService, setEditingService] = useState<AIService | null>(null)
+  const [viewMode, setViewMode] = useState<'compact' | 'expanded'>('compact')
+  const [selectedService, setSelectedService] = useState<string | null>(null)
+  const [currentView, setCurrentView] = useState<'dashboard' | 'analytics'>('dashboard')
 
   // Keep history in sync with live updates.
   useEffect(() => {
-    if (!lastUpdate) return;
-    refreshHistory();
-  }, [lastUpdate, refreshHistory]);
+    if (!lastUpdate) return
+    refreshHistory()
+  }, [lastUpdate, refreshHistory])
 
   const handleRefreshAll = useCallback(() => {
-    refresh();
-  }, [refresh]);
+    refresh()
+  }, [refresh])
 
-  const handleAddService = async (service: Omit<AIService, 'id' | 'createdAt' | 'updatedAt' | 'displayOrder'>) => {
-    const success = await addService(service);
+  const handleAddService = async (
+    service: Omit<AIService, 'id' | 'createdAt' | 'updatedAt' | 'displayOrder'>,
+  ) => {
+    const success = await addService(service)
     if (success) {
-      reloadCached();
+      reloadCached()
     }
-  };
+  }
 
   const handleUpdateService = async (service: Partial<AIService>) => {
-    if (!editingService) return;
-    const success = await updateService(editingService.id, service);
+    if (!editingService) return
+    const success = await updateService(editingService.id, service)
     if (success) {
-      setEditingService(null);
-      reloadCached();
+      setEditingService(null)
+      reloadCached()
     }
-  };
+  }
 
   const handleDeleteService = async (id: string) => {
     if (confirm('Delete this service?')) {
-      await deleteService(id);
-      refreshServices();
-      reloadCached();
+      await deleteService(id)
+      refreshServices()
+      reloadCached()
     }
-  };
+  }
 
   const handleEditService = (service: AIService) => {
-    setEditingService(service);
-    setIsModalOpen(true);
-  };
+    setEditingService(service)
+    setIsModalOpen(true)
+  }
 
   const handleReorderService = async (serviceId: string, direction: 'up' | 'down') => {
-    const currentIndex = services.findIndex(s => s.id === serviceId);
-    if (currentIndex === -1) return;
+    const currentIndex = services.findIndex((s) => s.id === serviceId)
+    if (currentIndex === -1) return
 
-    let newServices = [...services];
+    let newServices = [...services]
     if (direction === 'up' && currentIndex > 0) {
-      [newServices[currentIndex], newServices[currentIndex - 1]] = [newServices[currentIndex - 1], newServices[currentIndex]];
+      ;[newServices[currentIndex], newServices[currentIndex - 1]] = [
+        newServices[currentIndex - 1],
+        newServices[currentIndex],
+      ]
     } else if (direction === 'down' && currentIndex < services.length - 1) {
-      [newServices[currentIndex], newServices[currentIndex + 1]] = [newServices[currentIndex + 1], newServices[currentIndex]];
+      ;[newServices[currentIndex], newServices[currentIndex + 1]] = [
+        newServices[currentIndex + 1],
+        newServices[currentIndex],
+      ]
     } else {
-      return; // Can't move in this direction
+      return // Can't move in this direction
     }
 
     // Update backend and then refresh the display immediately
-    await reorderServices(newServices.map(s => s.id));
-    reloadCached(); // Force immediate refresh of WebSocket statuses
-  };
+    await reorderServices(newServices.map((s) => s.id))
+    reloadCached() // Force immediate refresh of WebSocket statuses
+  }
 
   const handleCloseModal = () => {
-    setIsModalOpen(false);
-    setEditingService(null);
-  };
+    setIsModalOpen(false)
+    setEditingService(null)
+  }
 
-  const handleModalSubmit = async (service: Omit<AIService, 'id' | 'createdAt' | 'updatedAt' | 'displayOrder'>) => {
+  const handleModalSubmit = async (
+    service: Omit<AIService, 'id' | 'createdAt' | 'updatedAt' | 'displayOrder'>,
+  ) => {
     if (editingService) {
       // For editing, convert to Partial<AIService> by including all fields from the form
       const updateData: Partial<AIService> = {
@@ -106,40 +131,51 @@ function App() {
         apiKey: service.apiKey,
         bearerToken: service.bearerToken,
         baseUrl: service.baseUrl,
-        enabled: service.enabled
-      };
-      await handleUpdateService(updateData);
+        enabled: service.enabled,
+      }
+      await handleUpdateService(updateData)
     } else {
-      await handleAddService(service);
+      await handleAddService(service)
     }
-  };
+  }
 
-  const healthyCount = statuses.filter(s => s.isHealthy).length;
-  const totalCount = statuses.length;
+  const healthyCount = statuses.filter((s) => s.isHealthy).length
+  const totalCount = statuses.length
 
   // Calculate aggregate stats
-  const aggregateStats = statuses.reduce((acc, status) => {
-    status.quotas.forEach(quota => {
-      const percentage = quota.limit > 0 ? (quota.used / quota.limit) * 100 : 0;
-      acc.totalQuotas++;
-      if (percentage > 90) acc.criticalQuotas++;
-      else if (percentage > 70) acc.warningQuotas++;
-    });
-    return acc;
-  }, { totalQuotas: 0, criticalQuotas: 0, warningQuotas: 0 });
+  const aggregateStats = statuses.reduce(
+    (acc, status) => {
+      status.quotas.forEach((quota) => {
+        const percentage = quota.limit > 0 ? (quota.used / quota.limit) * 100 : 0
+        acc.totalQuotas++
+        if (percentage > 90) acc.criticalQuotas++
+        else if (percentage > 70) acc.warningQuotas++
+      })
+      return acc
+    },
+    { totalQuotas: 0, criticalQuotas: 0, warningQuotas: 0 },
+  )
 
   return (
     <div className="min-h-screen bg-[#0f0f11] text-[#fafafa]">
       {/* Compact Header - Red styling when disconnected */}
-      <header className={`glass sticky top-0 z-50 border-b transition-colors duration-300 ${
-        isConnected ? 'border-white/10' : 'border-red-500/50 bg-red-950/20'
-      }`}>
+      <header
+        className={`glass sticky top-0 z-50 border-b transition-colors duration-300 ${
+          isConnected ? 'border-white/10' : 'border-red-500/50 bg-red-950/20'
+        }`}
+      >
         <div className="max-w-7xl mx-auto px-3 py-2">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               <div className="flex items-center gap-2">
-                <div className={`w-2 h-2 rounded-full ${isConnected ? 'bg-emerald-500 pulse-live' : 'bg-red-500 animate-pulse'}`} />
-                <h1 className={`text-sm font-semibold tracking-wide ${!isConnected ? 'text-red-400' : ''}`}>AI Monitor</h1>
+                <div
+                  className={`w-2 h-2 rounded-full ${isConnected ? 'bg-emerald-500 pulse-live' : 'bg-red-500 animate-pulse'}`}
+                />
+                <h1
+                  className={`text-sm font-semibold tracking-wide ${!isConnected ? 'text-red-400' : ''}`}
+                >
+                  AI Monitor
+                </h1>
                 {!isConnected && (
                   <span className="hidden sm:flex items-center gap-1 text-xs text-red-400 font-medium">
                     <AlertCircle size={12} />
@@ -147,7 +183,7 @@ function App() {
                   </span>
                 )}
               </div>
-              
+
               {/* Quick Stats */}
               <div className="hidden sm:flex items-center gap-2 text-xs text-zinc-400">
                 <span className="px-2 py-0.5 rounded-full bg-zinc-800/50 border border-white/5">
@@ -191,7 +227,7 @@ function App() {
                     onClick={handleRefreshAll}
                     disabled={!isConnected}
                     className={`btn-icon tooltip ${!isConnected ? 'opacity-40 cursor-not-allowed' : ''}`}
-                    data-tooltip={isConnected ? "Refresh all" : "Offline - cannot refresh"}
+                    data-tooltip={isConnected ? 'Refresh all' : 'Offline - cannot refresh'}
                   >
                     <RefreshCw size={14} />
                   </button>
@@ -200,7 +236,7 @@ function App() {
                     onClick={() => setIsModalOpen(true)}
                     disabled={!isConnected}
                     className={`btn-icon tooltip bg-violet-600 border-violet-500 hover:bg-violet-500 ${!isConnected ? 'opacity-40 cursor-not-allowed' : ''}`}
-                    data-tooltip={isConnected ? "Add service" : "Offline - cannot add services"}
+                    data-tooltip={isConnected ? 'Add service' : 'Offline - cannot add services'}
                   >
                     <Plus size={14} />
                   </button>
@@ -209,7 +245,7 @@ function App() {
                     onClick={() => isConnected && setShowSettings(!showSettings)}
                     disabled={!isConnected}
                     className={`btn-icon tooltip ${showSettings && isConnected ? 'bg-zinc-700 text-white' : ''} ${!isConnected ? 'opacity-40 cursor-not-allowed' : ''}`}
-                    data-tooltip={isConnected ? "Settings" : "Offline - settings unavailable"}
+                    data-tooltip={isConnected ? 'Settings' : 'Offline - settings unavailable'}
                   >
                     <Settings size={14} />
                   </button>
@@ -254,7 +290,9 @@ function App() {
         {showSettings && isConnected && currentView === 'dashboard' && (
           <div className="mb-3 glass rounded-xl p-3 slide-in">
             <div className="flex items-center justify-between mb-2">
-              <h3 className="text-xs font-semibold text-zinc-400 uppercase tracking-wider">Services</h3>
+              <h3 className="text-xs font-semibold text-zinc-400 uppercase tracking-wider">
+                Services
+              </h3>
               <button
                 onClick={() => setShowSettings(false)}
                 className="text-zinc-500 hover:text-white"
@@ -269,9 +307,13 @@ function App() {
                   className="flex items-center justify-between p-2 rounded-lg bg-zinc-800/30 border border-white/5 hover:border-white/10 transition-colors"
                 >
                   <div className="flex items-center gap-2">
-                    <div className={`w-1.5 h-1.5 rounded-full ${
-                      statuses.find(s => s.service.id === service.id)?.isHealthy ? 'bg-emerald-500' : 'bg-red-500'
-                    }`} />
+                    <div
+                      className={`w-1.5 h-1.5 rounded-full ${
+                        statuses.find((s) => s.service.id === service.id)?.isHealthy
+                          ? 'bg-emerald-500'
+                          : 'bg-red-500'
+                      }`}
+                    />
                     <span className="text-sm font-medium">{service.name}</span>
                     <span className="text-xs text-zinc-500">{service.provider}</span>
                   </div>
@@ -317,25 +359,24 @@ function App() {
               <span className="font-medium">Backend Disconnected</span>
             </div>
             <p className="text-xs text-red-300/70 mt-1">
-              Showing last known data. Controls are disabled until reconnection.{isReconnecting && ' Reconnecting...'}
+              Showing last known data. Controls are disabled until reconnection.
+              {isReconnecting && ' Reconnecting...'}
             </p>
           </div>
         )}
 
         {currentView === 'analytics' ? (
-          <AnalyticsView
-            services={services}
-            statuses={statuses}
-            isConnected={isConnected}
-          />
+          <AnalyticsView services={services} statuses={statuses} isConnected={isConnected} />
         ) : (
           <>
             {/* Service Grid */}
-            <div className={`grid gap-2 ${
-              viewMode === 'compact'
-                ? 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4'
-                : 'grid-cols-1 lg:grid-cols-2'
-            }`}>
+            <div
+              className={`grid gap-2 ${
+                viewMode === 'compact'
+                  ? 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4'
+                  : 'grid-cols-1 lg:grid-cols-2'
+              }`}
+            >
               {statuses.map((status) => (
                 <ServiceCard
                   key={status.service.id}
@@ -344,9 +385,11 @@ function App() {
                   viewMode={viewMode}
                   onRefresh={() => refreshService(status.service.id)}
                   isSelected={selectedService === status.service.id}
-                  onSelect={() => setSelectedService(
-                    selectedService === status.service.id ? null : status.service.id
-                  )}
+                  onSelect={() =>
+                    setSelectedService(
+                      selectedService === status.service.id ? null : status.service.id,
+                    )
+                  }
                   isConnected={isConnected}
                 />
               ))}
@@ -373,7 +416,6 @@ function App() {
             )}
           </>
         )}
-
       </main>
 
       {/* Connection Status Footer */}
@@ -402,9 +444,7 @@ function App() {
               </span>
             )}
           </div>
-          {lastUpdate && (
-            <span>Updated {lastUpdate.toLocaleTimeString()}</span>
-          )}
+          {lastUpdate && <span>Updated {lastUpdate.toLocaleTimeString()}</span>}
         </div>
       </footer>
 
@@ -417,7 +457,7 @@ function App() {
         disabled={!isConnected}
       />
     </div>
-  );
+  )
 }
 
-export default App;
+export default App

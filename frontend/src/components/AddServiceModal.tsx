@@ -1,13 +1,13 @@
-import { useState, useEffect } from 'react';
-import { AIService } from '../types';
-import { X, ChevronDown, ChevronUp, ExternalLink, Sparkles } from 'lucide-react';
+import { useState, useEffect } from 'react'
+import { AIService } from '../types'
+import { X, ChevronDown, ChevronUp, ExternalLink, Sparkles } from 'lucide-react'
 
 interface AddServiceModalProps {
-  isOpen: boolean;
-  onClose: () => void;
-  onSubmit: (service: Omit<AIService, 'id' | 'createdAt' | 'updatedAt' | 'displayOrder'>) => void;
-  editingService?: AIService | null;
-  disabled?: boolean;
+  isOpen: boolean
+  onClose: () => void
+  onSubmit: (service: Omit<AIService, 'id' | 'createdAt' | 'updatedAt' | 'displayOrder'>) => void
+  editingService?: AIService | null
+  disabled?: boolean
 }
 
 const PROVIDERS = [
@@ -19,22 +19,22 @@ const PROVIDERS = [
   { value: 'opencode', label: 'opencode zen', color: '#8b5cf6' },
   { value: 'amp', label: 'AMP', color: '#06b6d4' },
   { value: 'zai', label: 'z.ai', color: '#10b981' },
-];
+]
 
 interface ProviderInstructions {
-  apiKeyLabel: string;
-  apiKeyPlaceholder: string;
-  apiKeyHelp: string;
-  bearerTokenLabel?: string;
-  bearerTokenPlaceholder?: string;
-  bearerTokenHelp?: string;
-  baseUrlHelp?: string;
-  baseUrlPlaceholder?: string;
+  apiKeyLabel: string
+  apiKeyPlaceholder: string
+  apiKeyHelp: string
+  bearerTokenLabel?: string
+  bearerTokenPlaceholder?: string
+  bearerTokenHelp?: string
+  baseUrlHelp?: string
+  baseUrlPlaceholder?: string
   instructions: {
-    title: string;
-    steps: string[];
-    link?: { text: string; url: string };
-  };
+    title: string
+    steps: string[]
+    link?: { text: string; url: string }
+  }
 }
 
 const PROVIDER_INSTRUCTIONS: Record<string, ProviderInstructions> = {
@@ -49,10 +49,10 @@ const PROVIDER_INSTRUCTIONS: Record<string, ProviderInstructions> = {
         'Log in to your OpenAI account',
         'Click "Create new secret key"',
         'Copy the key (it starts with "sk-")',
-        'Paste it here'
+        'Paste it here',
       ],
-      link: { text: 'Open OpenAI API Keys', url: 'https://platform.openai.com/api-keys' }
-    }
+      link: { text: 'Open OpenAI API Keys', url: 'https://platform.openai.com/api-keys' },
+    },
   },
   anthropic: {
     apiKeyLabel: 'API Key',
@@ -65,10 +65,10 @@ const PROVIDER_INSTRUCTIONS: Record<string, ProviderInstructions> = {
         'Log in to your Anthropic account',
         'Click "Create Key"',
         'Copy the key (it starts with "sk-ant-")',
-        'Paste it here'
+        'Paste it here',
       ],
-      link: { text: 'Open Anthropic Console', url: 'https://console.anthropic.com/settings/keys' }
-    }
+      link: { text: 'Open Anthropic Console', url: 'https://console.anthropic.com/settings/keys' },
+    },
   },
   google: {
     apiKeyLabel: 'API Key',
@@ -81,10 +81,10 @@ const PROVIDER_INSTRUCTIONS: Record<string, ProviderInstructions> = {
         'Log in to your Google account',
         'Click "Create API Key"',
         'Copy the key (it starts with "AIza")',
-        'Paste it here'
+        'Paste it here',
       ],
-      link: { text: 'Open Google AI Studio', url: 'https://makersuite.google.com/app/apikey' }
-    }
+      link: { text: 'Open Google AI Studio', url: 'https://makersuite.google.com/app/apikey' },
+    },
   },
   aws: {
     apiKeyLabel: 'AWS Credentials',
@@ -95,9 +95,9 @@ const PROVIDER_INSTRUCTIONS: Record<string, ProviderInstructions> = {
       steps: [
         'AWS Bedrock requires AWS Signature V4 authentication',
         'This is not yet fully implemented',
-        'Please use another provider for now'
-      ]
-    }
+        'Please use another provider for now',
+      ],
+    },
   },
   opencode: {
     apiKeyLabel: 'Auth Cookie',
@@ -115,10 +115,10 @@ const PROVIDER_INSTRUCTIONS: Record<string, ProviderInstructions> = {
         'Find the cookie named "auth"',
         'Copy the ENTIRE cookie string (including "auth=")',
         'Paste it in the field above',
-        'For Base URL: Copy your workspace billing page URL'
+        'For Base URL: Copy your workspace billing page URL',
       ],
-      link: { text: 'Open OpenCode', url: 'https://opencode.ai' }
-    }
+      link: { text: 'Open OpenCode', url: 'https://opencode.ai' },
+    },
   },
   amp: {
     apiKeyLabel: 'Session Cookie',
@@ -134,10 +134,10 @@ const PROVIDER_INSTRUCTIONS: Record<string, ProviderInstructions> = {
         'Open DevTools (F12) → Application → Cookies',
         'Find the session cookie (or auth cookie)',
         'Copy the ENTIRE cookie string (including the name, e.g., "session=")',
-        'Paste it in the field above'
+        'Paste it in the field above',
       ],
-      link: { text: 'Open AMP', url: 'https://ampcode.com' }
-    }
+      link: { text: 'Open AMP', url: 'https://ampcode.com' },
+    },
   },
   codex: {
     apiKeyLabel: 'Session Cookie (Optional)',
@@ -157,10 +157,10 @@ const PROVIDER_INSTRUCTIONS: Record<string, ProviderInstructions> = {
         'Click on it → Headers → Request Headers',
         'Find the "Authorization: Bearer" header',
         'Copy the token (the long string after "Bearer ")',
-        'Paste it in the Bearer Token field above'
+        'Paste it in the Bearer Token field above',
       ],
-      link: { text: 'Open ChatGPT', url: 'https://chatgpt.com' }
-    }
+      link: { text: 'Open ChatGPT', url: 'https://chatgpt.com' },
+    },
   },
   zai: {
     apiKeyLabel: 'Bearer Token',
@@ -174,65 +174,71 @@ const PROVIDER_INSTRUCTIONS: Record<string, ProviderInstructions> = {
         'Open DevTools (F12) → Application → Local Storage',
         'Look for key: z-ai-open-platform-token-production or z-ai-website-token',
         'Copy the token value',
-        'Paste it in the field above'
+        'Paste it in the field above',
       ],
-      link: { text: 'Open z.ai', url: 'https://z.ai' }
-    }
-  }
-};
+      link: { text: 'Open z.ai', url: 'https://z.ai' },
+    },
+  },
+}
 
-export function AddServiceModal({ isOpen, onClose, onSubmit, editingService, disabled }: AddServiceModalProps) {
-  const [name, setName] = useState('');
-  const [provider, setProvider] = useState('openai');
-  const [apiKey, setApiKey] = useState('');
-  const [bearerToken, setBearerToken] = useState('');
-  const [baseUrl, setBaseUrl] = useState('');
-  const [showInstructions, setShowInstructions] = useState(true);
+export function AddServiceModal({
+  isOpen,
+  onClose,
+  onSubmit,
+  editingService,
+  disabled,
+}: AddServiceModalProps) {
+  const [name, setName] = useState('')
+  const [provider, setProvider] = useState('openai')
+  const [apiKey, setApiKey] = useState('')
+  const [bearerToken, setBearerToken] = useState('')
+  const [baseUrl, setBaseUrl] = useState('')
+  const [showInstructions, setShowInstructions] = useState(true)
 
-  const isEditing = !!editingService;
+  const isEditing = !!editingService
 
   useEffect(() => {
     if (editingService) {
-      setName(editingService.name);
-      setProvider(editingService.provider);
-      setApiKey(editingService.apiKey || '');
-      setBearerToken(editingService.bearerToken || '');
-      setBaseUrl(editingService.baseUrl || '');
+      setName(editingService.name)
+      setProvider(editingService.provider)
+      setApiKey(editingService.apiKey || '')
+      setBearerToken(editingService.bearerToken || '')
+      setBaseUrl(editingService.baseUrl || '')
     } else {
-      setName('');
-      setProvider('openai');
-      setApiKey('');
-      setBearerToken('');
-      setBaseUrl('');
+      setName('')
+      setProvider('openai')
+      setApiKey('')
+      setBearerToken('')
+      setBaseUrl('')
     }
-    setShowInstructions(true);
-  }, [editingService, isOpen]);
+    setShowInstructions(true)
+  }, [editingService, isOpen])
 
-  if (!isOpen) return null;
+  if (!isOpen) return null
 
-  const instructions = PROVIDER_INSTRUCTIONS[provider];
-  const selectedProvider = PROVIDERS.find(p => p.value === provider);
+  const instructions = PROVIDER_INSTRUCTIONS[provider]
+  const selectedProvider = PROVIDERS.find((p) => p.value === provider)
 
   const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
+    e.preventDefault()
     onSubmit({
       name,
       provider,
       apiKey: apiKey || undefined,
       bearerToken: bearerToken || undefined,
       baseUrl: baseUrl || undefined,
-      enabled: true
-    });
-    onClose();
-  };
+      enabled: true,
+    })
+    onClose()
+  }
 
   const handleProviderChange = (newProvider: string) => {
-    setProvider(newProvider);
-    setApiKey('');
-    setBearerToken('');
-    setBaseUrl('');
-    setShowInstructions(true);
-  };
+    setProvider(newProvider)
+    setApiKey('')
+    setBearerToken('')
+    setBaseUrl('')
+    setShowInstructions(true)
+  }
 
   return (
     <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
@@ -240,7 +246,7 @@ export function AddServiceModal({ isOpen, onClose, onSubmit, editingService, dis
         {/* Header */}
         <div className="flex items-center justify-between p-4 border-b border-white/10">
           <div className="flex items-center gap-2">
-            <div 
+            <div
               className="w-3 h-3 rounded-full"
               style={{ backgroundColor: selectedProvider?.color || '#71717a' }}
             />
@@ -248,8 +254,8 @@ export function AddServiceModal({ isOpen, onClose, onSubmit, editingService, dis
               {isEditing ? 'Edit Service' : 'Add AI Service'}
             </h2>
           </div>
-          <button 
-            onClick={onClose} 
+          <button
+            onClick={onClose}
             className="p-2 hover:bg-white/10 rounded-lg transition-colors text-zinc-400 hover:text-white"
           >
             <X size={20} />
@@ -292,17 +298,16 @@ export function AddServiceModal({ isOpen, onClose, onSubmit, editingService, dis
                   } ${isEditing ? 'cursor-not-allowed opacity-50' : 'cursor-pointer'}`}
                 >
                   <div className="flex flex-col items-center gap-1">
-                    <div 
-                      className="w-2 h-2 rounded-full"
-                      style={{ backgroundColor: p.color }}
-                    />
+                    <div className="w-2 h-2 rounded-full" style={{ backgroundColor: p.color }} />
                     <span className="truncate">{p.label}</span>
                   </div>
                 </button>
               ))}
             </div>
             {isEditing && (
-              <p className="text-[10px] text-zinc-500 mt-1.5">Provider cannot be changed when editing</p>
+              <p className="text-[10px] text-zinc-500 mt-1.5">
+                Provider cannot be changed when editing
+              </p>
             )}
           </div>
 
@@ -315,7 +320,9 @@ export function AddServiceModal({ isOpen, onClose, onSubmit, editingService, dis
             >
               <div className="flex items-center gap-2">
                 <Sparkles size={14} className="text-violet-400" />
-                <span className="text-sm font-medium text-violet-300">{instructions.instructions.title}</span>
+                <span className="text-sm font-medium text-violet-300">
+                  {instructions.instructions.title}
+                </span>
               </div>
               {showInstructions ? (
                 <ChevronUp size={16} className="text-violet-400" />
@@ -323,12 +330,14 @@ export function AddServiceModal({ isOpen, onClose, onSubmit, editingService, dis
                 <ChevronDown size={16} className="text-violet-400" />
               )}
             </button>
-            
+
             {showInstructions && (
               <div className="px-4 py-3 border-t border-violet-500/20">
                 <ol className="list-decimal list-inside space-y-1.5 text-xs text-zinc-300">
                   {instructions.instructions.steps.map((step, index) => (
-                    <li key={index} className="leading-relaxed">{step}</li>
+                    <li key={index} className="leading-relaxed">
+                      {step}
+                    </li>
                   ))}
                 </ol>
                 {instructions.instructions.link && (
@@ -392,7 +401,7 @@ export function AddServiceModal({ isOpen, onClose, onSubmit, editingService, dis
                 value={baseUrl}
                 onChange={(e) => setBaseUrl(e.target.value)}
                 className="w-full px-3 py-2.5 bg-zinc-800/50 border border-white/10 rounded-lg focus:outline-none focus:ring-2 focus:ring-violet-500/50 focus:border-violet-500/50 text-xs font-mono text-white placeholder-zinc-600 transition-all"
-                placeholder={instructions.baseUrlPlaceholder || "https://api.example.com/v1"}
+                placeholder={instructions.baseUrlPlaceholder || 'https://api.example.com/v1'}
               />
             </div>
           )}
@@ -413,10 +422,10 @@ export function AddServiceModal({ isOpen, onClose, onSubmit, editingService, dis
             disabled={disabled}
             className={`flex-1 px-4 py-2.5 bg-violet-600 hover:bg-violet-500 text-white rounded-lg text-sm font-medium transition-all shadow-lg shadow-violet-600/20 ${disabled ? 'opacity-50 cursor-not-allowed' : ''}`}
           >
-            {disabled ? 'Offline' : (isEditing ? 'Save Changes' : 'Add Service')}
+            {disabled ? 'Offline' : isEditing ? 'Save Changes' : 'Add Service'}
           </button>
         </div>
       </div>
     </div>
-  );
+  )
 }

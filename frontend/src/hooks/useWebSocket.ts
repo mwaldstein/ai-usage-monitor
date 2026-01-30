@@ -1,50 +1,51 @@
-import { useEffect, useRef, useState, useCallback } from 'react';
-import { ServiceStatus } from '../types';
+import { useEffect, useRef, useState, useCallback } from 'react'
+import { ServiceStatus } from '../types'
 
-import { getApiBaseUrl, getWebSocketUrl } from '../services/backendUrls';
+import { getApiBaseUrl, getWebSocketUrl } from '../services/backendUrls'
 
-const WS_URL = getWebSocketUrl();
-const API_URL = getApiBaseUrl();
+const WS_URL = getWebSocketUrl()
+const API_URL = getApiBaseUrl()
 
-type MergeMode = 'full' | 'partial';
+type MergeMode = 'full' | 'partial'
 
 // Merge helper function to preserve quota data
-function mergeStatuses(prevStatuses: ServiceStatus[], newStatuses: ServiceStatus[], mode: MergeMode = 'full'): ServiceStatus[] {
-  const mergedStatuses = [...prevStatuses];
-  
+function mergeStatuses(
+  prevStatuses: ServiceStatus[],
+  newStatuses: ServiceStatus[],
+  mode: MergeMode = 'full',
+): ServiceStatus[] {
+  const mergedStatuses = [...prevStatuses]
+
   newStatuses.forEach((newStatus: ServiceStatus) => {
-    const existingIndex = mergedStatuses.findIndex(
-      s => s.service.id === newStatus.service.id
-    );
-    
+    const existingIndex = mergedStatuses.findIndex((s) => s.service.id === newStatus.service.id)
+
     if (existingIndex >= 0) {
       // Only update if the new status has quotas or if the service state changed
       // This prevents clearing numbers when a service is temporarily empty during refresh
-      const existing = mergedStatuses[existingIndex];
-      const shouldUpdate = newStatus.quotas.length > 0 || 
-                         !existing.isHealthy || 
-                         newStatus.error !== existing.error;
-      
+      const existing = mergedStatuses[existingIndex]
+      const shouldUpdate =
+        newStatus.quotas.length > 0 || !existing.isHealthy || newStatus.error !== existing.error
+
       if (shouldUpdate) {
-        mergedStatuses[existingIndex] = newStatus;
+        mergedStatuses[existingIndex] = newStatus
       }
     } else {
       // New service, add it
-      mergedStatuses.push(newStatus);
+      mergedStatuses.push(newStatus)
     }
-  });
-  
+  })
+
   if (mode === 'full') {
     // Remove services that no longer exist
-    const newServiceIds = new Set(newStatuses.map((s: ServiceStatus) => s.service.id));
-    const filtered = mergedStatuses.filter(s => newServiceIds.has(s.service.id));
+    const newServiceIds = new Set(newStatuses.map((s: ServiceStatus) => s.service.id))
+    const filtered = mergedStatuses.filter((s) => newServiceIds.has(s.service.id))
     // Sort by displayOrder to maintain user-defined order
-    return filtered.sort((a, b) => a.service.displayOrder - b.service.displayOrder);
+    return filtered.sort((a, b) => a.service.displayOrder - b.service.displayOrder)
   }
 
   // Partial updates shouldn't prune other services.
   // Still sort to maintain order
-  return mergedStatuses.sort((a, b) => a.service.displayOrder - b.service.displayOrder);
+  return mergedStatuses.sort((a, b) => a.service.displayOrder - b.service.displayOrder)
 }
 
 const METRIC_ORDER: Record<string, number> = {
@@ -71,149 +72,170 @@ const METRIC_ORDER: Record<string, number> = {
   // Common rate limits
   requests_per_minute: 10,
   tokens_per_minute: 20,
-  requests_per_day: 30
-};
+  requests_per_day: 30,
+}
 
 function getMetricOrder(metric: string): number {
-  const direct = METRIC_ORDER[metric];
-  if (direct !== undefined) return direct;
+  const direct = METRIC_ORDER[metric]
+  if (direct !== undefined) return direct
 
   // AMP (and similar) often uses a primary "*_quota" metric.
-  if (metric.endsWith('_quota')) return 10;
+  if (metric.endsWith('_quota')) return 10
 
-  return 1000;
+  return 1000
 }
 
 function normalizeStatus(status: ServiceStatus): ServiceStatus {
   // Filter legacy/derived metrics that were previously stored as standalone quotas.
   // We now represent these via `replenishmentRate` + `resetAt` on the main quota.
-  const hiddenMetrics = new Set(['hourly_replenishment', 'window_hours']);
+  const hiddenMetrics = new Set(['hourly_replenishment', 'window_hours'])
 
   const quotas = [...(status.quotas || [])]
-    .filter(q => !hiddenMetrics.has(q.metric))
+    .filter((q) => !hiddenMetrics.has(q.metric))
     .sort((a, b) => {
-    const ao = getMetricOrder(a.metric);
-    const bo = getMetricOrder(b.metric);
-    if (ao !== bo) return ao - bo;
-    return a.metric.localeCompare(b.metric);
-  });
+      const ao = getMetricOrder(a.metric)
+      const bo = getMetricOrder(b.metric)
+      if (ao !== bo) return ao - bo
+      return a.metric.localeCompare(b.metric)
+    })
 
-  return { ...status, quotas };
+  return { ...status, quotas }
 }
 
 function normalizeStatuses(statuses: ServiceStatus[]): ServiceStatus[] {
-  return (statuses || []).map(normalizeStatus);
+  return (statuses || []).map(normalizeStatus)
 }
 
 export function useWebSocket() {
-  const [statuses, setStatuses] = useState<ServiceStatus[]>([]);
-  const [isConnected, setIsConnected] = useState(false);
-  const [isReconnecting, setIsReconnecting] = useState(false);
-  const [lastUpdate, setLastUpdate] = useState<Date | null>(null);
-  const wsRef = useRef<WebSocket | null>(null);
-  const reconnectTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const [statuses, setStatuses] = useState<ServiceStatus[]>([])
+  const [isConnected, setIsConnected] = useState(false)
+  const [isReconnecting, setIsReconnecting] = useState(false)
+  const [lastUpdate, setLastUpdate] = useState<Date | null>(null)
+  const wsRef = useRef<WebSocket | null>(null)
+  const reconnectTimeoutRef = useRef<NodeJS.Timeout | null>(null)
 
   const connect = useCallback(() => {
-    if (wsRef.current?.readyState === WebSocket.OPEN) return;
+    if (wsRef.current?.readyState === WebSocket.OPEN) return
 
-    const ws = new WebSocket(WS_URL);
-    wsRef.current = ws;
+    const ws = new WebSocket(WS_URL)
+    wsRef.current = ws
 
     ws.onopen = () => {
-      console.log('WebSocket connected');
-      setIsConnected(true);
-      setIsReconnecting(false);
-      ws.send(JSON.stringify({ type: 'subscribe' }));
-    };
+      console.log('WebSocket connected')
+      setIsConnected(true)
+      setIsReconnecting(false)
+      ws.send(JSON.stringify({ type: 'subscribe' }))
+    }
 
-      ws.onmessage = (event) => {
+    ws.onmessage = (event) => {
       try {
-        const data = JSON.parse(event.data);
-        
+        const data = JSON.parse(event.data)
+
         if (data.type === 'status') {
           // Merge new statuses with existing ones to preserve quota data
           // for services that weren't updated (prevents clearing numbers when adding services)
-          setStatuses(prevStatuses => mergeStatuses(prevStatuses, normalizeStatuses(data.data as ServiceStatus[]), 'full'));
-          setLastUpdate(new Date(data.timestamp));
-          
+          setStatuses((prevStatuses) =>
+            mergeStatuses(prevStatuses, normalizeStatuses(data.data as ServiceStatus[]), 'full'),
+          )
+          setLastUpdate(new Date(data.timestamp))
+
           // Check for authentication errors and trigger UI alert
-          const authErrors = (data.data as ServiceStatus[]).filter(status => status.authError);
+          const authErrors = (data.data as ServiceStatus[]).filter((status) => status.authError)
           if (authErrors.length > 0) {
-            console.error('Authentication errors detected:', authErrors.map(s => s.service.name));
-            
+            console.error(
+              'Authentication errors detected:',
+              authErrors.map((s) => s.service.name),
+            )
+
             // Show browser alert for authentication failures
-            const serviceNames = authErrors.map(s => s.service.name).join(', ');
-            alert(`⚠️ Authentication Failed: ${serviceNames}\n\nYour tokens may have expired or been revoked.\n\nPlease visit your AI provider and generate new tokens.\n\nAfter updating tokens, the dashboard will refresh automatically.`);
+            const serviceNames = authErrors.map((s) => s.service.name).join(', ')
+            alert(
+              `⚠️ Authentication Failed: ${serviceNames}\n\nYour tokens may have expired or been revoked.\n\nPlease visit your AI provider and generate new tokens.\n\nAfter updating tokens, the dashboard will refresh automatically.`,
+            )
           }
         }
       } catch (error) {
-        console.error('Error parsing WebSocket message:', error);
+        console.error('Error parsing WebSocket message:', error)
       }
-    };
+    }
 
     ws.onclose = () => {
-      console.log('WebSocket disconnected');
-      setIsConnected(false);
-      setIsReconnecting(true);
-      
+      console.log('WebSocket disconnected')
+      setIsConnected(false)
+      setIsReconnecting(true)
+
       // Reconnect after 5 seconds
       reconnectTimeoutRef.current = setTimeout(() => {
-        console.log('Attempting to reconnect...');
-        connect();
-      }, 5000);
-    };
+        console.log('Attempting to reconnect...')
+        connect()
+      }, 5000)
+    }
 
     ws.onerror = (error) => {
-      console.error('WebSocket error:', error);
-      ws.close();
-    };
-  }, []);
+      console.error('WebSocket error:', error)
+      ws.close()
+    }
+  }, [])
 
   const disconnect = useCallback(() => {
     if (reconnectTimeoutRef.current) {
-      clearTimeout(reconnectTimeoutRef.current);
+      clearTimeout(reconnectTimeoutRef.current)
     }
-    wsRef.current?.close();
-  }, []);
+    wsRef.current?.close()
+  }, [])
 
   useEffect(() => {
-    connect();
-    
+    connect()
+
     return () => {
-      disconnect();
-    };
-  }, [connect, disconnect]);
+      disconnect()
+    }
+  }, [connect, disconnect])
 
   const reloadCached = useCallback(() => {
     fetch(`${API_URL}/status/cached`)
-      .then(response => response.json())
-      .then(data => {
-        setStatuses(prevStatuses => mergeStatuses(prevStatuses, normalizeStatuses(data as ServiceStatus[]), 'full'));
-        setLastUpdate(new Date());
+      .then((response) => response.json())
+      .then((data) => {
+        setStatuses((prevStatuses) =>
+          mergeStatuses(prevStatuses, normalizeStatuses(data as ServiceStatus[]), 'full'),
+        )
+        setLastUpdate(new Date())
       })
-      .catch(error => console.error('Error loading cached status:', error));
-  }, []);
+      .catch((error) => console.error('Error loading cached status:', error))
+  }, [])
 
   const refresh = useCallback(() => {
     fetch(`${API_URL}/quotas/refresh`, { method: 'POST' })
-      .then(response => response.json())
-      .then(data => {
-        setStatuses(prevStatuses => mergeStatuses(prevStatuses, normalizeStatuses(data as ServiceStatus[]), 'full'));
-        setLastUpdate(new Date());
+      .then((response) => response.json())
+      .then((data) => {
+        setStatuses((prevStatuses) =>
+          mergeStatuses(prevStatuses, normalizeStatuses(data as ServiceStatus[]), 'full'),
+        )
+        setLastUpdate(new Date())
       })
-      .catch(error => console.error('Error refreshing quotas:', error));
-  }, []);
+      .catch((error) => console.error('Error refreshing quotas:', error))
+  }, [])
 
   const refreshService = useCallback((serviceId: string) => {
     fetch(`${API_URL}/quotas/refresh/${serviceId}`, { method: 'POST' })
-      .then(response => response.json())
-      .then(data => {
+      .then((response) => response.json())
+      .then((data) => {
         // Endpoint returns a single ServiceStatus
-        setStatuses(prevStatuses => mergeStatuses(prevStatuses, normalizeStatuses([data as ServiceStatus]), 'partial'));
-        setLastUpdate(new Date());
+        setStatuses((prevStatuses) =>
+          mergeStatuses(prevStatuses, normalizeStatuses([data as ServiceStatus]), 'partial'),
+        )
+        setLastUpdate(new Date())
       })
-      .catch(error => console.error('Error refreshing service:', error));
-  }, []);
+      .catch((error) => console.error('Error refreshing service:', error))
+  }, [])
 
-  return { statuses, isConnected, isReconnecting, lastUpdate, reloadCached, refresh, refreshService };
+  return {
+    statuses,
+    isConnected,
+    isReconnecting,
+    lastUpdate,
+    reloadCached,
+    refresh,
+    refreshService,
+  }
 }
