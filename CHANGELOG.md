@@ -7,8 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.1] - 2026-01-30
+
 ### Added
 - Developer tooling: Oxlint (lint) and Oxfmt (format)
+- GitHub Actions workflow for linting and format checks
+- Pre-commit hook to auto-format staged files and verify lint
 
 ### Removed
 - ESLint/Prettier tooling in favor of oxlint/oxfmt
@@ -45,5 +49,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 - Added missing dependencies (uuid, sqlite) for Docker builds
 
-[Unreleased]: https://github.com/mwaldstein/ai-usage-monitor/compare/v0.1.0...HEAD
+[Unreleased]: https://github.com/mwaldstein/ai-usage-monitor/compare/v0.1.1...HEAD
+[0.1.1]: https://github.com/mwaldstein/ai-usage-monitor/compare/v0.1.0...v0.1.1
 [0.1.0]: https://github.com/mwaldstein/ai-usage-monitor/releases/tag/v0.1.0
