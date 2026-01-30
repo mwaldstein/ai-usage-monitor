@@ -23,7 +23,7 @@ export function useServices() {
     }
   };
 
-  const addService = async (service: Omit<AIService, 'id' | 'createdAt' | 'updatedAt'>) => {
+  const addService = async (service: Omit<AIService, 'id' | 'createdAt' | 'updatedAt' | 'displayOrder'>) => {
     try {
       const response = await fetch(`${API_URL}/services`, {
         method: 'POST',

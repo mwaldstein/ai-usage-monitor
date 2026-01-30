@@ -5,8 +5,9 @@ import { X, ChevronDown, ChevronUp, ExternalLink, Sparkles } from 'lucide-react'
 interface AddServiceModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSubmit: (service: Omit<AIService, 'id' | 'createdAt' | 'updatedAt'>) => void;
+  onSubmit: (service: Omit<AIService, 'id' | 'createdAt' | 'updatedAt' | 'displayOrder'>) => void;
   editingService?: AIService | null;
+  disabled?: boolean;
 }
 
 const PROVIDERS = [
@@ -180,7 +181,7 @@ const PROVIDER_INSTRUCTIONS: Record<string, ProviderInstructions> = {
   }
 };
 
-export function AddServiceModal({ isOpen, onClose, onSubmit, editingService }: AddServiceModalProps) {
+export function AddServiceModal({ isOpen, onClose, onSubmit, editingService, disabled }: AddServiceModalProps) {
   const [name, setName] = useState('');
   const [provider, setProvider] = useState('openai');
   const [apiKey, setApiKey] = useState('');
@@ -409,9 +410,10 @@ export function AddServiceModal({ isOpen, onClose, onSubmit, editingService }: A
           <button
             type="submit"
             onClick={handleSubmit}
-            className="flex-1 px-4 py-2.5 bg-violet-600 hover:bg-violet-500 text-white rounded-lg text-sm font-medium transition-all shadow-lg shadow-violet-600/20"
+            disabled={disabled}
+            className={`flex-1 px-4 py-2.5 bg-violet-600 hover:bg-violet-500 text-white rounded-lg text-sm font-medium transition-all shadow-lg shadow-violet-600/20 ${disabled ? 'opacity-50 cursor-not-allowed' : ''}`}
           >
-            {isEditing ? 'Save Changes' : 'Add Service'}
+            {disabled ? 'Offline' : (isEditing ? 'Save Changes' : 'Add Service')}
           </button>
         </div>
       </div>

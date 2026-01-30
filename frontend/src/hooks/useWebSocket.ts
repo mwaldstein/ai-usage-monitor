@@ -105,6 +105,7 @@ function normalizeStatuses(statuses: ServiceStatus[]): ServiceStatus[] {
 export function useWebSocket() {
   const [statuses, setStatuses] = useState<ServiceStatus[]>([]);
   const [isConnected, setIsConnected] = useState(false);
+  const [isReconnecting, setIsReconnecting] = useState(false);
   const [lastUpdate, setLastUpdate] = useState<Date | null>(null);
   const wsRef = useRef<WebSocket | null>(null);
   const reconnectTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -118,6 +119,7 @@ export function useWebSocket() {
     ws.onopen = () => {
       console.log('WebSocket connected');
       setIsConnected(true);
+      setIsReconnecting(false);
       ws.send(JSON.stringify({ type: 'subscribe' }));
     };
 
@@ -149,6 +151,7 @@ export function useWebSocket() {
     ws.onclose = () => {
       console.log('WebSocket disconnected');
       setIsConnected(false);
+      setIsReconnecting(true);
       
       // Reconnect after 5 seconds
       reconnectTimeoutRef.current = setTimeout(() => {
@@ -209,5 +212,5 @@ export function useWebSocket() {
       .catch(error => console.error('Error refreshing service:', error));
   }, []);
 
-  return { statuses, isConnected, lastUpdate, reloadCached, refresh, refreshService };
+  return { statuses, isConnected, isReconnecting, lastUpdate, reloadCached, refresh, refreshService };
 }

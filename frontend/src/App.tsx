@@ -3,25 +3,26 @@ import { useWebSocket } from './hooks/useWebSocket';
 import { useServices, useUsageHistory } from './hooks/useApi';
 import { ServiceCard } from './components/ServiceCard';
 import { AddServiceModal } from './components/AddServiceModal';
-import { 
-  Plus, 
-  RefreshCw, 
-  Wifi, 
-  WifiOff, 
-  Settings, 
-  Trash2, 
+import {
+  Plus,
+  RefreshCw,
+  Wifi,
+  WifiOff,
+  Settings,
+  Trash2,
   Edit2,
   LayoutGrid,
   List,
   ChevronUp,
   Activity,
   ArrowUp,
-  ArrowDown
+  ArrowDown,
+  AlertCircle
 } from 'lucide-react';
 import { AIService } from './types';
 
 function App() {
-  const { statuses, isConnected, lastUpdate, reloadCached, refresh, refreshService } = useWebSocket();
+  const { statuses, isConnected, isReconnecting, lastUpdate, reloadCached, refresh, refreshService } = useWebSocket();
   const { services, addService, updateService, deleteService, reorderServices, refresh: refreshServices } = useServices();
   const { history, refresh: refreshHistory } = useUsageHistory(undefined, 2); // Fetch 2 hours of history for comparisons
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -40,14 +41,14 @@ function App() {
     refresh();
   }, [refresh]);
 
-  const handleAddService = async (service: Omit<AIService, 'id' | 'createdAt' | 'updatedAt'>) => {
+  const handleAddService = async (service: Omit<AIService, 'id' | 'createdAt' | 'updatedAt' | 'displayOrder'>) => {
     const success = await addService(service);
     if (success) {
       reloadCached();
     }
   };
 
-  const handleUpdateService = async (service: Omit<AIService, 'id' | 'createdAt' | 'updatedAt'>) => {
+  const handleUpdateService = async (service: Partial<AIService>) => {
     if (!editingService) return;
     const success = await updateService(editingService.id, service);
     if (success) {
@@ -92,6 +93,23 @@ function App() {
     setEditingService(null);
   };
 
+  const handleModalSubmit = async (service: Omit<AIService, 'id' | 'createdAt' | 'updatedAt' | 'displayOrder'>) => {
+    if (editingService) {
+      // For editing, convert to Partial<AIService> by including all fields from the form
+      const updateData: Partial<AIService> = {
+        name: service.name,
+        provider: service.provider,
+        apiKey: service.apiKey,
+        bearerToken: service.bearerToken,
+        baseUrl: service.baseUrl,
+        enabled: service.enabled
+      };
+      await handleUpdateService(updateData);
+    } else {
+      await handleAddService(service);
+    }
+  };
+
   const healthyCount = statuses.filter(s => s.isHealthy).length;
   const totalCount = statuses.length;
 
@@ -108,14 +126,22 @@ function App() {
 
   return (
     <div className="min-h-screen bg-[#0f0f11] text-[#fafafa]">
-      {/* Compact Header */}
-      <header className="glass sticky top-0 z-50 border-b border-white/10">
+      {/* Compact Header - Red styling when disconnected */}
+      <header className={`glass sticky top-0 z-50 border-b transition-colors duration-300 ${
+        isConnected ? 'border-white/10' : 'border-red-500/50 bg-red-950/20'
+      }`}>
         <div className="max-w-7xl mx-auto px-3 py-2">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               <div className="flex items-center gap-2">
-                <div className={`w-2 h-2 rounded-full ${isConnected ? 'bg-emerald-500 pulse-live' : 'bg-red-500'}`} />
-                <h1 className="text-sm font-semibold tracking-wide">AI Monitor</h1>
+                <div className={`w-2 h-2 rounded-full ${isConnected ? 'bg-emerald-500 pulse-live' : 'bg-red-500 animate-pulse'}`} />
+                <h1 className={`text-sm font-semibold tracking-wide ${!isConnected ? 'text-red-400' : ''}`}>AI Monitor</h1>
+                {!isConnected && (
+                  <span className="hidden sm:flex items-center gap-1 text-xs text-red-400 font-medium">
+                    <AlertCircle size={12} />
+                    {isReconnecting ? 'Reconnecting...' : 'Disconnected'}
+                  </span>
+                )}
               </div>
               
               {/* Quick Stats */}
@@ -157,24 +183,27 @@ function App() {
 
               <button
                 onClick={handleRefreshAll}
-                className="btn-icon tooltip"
-                data-tooltip="Refresh all"
+                disabled={!isConnected}
+                className={`btn-icon tooltip ${!isConnected ? 'opacity-40 cursor-not-allowed' : ''}`}
+                data-tooltip={isConnected ? "Refresh all" : "Offline - cannot refresh"}
               >
                 <RefreshCw size={14} />
               </button>
 
               <button
                 onClick={() => setIsModalOpen(true)}
-                className="btn-icon tooltip bg-violet-600 border-violet-500 hover:bg-violet-500"
-                data-tooltip="Add service"
+                disabled={!isConnected}
+                className={`btn-icon tooltip bg-violet-600 border-violet-500 hover:bg-violet-500 ${!isConnected ? 'opacity-40 cursor-not-allowed' : ''}`}
+                data-tooltip={isConnected ? "Add service" : "Offline - cannot add services"}
               >
                 <Plus size={14} />
               </button>
 
               <button
-                onClick={() => setShowSettings(!showSettings)}
-                className={`btn-icon tooltip ${showSettings ? 'bg-zinc-700 text-white' : ''}`}
-                data-tooltip="Settings"
+                onClick={() => isConnected && setShowSettings(!showSettings)}
+                disabled={!isConnected}
+                className={`btn-icon tooltip ${showSettings && isConnected ? 'bg-zinc-700 text-white' : ''} ${!isConnected ? 'opacity-40 cursor-not-allowed' : ''}`}
+                data-tooltip={isConnected ? "Settings" : "Offline - settings unavailable"}
               >
                 <Settings size={14} />
               </button>
@@ -186,7 +215,7 @@ function App() {
       {/* Main Content */}
       <main className="max-w-7xl mx-auto px-3 py-3">
         {/* Settings Panel */}
-        {showSettings && (
+        {showSettings && isConnected && (
           <div className="mb-3 glass rounded-xl p-3 slide-in">
             <div className="flex items-center justify-between mb-2">
               <h3 className="text-xs font-semibold text-zinc-400 uppercase tracking-wider">Services</h3>
@@ -199,8 +228,8 @@ function App() {
             </div>
             <div className="space-y-1">
               {services.map((service) => (
-                <div 
-                  key={service.id} 
+                <div
+                  key={service.id}
                   className="flex items-center justify-between p-2 rounded-lg bg-zinc-800/30 border border-white/5 hover:border-white/10 transition-colors"
                 >
                   <div className="flex items-center gap-2">
@@ -244,10 +273,23 @@ function App() {
           </div>
         )}
 
+        {/* Disconnection Banner */}
+        {!isConnected && (
+          <div className="mb-3 glass rounded-xl p-3 border border-red-500/30 bg-red-950/20">
+            <div className="flex items-center gap-2 text-red-400">
+              <AlertCircle size={16} className="animate-pulse" />
+              <span className="font-medium">Backend Disconnected</span>
+            </div>
+            <p className="text-xs text-red-300/70 mt-1">
+              Showing last known data. Controls are disabled until reconnection.{isReconnecting && ' Reconnecting...'}
+            </p>
+          </div>
+        )}
+
         {/* Service Grid */}
         <div className={`grid gap-2 ${
-          viewMode === 'compact' 
-            ? 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4' 
+          viewMode === 'compact'
+            ? 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4'
             : 'grid-cols-1 lg:grid-cols-2'
         }`}>
           {statuses.map((status) => (
@@ -261,6 +303,7 @@ function App() {
               onSelect={() => setSelectedService(
                 selectedService === status.service.id ? null : status.service.id
               )}
+              isConnected={isConnected}
             />
           ))}
         </div>
@@ -274,10 +317,14 @@ function App() {
             <p className="text-zinc-400 text-sm mb-3">No services configured</p>
             <button
               onClick={() => setIsModalOpen(true)}
-              className="px-4 py-2 bg-violet-600 hover:bg-violet-500 text-white text-sm font-medium rounded-lg transition-colors"
+              disabled={!isConnected}
+              className={`px-4 py-2 bg-violet-600 hover:bg-violet-500 text-white text-sm font-medium rounded-lg transition-colors ${!isConnected ? 'opacity-40 cursor-not-allowed' : ''}`}
             >
               Add Your First Service
             </button>
+            {!isConnected && (
+              <p className="text-xs text-red-400 mt-2">Connect to backend to add services</p>
+            )}
           </div>
         )}
 
@@ -309,8 +356,9 @@ function App() {
       <AddServiceModal
         isOpen={isModalOpen}
         onClose={handleCloseModal}
-        onSubmit={editingService ? handleUpdateService : handleAddService}
+        onSubmit={handleModalSubmit}
         editingService={editingService}
+        disabled={!isConnected}
       />
     </div>
   );

@@ -9,6 +9,7 @@ interface ServiceCardProps {
   onSelect: () => void;
   history?: UsageHistory[];
   viewMode?: 'compact' | 'expanded';
+  isConnected?: boolean;
 }
 
 function formatCountdown(milliseconds: number): string {
@@ -463,6 +464,7 @@ export function ServiceCard({
   onSelect,
   history,
   viewMode = 'compact',
+  isConnected = true,
 }: ServiceCardProps) {
   const { service, quotas, lastUpdated, isHealthy, error, authError } = status;
   const providerColor = getProviderColor(service.provider);
@@ -567,7 +569,9 @@ export function ServiceCard({
             )}
             <button
               onClick={onRefresh}
-              className="p-1.5 rounded-md bg-white/5 hover:bg-white/10 text-zinc-400 hover:text-white transition-colors"
+              disabled={!isConnected}
+              title={isConnected ? "Refresh" : "Offline - cannot refresh"}
+              className={`p-1.5 rounded-md bg-white/5 hover:bg-white/10 text-zinc-400 hover:text-white transition-colors ${!isConnected ? 'opacity-40 cursor-not-allowed' : ''}`}
             >
               <RefreshCw size={12} />
             </button>
