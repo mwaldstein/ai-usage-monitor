@@ -237,6 +237,62 @@ npm run build
 
 The frontend build will be in `frontend/dist/`.
 
+### Docker Deployment
+
+Build and run the application using Docker:
+
+```bash
+# Build the Docker image
+docker build -t ai-usage-quota .
+
+# Run the container
+docker run -d \
+  --name ai-usage-quota \
+  -p 3001:3001 \
+  -v $(pwd)/data:/app/data \
+  ai-usage-quota
+```
+
+The application will be available at http://localhost:3001. Both the frontend and backend are served from the same port, making it easy to deploy behind a reverse proxy.
+
+**Environment Variables:**
+You can customize the configuration by passing environment variables:
+
+```bash
+docker run -d \
+  --name ai-usage-quota \
+  -p 3001:3001 \
+  -v $(pwd)/data:/app/data \
+  -e PORT=3001 \
+  -e REFRESH_INTERVAL=*/5 * * * * \
+  ai-usage-quota
+```
+
+**Using Docker Compose:**
+
+Create a `docker-compose.yml` file:
+
+```yaml
+version: '3.8'
+services:
+  app:
+    build: .
+    ports:
+      - "3001:3001"
+    volumes:
+      - ./data:/app/data
+    environment:
+      - PORT=3001
+      - REFRESH_INTERVAL=*/5 * * * *
+    restart: unless-stopped
+```
+
+Run with:
+
+```bash
+docker-compose up -d
+```
+
 ## Security Considerations
 
 - API keys are stored in the SQLite database

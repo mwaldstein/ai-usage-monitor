@@ -53,6 +53,23 @@ npm run preview      # Preview production build
 - Auto-initialized on first startup
 - No migrations needed (schema auto-created)
 
+### Docker Deployment
+```bash
+# Build and run using Docker
+docker build -t ai-usage-quota .
+docker run -d --name ai-usage-quota -p 3001:3001 -v $(pwd)/data:/app/data ai-usage-quota
+
+# Or use Docker Compose
+docker-compose up -d
+```
+
+**Production Notes:**
+- Single port exposed (3001) for both frontend and backend
+- Frontend served as static files from `/` (SPA fallback to index.html)
+- API endpoints at `/api/*`
+- Health check at `/health`
+- WebSocket upgrades handled by backend
+
 ## Code Style Guidelines
 
 ### TypeScript

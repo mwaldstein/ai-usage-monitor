@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { AIService, UsageHistory } from '../types';
 
-const API_URL = 'http://localhost:3001/api';
+const API_URL = process.env.NODE_ENV === 'production' ? '/api' : 'http://localhost:3001/api';
 
 export function useServices() {
   const [services, setServices] = useState<AIService[]>([]);
