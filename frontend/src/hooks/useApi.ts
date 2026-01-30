@@ -1,0 +1,140 @@
+import { useState, useEffect, useCallback } from 'react';
+import { AIService, UsageHistory } from '../types';
+
+const API_URL = 'http://localhost:3001/api';
+
+export function useServices() {
+  const [services, setServices] = useState<AIService[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const fetchServices = async () => {
+    try {
+      setLoading(true);
+      const response = await fetch(`${API_URL}/services`);
+      if (!response.ok) throw new Error('Failed to fetch services');
+      const data = await response.json();
+      setServices(data);
+      setError(null);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Unknown error');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const addService = async (service: Omit<AIService, 'id' | 'createdAt' | 'updatedAt'>) => {
+    try {
+      const response = await fetch(`${API_URL}/services`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(service)
+      });
+      if (!response.ok) throw new Error('Failed to add service');
+      await fetchServices();
+      return true;
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Unknown error');
+      return false;
+    }
+  };
+
+  const updateService = async (id: string, service: Partial<AIService>) => {
+    try {
+      const response = await fetch(`${API_URL}/services/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(service)
+      });
+      if (!response.ok) throw new Error('Failed to update service');
+      await fetchServices();
+      return true;
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Unknown error');
+      return false;
+    }
+  };
+
+  const deleteService = async (id: string) => {
+    try {
+      const response = await fetch(`${API_URL}/services/${id}`, {
+        method: 'DELETE'
+      });
+      if (!response.ok) throw new Error('Failed to delete service');
+      await fetchServices();
+      return true;
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Unknown error');
+      return false;
+    }
+  };
+
+  const reauthenticateService = async (id: string) => {
+    // Get service details to determine authentication method
+    const response = await fetch(`${API_URL}/services/${id}`);
+    if (!response.ok) return;
+    
+    const service = await response.json();
+    let helpUrl = '';
+    
+    switch (service.provider) {
+      case 'zai':
+        helpUrl = 'https://z.ai';
+        break;
+      case 'opencode':
+        helpUrl = 'https://opencode.ai';
+        break;
+      case 'amp':
+        helpUrl = 'https://ampcode.com';
+        break;
+      case 'openai':
+      case 'anthropic':
+      case 'google':
+        helpUrl = 'https://platform.openai.com/api-keys';
+        break;
+      default:
+        helpUrl = '';
+    }
+    
+    if (helpUrl) {
+      window.open(helpUrl, '_blank');
+    }
+  };
+
+  useEffect(() => {
+    fetchServices();
+  }, []);
+
+  return { services, loading, error, addService, updateService, deleteService, reauthenticateService, refresh: fetchServices };
+}
+
+export function useUsageHistory(serviceId?: string, hours: number = 24) {
+  const [history, setHistory] = useState<UsageHistory[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const fetchHistory = useCallback(async () => {
+    try {
+      setLoading(true);
+      const params = new URLSearchParams();
+      if (serviceId) params.append('serviceId', serviceId);
+      params.append('hours', hours.toString());
+      
+      const response = await fetch(`${API_URL}/usage/history?${params}`);
+      if (!response.ok) throw new Error('Failed to fetch usage history');
+      const data = await response.json();
+      setHistory(data);
+      setError(null);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Unknown error');
+    } finally {
+      setLoading(false);
+    }
+  }, [serviceId, hours]);
+
+  useEffect(() => {
+    fetchHistory();
+  }, [fetchHistory]);
+
+  return { history, loading, error, refresh: fetchHistory };
+}

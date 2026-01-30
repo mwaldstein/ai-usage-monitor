@@ -1,0 +1,218 @@
+import { BaseAIService } from './base';
+import { UsageQuota, AIService } from '../types';
+import { v4 as uuidv4 } from 'uuid';
+
+interface AMPQuotaData {
+  bucket: string;
+  quota: number;
+  hourlyReplenishment: number;
+  windowHours: number;
+  validProviderModels: string;
+  used: number;
+}
+
+interface AMPPaidBalanceData {
+  credits: number;  // Paid credits balance in USD cents (e.g., 1000 = $10.00)
+}
+
+interface AMPBillingBalance {
+  balance: number;  // Current balance in USD (e.g., 1.10 = $1.10)
+}
+
+export class AMPService extends BaseAIService {
+  constructor(service: AIService) {
+    super(service);
+  }
+
+  private parseQuotaResponse(data: any): AMPQuotaData | null {
+    try {
+      // AMP uses SvelteKit remote commands with positional encoding
+      // Format: {"type":"result","result":"[\"{\\\"bucket\\\":1,...},\\\"ubi\\\",2000,83,24,\\\"all\\\",0]"}
+      
+      if (data?.type === 'result' && data?.result) {
+        const resultArray = JSON.parse(data.result);
+        
+        // First element is the schema mapping
+        const schema = resultArray[0];
+        
+        // Extract values by position based on schema
+        return {
+          bucket: resultArray[1],
+          quota: resultArray[2],
+          hourlyReplenishment: resultArray[3],
+          windowHours: resultArray[4],
+          validProviderModels: resultArray[5],
+          used: resultArray[6]
+        };
+      }
+      
+      return null;
+    } catch (error) {
+      console.error('Error parsing AMP quota response:', error);
+      return null;
+    }
+  }
+
+  private parsePaidBalanceResponse(data: any): AMPPaidBalanceData | null {
+    try {
+      // AMP uses SvelteKit remote commands with positional encoding for paid balance
+      // Format: {"type":"result","result":"[2000]"} where value is credits in cents
+      
+      if (data?.type === 'result' && data?.result) {
+        const resultArray = JSON.parse(data.result);
+        
+        // Paid balance is typically just a number in cents
+        if (Array.isArray(resultArray) && resultArray.length > 0 && typeof resultArray[0] === 'number') {
+          return {
+            credits: resultArray[0]
+          };
+        }
+        
+        // Alternative format: direct number
+        if (typeof resultArray === 'number') {
+          return {
+            credits: resultArray
+          };
+        }
+      }
+      
+      return null;
+    } catch (error) {
+      console.error('Error parsing AMP paid balance response:', error);
+      return null;
+    }
+  }
+
+  private parseBillingBalance(html: string): number | null {
+    try {
+      // The balance is displayed in HTML like:
+      // <div class="text-5xl leading-[0.9] mt-8 flex flex-wrap items-baseline gap-1.5">
+      //   <span class="break-all tracking-tight">1.10</span>
+      //   <span class="text-2xl text-muted-foreground font-light leading-none">USD</span>
+      // </div>
+
+      // Look for the balance pattern in the billing section
+      // The pattern is: <span class="break-all tracking-tight">1.10</span> <span class="text-2xl text-muted-foreground font-light leading-none">USD</span>
+      const balanceMatch = html.match(/class="break-all[^"]*"[^>]*>([\d.]+)<\/span>\s*<span[^>]*class="[^"]*text-muted-foreground[^"]*"[^>]*>USD<\/span>/i);
+      if (balanceMatch) {
+        const balance = parseFloat(balanceMatch[1]);
+        if (!isNaN(balance)) {
+          console.log(`Found AMP billing balance: ${balance} USD`);
+          return balance;
+        }
+      }
+
+      // Alternative: look for the pattern in the entire HTML
+      const altMatch = html.match(/<span[^>]*class="break-all[^"]*"[^>]*>([\d.]+)<\/span>\s*<span[^>]*>USD<\/span>/i);
+      if (altMatch) {
+        const balance = parseFloat(altMatch[1]);
+        if (!isNaN(balance)) {
+          console.log(`Found AMP billing balance (alt): ${balance} USD`);
+          return balance;
+        }
+      }
+
+      return null;
+    } catch (error) {
+      console.error('Error parsing billing balance from HTML:', error);
+      return null;
+    }
+  }
+
+  async fetchQuotas(): Promise<UsageQuota[]> {
+    try {
+      // Check if API key (session cookie) is provided
+      if (!this.service.apiKey) {
+        console.warn('No session cookie provided for AMP service. Authentication required. Please copy your session cookie from the browser and paste it as the API key.');
+        return [];
+      }
+
+      const quotas: UsageQuota[] = [];
+      const now = new Date();
+
+      // First, fetch the settings page HTML to get the billing balance
+      let billingBalance: number | null = null;
+      try {
+        const htmlResponse = await this.client.get('/settings', {
+          headers: {
+            'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+            'Authorization': undefined, // Clear the Authorization header from base client
+            'Cookie': this.service.apiKey,
+          }
+        });
+        
+        if (htmlResponse.data && typeof htmlResponse.data === 'string') {
+          billingBalance = this.parseBillingBalance(htmlResponse.data);
+        }
+      } catch (htmlError) {
+        console.log('Could not fetch AMP settings page for billing balance:', htmlError);
+      }
+
+      // AMP uses SvelteKit remote commands
+      // Endpoint: /_app/remote/{id}/getFreeTierUsage
+      // The ID appears to be static: w6b2h6
+      const response = await this.client.get('/_app/remote/w6b2h6/getFreeTierUsage', {
+        headers: {
+          'Accept': 'application/json',
+          'Authorization': undefined, // Clear the Authorization header from base client
+          'Cookie': this.service.apiKey,
+          'x-sveltekit-pathname': '/settings',
+        }
+      });
+
+      const quotaData = this.parseQuotaResponse(response.data);
+      
+      if (!quotaData) {
+        console.warn('Could not parse AMP quota data');
+        return [];
+      }
+
+      // AMP quota values are in cents/credits - convert to dollars (divide by 100)
+      const quotaDollars = quotaData.quota / 100;
+      const usedDollars = quotaData.used / 100;
+      const remainingDollars = quotaDollars - usedDollars;
+      const hourlyReplenishmentDollars = quotaData.hourlyReplenishment / 100;
+
+      // Add the main quota (in dollars)
+      // Note: The AMP free tier continuously replenishes at a rate rather than resetting
+      quotas.push({
+        id: uuidv4(),
+        serviceId: this.service.id,
+        metric: `${quotaData.bucket}_quota`,
+        limit: quotaDollars,
+        used: usedDollars,
+        remaining: remainingDollars > 0 ? remainingDollars : 0,
+        resetAt: new Date(now.getTime() + quotaData.windowHours * 60 * 60 * 1000), // Window for full replenishment
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        replenishmentRate: {
+          amount: hourlyReplenishmentDollars,
+          period: 'hour'
+        },
+        type: 'usage'  // Burn down style - focus on remaining
+      });
+
+      // Add billing balance if found from HTML
+      if (billingBalance !== null && billingBalance > 0) {
+        quotas.push({
+          id: uuidv4(),
+          serviceId: this.service.id,
+          metric: 'billing_balance',
+          limit: billingBalance,
+          used: 0,
+          remaining: billingBalance,
+          resetAt: new Date(now.getTime() + 365 * 24 * 60 * 60 * 1000), // 1 year
+          createdAt: new Date(),
+          updatedAt: new Date(),
+          type: 'credits'  // Credit balance style - focus on remaining
+        });
+        console.log(`Added AMP billing balance: $${billingBalance} USD`);
+      }
+
+      return quotas;
+    } catch (error) {
+      console.error(`Error fetching AMP quotas for ${this.service.name}:`, error);
+      return [];
+    }
+  }
+}
