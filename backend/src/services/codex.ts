@@ -1,6 +1,6 @@
 import { BaseAIService } from './base';
 import { UsageQuota, AIService } from '../types';
-import { v4 as uuidv4 } from 'uuid';
+import { randomUUID } from 'crypto';
 import axios from 'axios';
 
 // Interfaces for Codex usage data from the API response
@@ -156,7 +156,7 @@ export class CodexService extends BaseAIService {
         console.log(`  - reset_at: ${new Date(window.reset_at * 1000).toISOString()}`);
         
         quotas.push({
-          id: uuidv4(),
+          id: randomUUID(),
           serviceId: this.service.id,
           metric: 'rolling_5hour',
           limit: 100,
@@ -185,7 +185,7 @@ export class CodexService extends BaseAIService {
         console.log(`  - reset_at: ${new Date(window.reset_at * 1000).toISOString()}`);
         
         quotas.push({
-          id: uuidv4(),
+          id: randomUUID(),
           serviceId: this.service.id,
           metric: 'weekly',
           limit: 100,
@@ -212,7 +212,7 @@ export class CodexService extends BaseAIService {
         console.log(`  - allowed: ${data.code_review_rate_limit.allowed}`);
         
         quotas.push({
-          id: uuidv4(),
+          id: randomUUID(),
           serviceId: this.service.id,
           metric: 'code_reviews',
           limit: 100,
@@ -233,7 +233,7 @@ export class CodexService extends BaseAIService {
         console.log(`[Codex:${serviceName}] Credits: ${data.credits.balance} (has_credits: ${data.credits.has_credits}, unlimited: ${data.credits.unlimited})`);
         
         quotas.push({
-          id: uuidv4(),
+          id: randomUUID(),
           serviceId: this.service.id,
           metric: 'credits',
           limit: data.credits.balance,

@@ -1,6 +1,6 @@
 import { BaseAIService } from './base';
 import { UsageQuota, AIService } from '../types';
-import { v4 as uuidv4 } from 'uuid';
+import { randomUUID } from 'crypto';
 
 interface OpenCodeBillingData {
   customerID: string;
@@ -423,7 +423,7 @@ export class OpenCodeService extends BaseAIService {
         const pagePercent = rollingUsage.usagePercent;  // What page shows (usage %)
         const burnDownPercent = 100 - pagePercent;      // Remaining capacity (burn down value)
         quotas.push({
-          id: uuidv4(),
+          id: randomUUID(),
           serviceId: this.service.id,
           metric: 'rolling_5hour_usage',
           limit: 100,
@@ -445,7 +445,7 @@ export class OpenCodeService extends BaseAIService {
         const pagePercent = weeklyUsage.usagePercent;  // What page shows (usage %)
         const burnDownPercent = 100 - pagePercent;      // Remaining capacity (burn down value)
         quotas.push({
-          id: uuidv4(),
+          id: randomUUID(),
           serviceId: this.service.id,
           metric: 'weekly_usage',
           limit: 100,
@@ -462,7 +462,7 @@ export class OpenCodeService extends BaseAIService {
       // Add monthly usage if available
       if (data.billing?.monthlyUsage !== undefined && data.billing?.monthlyLimit !== null) {
         quotas.push({
-          id: uuidv4(),
+          id: randomUUID(),
           serviceId: this.service.id,
           metric: 'monthly_usage',
           limit: data.billing.monthlyLimit,
@@ -479,7 +479,7 @@ export class OpenCodeService extends BaseAIService {
         // Balance is stored in smallest units (divide by 1e8 for dollars)
         const balanceDollars = data.billing.balance / 1e8;
         quotas.push({
-          id: uuidv4(),
+          id: randomUUID(),
           serviceId: this.service.id,
           metric: 'account_balance',
           limit: balanceDollars,
@@ -495,7 +495,7 @@ export class OpenCodeService extends BaseAIService {
       // Add subscription plan
       if (data.billing?.subscription?.plan) {
         quotas.push({
-          id: uuidv4(),
+          id: randomUUID(),
           serviceId: this.service.id,
           metric: 'subscription_plan',
           limit: parseInt(data.billing.subscription.plan) || 0,

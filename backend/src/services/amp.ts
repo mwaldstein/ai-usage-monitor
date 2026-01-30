@@ -1,6 +1,6 @@
 import { BaseAIService } from './base';
 import { UsageQuota, AIService } from '../types';
-import { v4 as uuidv4 } from 'uuid';
+import { randomUUID } from 'crypto';
 
 interface AMPQuotaData {
   bucket: string;
@@ -176,7 +176,7 @@ export class AMPService extends BaseAIService {
       // Add the main quota (in dollars)
       // Note: The AMP free tier continuously replenishes at a rate rather than resetting
       quotas.push({
-        id: uuidv4(),
+        id: randomUUID(),
         serviceId: this.service.id,
         metric: `${quotaData.bucket}_quota`,
         limit: quotaDollars,
@@ -195,7 +195,7 @@ export class AMPService extends BaseAIService {
       // Add billing balance if found from HTML
       if (billingBalance !== null && billingBalance > 0) {
         quotas.push({
-          id: uuidv4(),
+          id: randomUUID(),
           serviceId: this.service.id,
           metric: 'billing_balance',
           limit: billingBalance,

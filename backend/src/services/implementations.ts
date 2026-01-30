@@ -1,6 +1,6 @@
 import { BaseAIService } from './base';
 import { UsageQuota, AIService } from '../types';
-import { v4 as uuidv4 } from 'uuid';
+import { randomUUID } from 'crypto';
 
 /**
  * OpenAIService - Fetches billing and usage data from OpenAI API
@@ -39,7 +39,7 @@ export class OpenAIService extends BaseAIService {
         // Hard limit quota
         if (sub.hard_limit_usd) {
           quotas.push({
-            id: uuidv4(),
+            id: randomUUID(),
             serviceId: this.service.id,
             metric: 'monthly_spend_limit',
             limit: sub.hard_limit_usd,
@@ -54,7 +54,7 @@ export class OpenAIService extends BaseAIService {
         // Soft limit quota
         if (sub.soft_limit_usd) {
           quotas.push({
-            id: uuidv4(),
+            id: randomUUID(),
             serviceId: this.service.id,
             metric: 'monthly_spend_soft_limit',
             limit: sub.soft_limit_usd,
@@ -98,7 +98,7 @@ export class GoogleAIService extends BaseAIService {
 
       for (const q of commonQuotas) {
         quotas.push({
-          id: uuidv4(),
+          id: randomUUID(),
           serviceId: this.service.id,
           metric: q.metric,
           limit: q.limit,
@@ -147,7 +147,7 @@ export class AnthropicService extends BaseAIService {
 
       if (rateLimits.requests.limit > 0) {
         quotas.push({
-          id: uuidv4(),
+          id: randomUUID(),
           serviceId: this.service.id,
           metric: 'requests_per_minute',
           limit: rateLimits.requests.limit,
@@ -161,7 +161,7 @@ export class AnthropicService extends BaseAIService {
 
       if (rateLimits.tokens.limit > 0) {
         quotas.push({
-          id: uuidv4(),
+          id: randomUUID(),
           serviceId: this.service.id,
           metric: 'tokens_per_minute',
           limit: rateLimits.tokens.limit,
@@ -202,7 +202,7 @@ export class GenericAIService extends BaseAIService {
         if (data.quotas) {
           for (const quota of data.quotas) {
             quotas.push({
-              id: uuidv4(),
+              id: randomUUID(),
               serviceId: this.service.id,
               metric: quota.metric || quota.name || 'unknown',
               limit: quota.limit || quota.total || 0,

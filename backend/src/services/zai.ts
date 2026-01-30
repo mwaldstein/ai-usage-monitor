@@ -1,6 +1,6 @@
 import { BaseAIService } from './base';
 import { UsageQuota, AIService } from '../types';
-import { v4 as uuidv4 } from 'uuid';
+import { randomUUID } from 'crypto';
 
 interface ZAISubscription {
   id: string;
@@ -74,7 +74,7 @@ export class ZAIService extends BaseAIService {
 
       if (quotaResponse.data?.code === 200 && quotaResponse.data?.data?.limits) {
         for (const limit of quotaResponse.data.data.limits) {
-          const quotaId = uuidv4();
+          const quotaId = randomUUID();
           
           // Create a descriptive metric name based on type
           let metricName = limit.type.toLowerCase();
@@ -116,7 +116,7 @@ export class ZAIService extends BaseAIService {
           if (limit.usageDetails && limit.usageDetails.length > 0) {
             for (const detail of limit.usageDetails) {
               quotas.push({
-                id: uuidv4(),
+                id: randomUUID(),
                 serviceId: this.service.id,
                 metric: `${detail.modelCode}_usage`,
                 limit: 0, // No specific limit per model
@@ -144,7 +144,7 @@ export class ZAIService extends BaseAIService {
         if (subscriptionResponse.data?.code === 200 && subscriptionResponse.data?.data) {
           for (const sub of subscriptionResponse.data.data) {
             quotas.push({
-              id: uuidv4(),
+              id: randomUUID(),
               serviceId: this.service.id,
               metric: `subscription_${sub.productId}`,
               limit: 1,

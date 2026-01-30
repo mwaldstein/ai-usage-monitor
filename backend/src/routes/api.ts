@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { v4 as uuidv4 } from 'uuid';
+import { randomUUID } from 'crypto';
 import { getDatabase } from '../database';
 import { ServiceFactory } from '../services/factory';
 import { AIService, AIProvider, ServiceStatus, UsageQuota } from '../types';
@@ -68,7 +68,7 @@ router.post('/services', async (req, res) => {
       return res.status(400).json({ error: 'Name and provider are required' });
     }
 
-    const id = uuidv4();
+    const id = randomUUID();
     const now = new Date().toISOString();
     const db = getDatabase();
     
@@ -328,7 +328,7 @@ router.post('/quotas/refresh', async (req, res) => {
               // Log usage history for sparkline/trend UI.
               await db.run(
                 'INSERT INTO usage_history (id, service_id, metric, value, timestamp) VALUES (?, ?, ?, ?, ?)',
-                [uuidv4(), quota.serviceId, quota.metric, quota.used, now]
+                [randomUUID(), quota.serviceId, quota.metric, quota.used, now]
               );
             }
           } catch (dbError) {
@@ -414,7 +414,7 @@ router.post('/quotas/refresh/:serviceId', async (req, res) => {
         for (const quota of status.quotas) {
           await db.run(
             'INSERT INTO usage_history (id, service_id, metric, value, timestamp) VALUES (?, ?, ?, ?, ?)',
-            [uuidv4(), quota.serviceId, quota.metric, quota.used, new Date().toISOString()]
+            [randomUUID(), quota.serviceId, quota.metric, quota.used, new Date().toISOString()]
           );
         }
       } catch (dbError) {
