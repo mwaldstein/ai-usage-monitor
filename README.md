@@ -22,13 +22,6 @@ The main dashboard provides an at-a-glance view of all your AI service quotas wi
 
 *Dashboard showing service cards with quota progress bars, health indicators, and real-time connection status*
 
-### Add Service Modal
-Easily configure new AI services with built-in provider-specific instructions.
-
-![Add Service Modal](docs/screenshots/add-service-modal.png)
-
-*Modal for adding AI services with provider selection and authentication instructions*
-
 ### Analytics View
 Track usage trends and analyze consumption patterns across all your services.
 
