@@ -519,4 +519,203 @@ router.get('/usage/history', async (req, res) => {
   }
 });
 
+// Get usage analytics (aggregated time-series data for charts)
+router.get('/usage/analytics', async (req, res) => {
+  try {
+    const { days = 30, serviceId, interval = '1h', groupBy = 'service' } = req.query;
+    const db = getDatabase();
+
+    const daysNum = Math.max(1, Math.min(365, parseInt(String(days), 10) || 30));
+    const sinceIso = new Date(Date.now() - daysNum * 24 * 60 * 60 * 1000).toISOString();
+    
+    console.log(`[API /usage/analytics] days=${daysNum}, interval=${interval}, groupBy=${groupBy}, since=${sinceIso}`);
+
+    // Parse interval parameter (e.g., '5m', '15m', '1h', '1d')
+    const intervalMatch = String(interval).match(/^(\d+)(m|h|d)$/);
+    const intervalMinutes = intervalMatch 
+      ? parseInt(intervalMatch[1]) * (intervalMatch[2] === 'd' ? 1440 : intervalMatch[2] === 'h' ? 60 : 1)
+      : 60; // default to 1 hour
+
+    // Create time bucket expression based on interval
+    // SQLite strftime format and unixepoch calculations
+    let timeBucket: string;
+    if (intervalMinutes >= 1440) {
+      // Daily or longer
+      timeBucket = `date(uh.timestamp)`;
+    } else if (intervalMinutes >= 60) {
+      // Hourly
+      const hours = intervalMinutes / 60;
+      timeBucket = hours === 1 
+        ? `datetime((strftime('%s', uh.timestamp) / 3600) * 3600, 'unixepoch')`
+        : `datetime((strftime('%s', uh.timestamp) / ${hours * 3600}) * ${hours * 3600}, 'unixepoch')`;
+    } else {
+      // Sub-hourly (minutes)
+      const seconds = intervalMinutes * 60;
+      timeBucket = `datetime((strftime('%s', uh.timestamp) / ${seconds}) * ${seconds}, 'unixepoch')`;
+    }
+
+    // Build query based on groupBy parameter
+    const groupByColumn = String(groupBy);
+    let selectColumns: string;
+    let groupByClause: string;
+    
+    if (groupByColumn === 'metric') {
+      // When grouping by metric, aggregate across all services
+      selectColumns = `
+        'All Services' as service_name,
+        'all' as provider,
+        'all' as serviceId,
+        uh.metric as metric`;
+      groupByClause = `uh.metric, ${timeBucket}`;
+    } else if (groupByColumn === 'provider') {
+      // When grouping by provider, aggregate by provider
+      selectColumns = `
+        s.provider as service_name,
+        s.provider as provider,
+        s.provider as serviceId,
+        uh.metric as metric`;
+      groupByClause = `s.provider, uh.metric, ${timeBucket}`;
+    } else {
+      // Default: group by service
+      selectColumns = `
+        s.name as service_name,
+        s.provider as provider,
+        uh.service_id as serviceId,
+        uh.metric as metric`;
+      groupByClause = `s.name, s.provider, uh.service_id, uh.metric, ${timeBucket}`;
+    }
+
+    // Get time-series data aggregated by time bucket
+    // Note: We include max_value which represents the highest usage in the period
+    // For burn-down style remaining calculations, this is more useful than avg
+    let timeSeriesQuery = `
+      SELECT 
+        ${selectColumns},
+        ${timeBucket} as timestamp,
+        AVG(uh.value) as avg_value,
+        MIN(uh.value) as min_value,
+        MAX(uh.value) as max_value,
+        COUNT(*) as data_points
+      FROM usage_history uh
+      JOIN services s ON uh.service_id = s.id
+      WHERE uh.timestamp >= ?
+    `;
+    
+    const params: any[] = [sinceIso];
+    
+    if (serviceId) {
+      timeSeriesQuery += ' AND uh.service_id = ?';
+      params.push(serviceId);
+    }
+    
+    timeSeriesQuery += `
+      GROUP BY ${groupByClause}
+      ORDER BY timestamp ASC, metric
+    `;
+    
+    const timeSeries = await db.all(timeSeriesQuery, params);
+
+    // Get current quota limits for utilization calculation
+    const quotasQuery = `
+      SELECT 
+        q.service_id as serviceId,
+        q.metric as metric,
+        q.limit_value as "limit",
+        q.used_value as used,
+        q.type as type,
+        s.name as service_name,
+        s.provider as provider
+      FROM quotas q
+      JOIN services s ON q.service_id = s.id
+      WHERE s.enabled = 1
+    `;
+    
+    const quotas = serviceId 
+      ? await db.all(quotasQuery + ' AND q.service_id = ?', [serviceId])
+      : await db.all(quotasQuery);
+
+    // Get summary statistics
+    let summaryQuery = `
+      SELECT 
+        s.name as service_name,
+        s.provider as provider,
+        uh.service_id as serviceId,
+        uh.metric as metric,
+        MIN(uh.value) as min_value,
+        MAX(uh.value) as max_value,
+        AVG(uh.value) as avg_value,
+        (MAX(uh.value) - MIN(uh.value)) as total_consumed,
+        MIN(uh.timestamp) as first_record,
+        MAX(uh.timestamp) as last_record,
+        COUNT(DISTINCT date(uh.timestamp)) as active_days
+      FROM usage_history uh
+      JOIN services s ON uh.service_id = s.id
+      WHERE uh.timestamp >= ?
+    `;
+    
+    const summaryParams: any[] = [sinceIso];
+    
+    if (serviceId) {
+      summaryQuery += ' AND uh.service_id = ?';
+      summaryParams.push(serviceId);
+    }
+    
+    summaryQuery += `
+      GROUP BY s.name, s.provider, uh.service_id, uh.metric
+      ORDER BY total_consumed DESC
+    `;
+    
+    const summary = await db.all(summaryQuery, summaryParams);
+
+    res.json({
+      timeSeries,
+      quotas,
+      summary,
+      days: daysNum,
+      generatedAt: new Date().toISOString()
+    });
+  } catch (error) {
+    console.error('Error fetching usage analytics:', error);
+    res.status(500).json({ error: 'Failed to fetch usage analytics' });
+  }
+});
+
+// Get provider comparison data
+router.get('/usage/providers', async (req, res) => {
+  try {
+    const { days = 30 } = req.query;
+    const db = getDatabase();
+
+    const daysNum = Math.max(1, Math.min(365, parseInt(String(days), 10) || 30));
+    const sinceIso = new Date(Date.now() - daysNum * 24 * 60 * 60 * 1000).toISOString();
+
+    const query = `
+      SELECT 
+        s.provider as provider,
+        COUNT(DISTINCT s.id) as service_count,
+        COUNT(DISTINCT uh.metric) as metric_count,
+        SUM(uh.value) as total_usage,
+        AVG(uh.value) as avg_usage,
+        MAX(uh.value) as peak_usage,
+        COUNT(*) as data_points
+      FROM usage_history uh
+      JOIN services s ON uh.service_id = s.id
+      WHERE uh.timestamp >= ?
+      GROUP BY s.provider
+      ORDER BY total_usage DESC
+    `;
+    
+    const providers = await db.all(query, [sinceIso]);
+    
+    res.json({
+      providers,
+      days: daysNum,
+      generatedAt: new Date().toISOString()
+    });
+  } catch (error) {
+    console.error('Error fetching provider comparison:', error);
+    res.status(500).json({ error: 'Failed to fetch provider comparison' });
+  }
+});
+
 export default router;

@@ -3,6 +3,7 @@ import { useWebSocket } from './hooks/useWebSocket';
 import { useServices, useUsageHistory } from './hooks/useApi';
 import { ServiceCard } from './components/ServiceCard';
 import { AddServiceModal } from './components/AddServiceModal';
+import { AnalyticsView } from './components/AnalyticsView';
 import {
   Plus,
   RefreshCw,
@@ -17,7 +18,8 @@ import {
   Activity,
   ArrowUp,
   ArrowDown,
-  AlertCircle
+  AlertCircle,
+  BarChart3
 } from 'lucide-react';
 import { AIService } from './types';
 
@@ -30,6 +32,7 @@ function App() {
   const [editingService, setEditingService] = useState<AIService | null>(null);
   const [viewMode, setViewMode] = useState<'compact' | 'expanded'>('compact');
   const [selectedService, setSelectedService] = useState<string | null>(null);
+  const [currentView, setCurrentView] = useState<'dashboard' | 'analytics'>('dashboard');
 
   // Keep history in sync with live updates.
   useEffect(() => {
@@ -163,49 +166,81 @@ function App() {
             </div>
 
             <div className="flex items-center gap-1">
-              {/* View Toggle */}
-              <div className="flex items-center bg-zinc-800/50 rounded-lg p-0.5 border border-white/5">
-                <button
-                  onClick={() => setViewMode('compact')}
-                  className={`p-1.5 rounded-md transition-all ${viewMode === 'compact' ? 'bg-zinc-700 text-white' : 'text-zinc-400 hover:text-white'}`}
-                  title="Compact view"
-                >
-                  <LayoutGrid size={14} />
-                </button>
-                <button
-                  onClick={() => setViewMode('expanded')}
-                  className={`p-1.5 rounded-md transition-all ${viewMode === 'expanded' ? 'bg-zinc-700 text-white' : 'text-zinc-400 hover:text-white'}`}
-                  title="Expanded view"
-                >
-                  <List size={14} />
-                </button>
-              </div>
+              {currentView === 'dashboard' && (
+                <>
+                  {/* View Toggle - Dashboard only */}
+                  <div className="flex items-center bg-zinc-800/50 rounded-lg p-0.5 border border-white/5">
+                    <button
+                      onClick={() => setViewMode('compact')}
+                      className={`p-1.5 rounded-md transition-all ${viewMode === 'compact' ? 'bg-zinc-700 text-white' : 'text-zinc-400 hover:text-white'}`}
+                      title="Compact view"
+                    >
+                      <LayoutGrid size={14} />
+                    </button>
+                    <button
+                      onClick={() => setViewMode('expanded')}
+                      className={`p-1.5 rounded-md transition-all ${viewMode === 'expanded' ? 'bg-zinc-700 text-white' : 'text-zinc-400 hover:text-white'}`}
+                      title="Expanded view"
+                    >
+                      <List size={14} />
+                    </button>
+                  </div>
 
+                  <button
+                    onClick={handleRefreshAll}
+                    disabled={!isConnected}
+                    className={`btn-icon tooltip ${!isConnected ? 'opacity-40 cursor-not-allowed' : ''}`}
+                    data-tooltip={isConnected ? "Refresh all" : "Offline - cannot refresh"}
+                  >
+                    <RefreshCw size={14} />
+                  </button>
+
+                  <button
+                    onClick={() => setIsModalOpen(true)}
+                    disabled={!isConnected}
+                    className={`btn-icon tooltip bg-violet-600 border-violet-500 hover:bg-violet-500 ${!isConnected ? 'opacity-40 cursor-not-allowed' : ''}`}
+                    data-tooltip={isConnected ? "Add service" : "Offline - cannot add services"}
+                  >
+                    <Plus size={14} />
+                  </button>
+
+                  <button
+                    onClick={() => isConnected && setShowSettings(!showSettings)}
+                    disabled={!isConnected}
+                    className={`btn-icon tooltip ${showSettings && isConnected ? 'bg-zinc-700 text-white' : ''} ${!isConnected ? 'opacity-40 cursor-not-allowed' : ''}`}
+                    data-tooltip={isConnected ? "Settings" : "Offline - settings unavailable"}
+                  >
+                    <Settings size={14} />
+                  </button>
+                </>
+              )}
+            </div>
+
+            {/* Main Navigation Tabs */}
+            <div className="flex items-center gap-1">
               <button
-                onClick={handleRefreshAll}
+                onClick={() => setCurrentView('dashboard')}
                 disabled={!isConnected}
-                className={`btn-icon tooltip ${!isConnected ? 'opacity-40 cursor-not-allowed' : ''}`}
-                data-tooltip={isConnected ? "Refresh all" : "Offline - cannot refresh"}
+                className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+                  currentView === 'dashboard'
+                    ? 'bg-zinc-800 text-white border border-white/10'
+                    : 'text-zinc-400 hover:text-white hover:bg-zinc-800/50'
+                } ${!isConnected ? 'opacity-40 cursor-not-allowed' : ''}`}
               >
-                <RefreshCw size={14} />
+                <LayoutGrid size={16} />
+                <span>Dashboard</span>
               </button>
-
               <button
-                onClick={() => setIsModalOpen(true)}
+                onClick={() => setCurrentView('analytics')}
                 disabled={!isConnected}
-                className={`btn-icon tooltip bg-violet-600 border-violet-500 hover:bg-violet-500 ${!isConnected ? 'opacity-40 cursor-not-allowed' : ''}`}
-                data-tooltip={isConnected ? "Add service" : "Offline - cannot add services"}
+                className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+                  currentView === 'analytics'
+                    ? 'bg-zinc-800 text-white border border-white/10'
+                    : 'text-zinc-400 hover:text-white hover:bg-zinc-800/50'
+                } ${!isConnected ? 'opacity-40 cursor-not-allowed' : ''}`}
               >
-                <Plus size={14} />
-              </button>
-
-              <button
-                onClick={() => isConnected && setShowSettings(!showSettings)}
-                disabled={!isConnected}
-                className={`btn-icon tooltip ${showSettings && isConnected ? 'bg-zinc-700 text-white' : ''} ${!isConnected ? 'opacity-40 cursor-not-allowed' : ''}`}
-                data-tooltip={isConnected ? "Settings" : "Offline - settings unavailable"}
-              >
-                <Settings size={14} />
+                <BarChart3 size={16} />
+                <span>Analytics</span>
               </button>
             </div>
           </div>
@@ -214,8 +249,8 @@ function App() {
 
       {/* Main Content */}
       <main className="max-w-7xl mx-auto px-3 py-3">
-        {/* Settings Panel */}
-        {showSettings && isConnected && (
+        {/* Settings Panel - Only on Dashboard */}
+        {showSettings && isConnected && currentView === 'dashboard' && (
           <div className="mb-3 glass rounded-xl p-3 slide-in">
             <div className="flex items-center justify-between mb-2">
               <h3 className="text-xs font-semibold text-zinc-400 uppercase tracking-wider">Services</h3>
@@ -286,46 +321,56 @@ function App() {
           </div>
         )}
 
-        {/* Service Grid */}
-        <div className={`grid gap-2 ${
-          viewMode === 'compact'
-            ? 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4'
-            : 'grid-cols-1 lg:grid-cols-2'
-        }`}>
-          {statuses.map((status) => (
-            <ServiceCard
-              key={status.service.id}
-              status={status}
-              history={history}
-              viewMode={viewMode}
-              onRefresh={() => refreshService(status.service.id)}
-              isSelected={selectedService === status.service.id}
-              onSelect={() => setSelectedService(
-                selectedService === status.service.id ? null : status.service.id
-              )}
-              isConnected={isConnected}
-            />
-          ))}
-        </div>
-
-        {/* Empty State */}
-        {statuses.length === 0 && (
-          <div className="glass rounded-xl p-8 text-center">
-            <div className="w-12 h-12 mx-auto mb-3 rounded-full bg-violet-500/20 flex items-center justify-center">
-              <Activity size={24} className="text-violet-400" />
+        {currentView === 'analytics' ? (
+          <AnalyticsView
+            services={services}
+            statuses={statuses}
+            isConnected={isConnected}
+          />
+        ) : (
+          <>
+            {/* Service Grid */}
+            <div className={`grid gap-2 ${
+              viewMode === 'compact'
+                ? 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4'
+                : 'grid-cols-1 lg:grid-cols-2'
+            }`}>
+              {statuses.map((status) => (
+                <ServiceCard
+                  key={status.service.id}
+                  status={status}
+                  history={history}
+                  viewMode={viewMode}
+                  onRefresh={() => refreshService(status.service.id)}
+                  isSelected={selectedService === status.service.id}
+                  onSelect={() => setSelectedService(
+                    selectedService === status.service.id ? null : status.service.id
+                  )}
+                  isConnected={isConnected}
+                />
+              ))}
             </div>
-            <p className="text-zinc-400 text-sm mb-3">No services configured</p>
-            <button
-              onClick={() => setIsModalOpen(true)}
-              disabled={!isConnected}
-              className={`px-4 py-2 bg-violet-600 hover:bg-violet-500 text-white text-sm font-medium rounded-lg transition-colors ${!isConnected ? 'opacity-40 cursor-not-allowed' : ''}`}
-            >
-              Add Your First Service
-            </button>
-            {!isConnected && (
-              <p className="text-xs text-red-400 mt-2">Connect to backend to add services</p>
+
+            {/* Empty State */}
+            {statuses.length === 0 && (
+              <div className="glass rounded-xl p-8 text-center">
+                <div className="w-12 h-12 mx-auto mb-3 rounded-full bg-violet-500/20 flex items-center justify-center">
+                  <Activity size={24} className="text-violet-400" />
+                </div>
+                <p className="text-zinc-400 text-sm mb-3">No services configured</p>
+                <button
+                  onClick={() => setIsModalOpen(true)}
+                  disabled={!isConnected}
+                  className={`px-4 py-2 bg-violet-600 hover:bg-violet-500 text-white text-sm font-medium rounded-lg transition-colors ${!isConnected ? 'opacity-40 cursor-not-allowed' : ''}`}
+                >
+                  Add Your First Service
+                </button>
+                {!isConnected && (
+                  <p className="text-xs text-red-400 mt-2">Connect to backend to add services</p>
+                )}
+              </div>
             )}
-          </div>
+          </>
         )}
 
       </main>
