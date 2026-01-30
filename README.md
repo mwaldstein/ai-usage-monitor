@@ -59,7 +59,7 @@ ai-usage-quota/
 
 ### Prerequisites
 
-- Node.js 18+ and npm
+- Node.js 22.12+ (or 20.19+) and npm
 - API keys for the AI services you want to monitor
 
 ### Setup
