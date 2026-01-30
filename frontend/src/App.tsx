@@ -1,6 +1,6 @@
 import { useState, useCallback, useEffect } from 'react';
 import { useWebSocket } from './hooks/useWebSocket';
-import { useServices, useUsageHistory } from './hooks/useApi';
+import { useServices, useUsageHistory, useVersion } from './hooks/useApi';
 import { ServiceCard } from './components/ServiceCard';
 import { AddServiceModal } from './components/AddServiceModal';
 import { AnalyticsView } from './components/AnalyticsView';
@@ -27,6 +27,7 @@ function App() {
   const { statuses, isConnected, isReconnecting, lastUpdate, reloadCached, refresh, refreshService } = useWebSocket();
   const { services, addService, updateService, deleteService, reorderServices, refresh: refreshServices } = useServices();
   const { history, refresh: refreshHistory } = useUsageHistory(undefined, 2); // Fetch 2 hours of history for comparisons
+  const { version, commitSha } = useVersion();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [editingService, setEditingService] = useState<AIService | null>(null);
@@ -378,17 +379,27 @@ function App() {
       {/* Connection Status Footer */}
       <footer className="fixed bottom-0 left-0 right-0 glass border-t border-white/10 py-1 px-3">
         <div className="max-w-7xl mx-auto flex items-center justify-between text-xs text-zinc-500">
-          <div className="flex items-center gap-2">
-            {isConnected ? (
-              <>
-                <Wifi size={12} className="text-emerald-500" />
-                <span>Connected</span>
-              </>
-            ) : (
-              <>
-                <WifiOff size={12} className="text-red-500" />
-                <span>Disconnected</span>
-              </>
+          <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2">
+              {isConnected ? (
+                <>
+                  <Wifi size={12} className="text-emerald-500" />
+                  <span>Connected</span>
+                </>
+              ) : (
+                <>
+                  <WifiOff size={12} className="text-red-500" />
+                  <span>Disconnected</span>
+                </>
+              )}
+            </div>
+            {version && (
+              <span className="text-zinc-600">
+                v{version}
+                {commitSha && commitSha !== 'unknown' && (
+                  <span className="text-zinc-700 ml-1">({commitSha})</span>
+                )}
+              </span>
             )}
           </div>
           {lastUpdate && (

@@ -221,3 +221,29 @@ export function useProviderAnalytics(days: number = 30) {
 
   return { providerAnalytics, loading, error, refresh: fetchProviderAnalytics };
 }
+
+export function useVersion() {
+  const [version, setVersion] = useState<string>('');
+  const [commitSha, setCommitSha] = useState<string>('');
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchVersion = async () => {
+      try {
+        const response = await fetch(`${API_URL}/version`);
+        if (!response.ok) throw new Error('Failed to fetch version');
+        const data = await response.json();
+        setVersion(data.version);
+        setCommitSha(data.commitSha);
+      } catch (err) {
+        console.error('Error fetching version:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchVersion();
+  }, []);
+
+  return { version, commitSha, loading };
+}

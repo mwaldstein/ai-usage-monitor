@@ -6,6 +6,7 @@ import { createServer } from 'http';
 import cron from 'node-cron';
 import path from 'path';
 import fs from 'fs';
+import { execSync } from 'child_process';
 
 import { initializeDatabase, getDatabase } from './database';
 import apiRoutes from './routes/api';
@@ -42,6 +43,12 @@ app.use('/api', apiRoutes);
 // Health check
 app.get('/health', (req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });
+});
+
+// Version endpoint
+const versionInfo = getVersionInfo();
+app.get('/version', (req, res) => {
+  res.json(versionInfo);
 });
 
 // Serve static frontend files in production
@@ -322,6 +329,25 @@ async function refreshQuotas() {
     console.error('Error refreshing quotas:', error);
   } finally {
     refreshInProgress = false;
+  }
+}
+
+// Get version info from package.json and git
+function getVersionInfo() {
+  try {
+    const packageJson = JSON.parse(fs.readFileSync(path.join(__dirname, '../package.json'), 'utf8'));
+    const version = packageJson.version || '0.0.0';
+
+    let commitSha = 'unknown';
+    try {
+      commitSha = execSync('git rev-parse --short HEAD', { cwd: __dirname, encoding: 'utf8' }).trim();
+    } catch (e) {
+      // Git not available or not in git repo
+    }
+
+    return { version, commitSha };
+  } catch (e) {
+    return { version: '0.0.0', commitSha: 'unknown' };
   }
 }
 
