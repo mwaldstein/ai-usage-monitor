@@ -2,6 +2,29 @@
 
 A web application that monitors AI service usage across multiple providers in real-time, providing a single-pane view of all your quotas.
 
+## Screenshots
+
+### Dashboard View
+The main dashboard provides an at-a-glance view of all your AI service quotas with real-time updates.
+
+![Dashboard](docs/screenshots/dashboard.png)
+
+*Dashboard showing service cards with quota progress bars, health indicators, and real-time connection status*
+
+### Add Service Modal
+Easily configure new AI services with built-in provider-specific instructions.
+
+![Add Service Modal](docs/screenshots/add-service-modal.png)
+
+*Modal for adding AI services with provider selection and authentication instructions*
+
+### Analytics View
+Track usage trends and analyze consumption patterns across all your services.
+
+![Analytics View](docs/screenshots/analytics.png)
+
+*Analytics dashboard with time-series charts, provider breakdowns, and usage metrics*
+
 ## Features
 
 - **Multi-Provider Support**: Monitor OpenAI, Anthropic, Google AI, Azure OpenAI, AWS Bedrock, opencode zen, AMP, z.ai, and more
