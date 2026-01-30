@@ -38,3 +38,6 @@ test-*.ts
 # Temporary files
 *.tmp
 *.temp
+
+# Debug files
+debug/
