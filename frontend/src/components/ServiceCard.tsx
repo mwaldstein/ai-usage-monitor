@@ -323,13 +323,24 @@ export function ServiceCard({
   const providerColor = getProviderColor(service.provider);
   const [isExpanded, setIsExpanded] = useState(false);
 
+  const sortedQuotas = useMemo(() => {
+    if (service.provider === 'zai') {
+      return [...quotas].sort((a, b) => {
+        const aPriority = a.metric === 'tokens_consumption' ? 0 : 1;
+        const bPriority = b.metric === 'tokens_consumption' ? 0 : 1;
+        return aPriority - bPriority || a.metric.localeCompare(b.metric);
+      });
+    }
+    return quotas;
+  }, [quotas, service.provider]);
+
 
 
   // Generate burn down sparkline data from first quota using actual history
   const sparklineData = useMemo(() => {
-    if (!quotas.length) return { values: [], isBurnDown: false };
+    if (!sortedQuotas.length) return { values: [], isBurnDown: false };
 
-    const firstQuota = quotas[0];
+    const firstQuota = sortedQuotas[0];
     const quotaType = firstQuota.type || 'rate_limit';
     const isBurnDown = quotaType === 'usage' || quotaType === 'credits';
 
@@ -419,18 +430,18 @@ export function ServiceCard({
 
 
         {/* Compact Quota Preview (first 2) */}
-        {!isExpanded && quotas.length > 0 && (
+        {!isExpanded && sortedQuotas.length > 0 && (
           <div className="space-y-1">
-            {quotas.slice(0, 2).map(quota => (
+            {sortedQuotas.slice(0, 2).map(quota => (
               <CompactQuota key={quota.id} quota={quota} history={history} />
             ))}
-            {quotas.length > 2 && (
+            {sortedQuotas.length > 2 && (
               <button
                 className="w-full py-1 text-[10px] text-zinc-500 hover:text-zinc-300 flex items-center justify-center gap-1"
                 onClick={() => setIsExpanded(true)}
               >
                 <ChevronDown size={10} />
-                {quotas.length - 2} more
+                {sortedQuotas.length - 2} more
               </button>
             )}
           </div>
@@ -473,7 +484,7 @@ export function ServiceCard({
         {/* Expanded View - All Quotas */}
         {isExpanded && (
           <div className="mt-2 space-y-1 fade-in">
-            {quotas.map(quota => (
+            {sortedQuotas.map(quota => (
               <CompactQuota key={quota.id} quota={quota} history={history} />
             ))}
             <button
@@ -489,9 +500,9 @@ export function ServiceCard({
         {/* Last Updated */}
         <div className="mt-2 flex items-center justify-between text-[10px] text-zinc-600">
           <span>{new Date(lastUpdated).toLocaleTimeString()}</span>
-          {quotas.some(q => q.replenishmentRate && q.replenishmentRate.amount > 0) && (
+          {sortedQuotas.some(q => q.replenishmentRate && q.replenishmentRate.amount > 0) && (
             <span className="text-emerald-500">
-              +{quotas[0].replenishmentRate?.amount.toFixed(2)}/{quotas[0].replenishmentRate?.period}
+              +{sortedQuotas[0].replenishmentRate?.amount.toFixed(2)}/{sortedQuotas[0].replenishmentRate?.period}
             </span>
           )}
         </div>

@@ -84,17 +84,33 @@ export class ZAIService extends BaseAIService {
             metricName = 'tokens_consumption';
           }
 
-          quotas.push({
-            id: quotaId,
-            serviceId: this.service.id,
-            metric: metricName,
-            limit: limit.usage,
-            used: limit.currentValue,
-            remaining: limit.remaining,
-            resetAt: limit.nextResetTime ? new Date(limit.nextResetTime) : new Date(now.getTime() + 24 * 60 * 60 * 1000),
-            createdAt: new Date(),
-            updatedAt: new Date()
-          });
+          if (metricName === 'tokens_consumption') {
+            quotas.unshift({
+              id: quotaId,
+              serviceId: this.service.id,
+              metric: metricName,
+              limit: limit.usage,
+              used: limit.currentValue,
+              remaining: limit.remaining,
+              resetAt: limit.nextResetTime ? new Date(limit.nextResetTime) : new Date(now.getTime() + 24 * 60 * 60 * 1000),
+              createdAt: new Date(),
+              updatedAt: new Date(),
+              type: 'usage'
+            });
+          } else {
+            quotas.push({
+              id: quotaId,
+              serviceId: this.service.id,
+              metric: metricName,
+              limit: limit.usage,
+              used: limit.currentValue,
+              remaining: limit.remaining,
+              resetAt: limit.nextResetTime ? new Date(limit.nextResetTime) : new Date(now.getTime() + 24 * 60 * 60 * 1000),
+              createdAt: new Date(),
+              updatedAt: new Date(),
+              type: 'usage'
+            });
+          }
 
           // Add usage details for each model if available
           if (limit.usageDetails && limit.usageDetails.length > 0) {
@@ -108,7 +124,8 @@ export class ZAIService extends BaseAIService {
                 remaining: 0,
                 resetAt: limit.nextResetTime ? new Date(limit.nextResetTime) : new Date(now.getTime() + 24 * 60 * 60 * 1000),
                 createdAt: new Date(),
-                updatedAt: new Date()
+                updatedAt: new Date(),
+                type: 'usage'
               });
             }
           }
