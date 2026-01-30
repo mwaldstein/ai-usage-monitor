@@ -267,6 +267,18 @@ npm --prefix backend run lint
 npm --prefix frontend run lint
 ```
 
+### Git Hooks
+
+This repo includes a pre-commit hook that:
+- runs Oxfmt on staged files (and re-stages them)
+- runs Oxlint on staged files
+
+Enable it once per clone:
+
+```bash
+npm run hooks:install
+```
+
 ### Building for Production
 
 **Backend:**

@@ -1,5 +1,6 @@
 {
   "scripts": {
+    "hooks:install": "git config core.hooksPath .githooks",
     "lint": "npm --prefix backend run lint && npm --prefix frontend run lint",
     "lint:fix": "npm --prefix backend run lint:fix && npm --prefix frontend run lint:fix",
     "fmt": "npm --prefix backend run fmt && npm --prefix frontend run fmt",
