@@ -62,7 +62,7 @@ export const providerConfigs: Record<AIProvider, ProviderConfig> = {
   },
   zai: {
     name: 'z.ai',
-    baseUrl: 'https://api.z.ai/v1',
+    baseUrl: 'https://api.z.ai',
     quotaEndpoints: {
       usage: '/usage'
     },

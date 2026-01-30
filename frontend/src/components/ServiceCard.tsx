@@ -323,23 +323,7 @@ export function ServiceCard({
   const providerColor = getProviderColor(service.provider);
   const [isExpanded, setIsExpanded] = useState(false);
 
-  // Calculate health score
-  const healthScore = useMemo(() => {
-    if (!quotas.length) return 100;
-    let critical = 0;
-    let warning = 0;
-    quotas.forEach(q => {
-      const pct = q.limit > 0 ? (q.used / q.limit) * 100 : 0;
-      if (pct > 90) critical++;
-      else if (pct > 70) warning++;
-    });
-    if (critical > 0) return 33;
-    if (warning > 0) return 66;
-    return 100;
-  }, [quotas]);
 
-  // Determine health color
-  const healthColor = healthScore > 80 ? '#10b981' : healthScore > 50 ? '#f59e0b' : '#ef4444';
 
   // Generate burn down sparkline data from first quota using actual history
   const sparklineData = useMemo(() => {
@@ -432,22 +416,7 @@ export function ServiceCard({
           </div>
         </div>
 
-        {/* Health Score Bar */}
-        <div className="flex items-center gap-2 mb-2">
-          <div className="flex-1 h-1 bg-white/10 rounded-full overflow-hidden">
-            <div 
-              className="h-full rounded-full transition-all duration-500"
-              style={{ 
-                width: `${healthScore}%`,
-                backgroundColor: healthColor,
-                boxShadow: `0 0 8px ${healthColor}40`
-              }}
-            />
-          </div>
-          <span className="text-[10px] font-medium" style={{ color: healthColor }}>
-            {healthScore}%
-          </span>
-        </div>
+
 
         {/* Compact Quota Preview (first 2) */}
         {!isExpanded && quotas.length > 0 && (

@@ -165,8 +165,6 @@ const PROVIDER_INSTRUCTIONS: Record<string, ProviderInstructions> = {
     apiKeyLabel: 'Bearer Token',
     apiKeyPlaceholder: 'eyJ...',
     apiKeyHelp: 'Required: Copy from browser localStorage',
-    baseUrlHelp: 'Optional: defaults to https://api.z.ai',
-    baseUrlPlaceholder: 'https://api.z.ai',
     instructions: {
       title: 'How to get your z.ai Bearer Token',
       steps: [
@@ -380,7 +378,7 @@ export function AddServiceModal({ isOpen, onClose, onSubmit, editingService }: A
           )}
 
           {/* Base URL */}
-          {provider !== 'codex' && (
+          {provider !== 'codex' && provider !== 'zai' && (
             <div>
               <label className="block text-xs font-medium text-zinc-400 mb-1.5 uppercase tracking-wider">
                 Base URL
