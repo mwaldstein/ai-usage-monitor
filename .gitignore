@@ -1,8 +1,7 @@
 # Dependencies
 node_modules/
 */node_modules/
-package-lock.json
-*/package-lock.json
+# Note: package-lock.json is intentionally tracked for reproducible Docker builds
 yarn.lock
 */yarn.lock
 pnpm-lock.yaml
