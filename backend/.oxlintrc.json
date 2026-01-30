@@ -1,0 +1,21 @@
+{
+  "$schema": "./node_modules/oxlint/configuration_schema.json",
+  "env": {
+    "node": true
+  },
+  "plugins": ["typescript", "oxc", "import", "node"],
+  "ignorePatterns": ["dist/**", "data/**", "debug/**", "node_modules/**"],
+  "categories": {
+    "correctness": "warn",
+    "suspicious": "warn",
+    "perf": "allow",
+    "style": "allow",
+    "pedantic": "allow",
+    "restriction": "allow",
+    "nursery": "allow"
+  },
+  "rules": {
+    "oxc/no-async-endpoint-handlers": "allow",
+    "typescript/no-extraneous-class": "allow"
+  }
+}

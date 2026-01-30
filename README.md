@@ -247,6 +247,26 @@ The frontend uses:
 - Recharts for data visualization
 - Lucide React for icons
 
+### Linting & Formatting
+
+This repo uses Oxc tools:
+- Lint: `oxlint`
+- Format: `oxfmt`
+
+From the repo root:
+
+```bash
+npm run lint
+npm run fmt
+```
+
+Or per package:
+
+```bash
+npm --prefix backend run lint
+npm --prefix frontend run lint
+```
+
 ### Building for Production
 
 **Backend:**

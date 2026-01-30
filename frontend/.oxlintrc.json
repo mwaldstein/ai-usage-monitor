@@ -1,0 +1,21 @@
+{
+  "$schema": "./node_modules/oxlint/configuration_schema.json",
+  "env": {
+    "browser": true
+  },
+  "plugins": ["typescript", "oxc", "import", "react"],
+  "ignorePatterns": ["dist/**", "node_modules/**"],
+  "categories": {
+    "correctness": "warn",
+    "suspicious": "warn",
+    "perf": "allow",
+    "style": "allow",
+    "pedantic": "allow",
+    "restriction": "allow",
+    "nursery": "allow"
+  },
+  "rules": {
+    "react/react-in-jsx-scope": "allow",
+    "import/no-unassigned-import": "allow"
+  }
+}

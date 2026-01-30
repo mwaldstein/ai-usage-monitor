@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- Developer tooling: Oxlint (lint) and Oxfmt (format)
+
+### Removed
+- ESLint/Prettier tooling in favor of oxlint/oxfmt
+
 ### Changed
 - Frontend now supports reverse proxy deployments under a subpath by detecting the runtime base path and using it for API/WebSocket URLs
 
