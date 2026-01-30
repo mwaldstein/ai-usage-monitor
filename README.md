@@ -2,6 +2,17 @@
 
 A web application that monitors AI service usage across multiple providers in real-time, providing a single-pane view of all your quotas.
 
+## Disclaimer
+
+**This is a personal project intended for local/development use only.**
+
+- **No authentication**: Anyone with network access to the application can view and modify all data
+- **No encryption**: API keys are stored in plaintext in a local SQLite database
+- **No security hardening**: This is not production-ready software
+- **Use at your own risk**: The authors are not responsible for any data breaches, API key exposure, or other security incidents
+
+**Recommended usage**: Run only on localhost or within a trusted private network. Do not expose to the public internet without implementing proper authentication and security measures.
+
 ## Screenshots
 
 ### Dashboard View
@@ -318,11 +329,24 @@ docker-compose up -d
 
 ## Security Considerations
 
-- API keys are stored in the SQLite database
-- Use environment variables for sensitive configuration
-- Consider implementing authentication for production use
-- API keys are masked in the UI (password input type)
-- Database file should have restricted permissions
+**⚠️ Important: This application lacks production-grade security features.**
+
+- **No user authentication**: The application has no login system or user management
+- **Unencrypted storage**: API keys are stored as plaintext in the SQLite database (`backend/data/ai-usage.db`)
+- **No access control**: Anyone who can reach the application endpoints can view and modify all data
+- **No HTTPS**: The development server runs on plain HTTP
+- **No audit logging**: Changes are not tracked or logged
+- **Local-only recommendation**: This is designed to run on `localhost` for personal monitoring only
+
+### Security Best Practices (if you must expose it)
+
+If you absolutely need to access this remotely:
+1. Place it behind a reverse proxy (nginx, traefik) with HTTPS
+2. Implement a VPN or SSH tunnel for access
+3. Add basic HTTP authentication at the reverse proxy level
+4. Restrict database file permissions (`chmod 600 backend/data/ai-usage.db`)
+5. Do not store production API keys with high privileges
+6. Consider the API keys exposed/compromised and rotate them regularly
 
 ## Troubleshooting
 
