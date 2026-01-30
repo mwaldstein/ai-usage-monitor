@@ -101,11 +101,28 @@ export function useServices() {
     }
   };
 
+  const reorderServices = async (serviceIds: string[]) => {
+    try {
+      const response = await fetch(`${API_URL}/services/reorder`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ serviceIds })
+      });
+      if (!response.ok) throw new Error('Failed to reorder services');
+      const data = await response.json();
+      setServices(data);
+      return true;
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Unknown error');
+      return false;
+    }
+  };
+
   useEffect(() => {
     fetchServices();
   }, []);
 
-  return { services, loading, error, addService, updateService, deleteService, reauthenticateService, refresh: fetchServices };
+  return { services, loading, error, addService, updateService, deleteService, reauthenticateService, reorderServices, refresh: fetchServices };
 }
 
 export function useUsageHistory(serviceId?: string, hours: number = 24) {

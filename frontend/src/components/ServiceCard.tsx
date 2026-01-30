@@ -8,6 +8,7 @@ interface ServiceCardProps {
   isSelected: boolean;
   onSelect: () => void;
   history?: UsageHistory[];
+  viewMode?: 'compact' | 'expanded';
 }
 
 function formatCountdown(milliseconds: number): string {
@@ -89,9 +90,11 @@ function RadialProgress({
 function CompactQuota({
   quota,
   history,
+  viewMode = 'compact',
 }: {
   quota: UsageQuota;
   history?: UsageHistory[];
+  viewMode?: 'compact' | 'expanded';
 }) {
   const used = quota.used ?? 0;
   const remaining = quota.remaining ?? 0;
@@ -126,7 +129,34 @@ function CompactQuota({
   else if (isWarning) color = '#f59e0b'; // amber
 
   const { trend, oneHourChange } = getQuotaTrend(quota, isBurnDown, history);
-  
+
+  // Generate sparkline data for this quota in expanded view mode only
+  const sparklineData = useMemo(() => {
+    if (viewMode !== 'expanded' || !history || history.length === 0) return [];
+
+    const twoHoursAgo = Date.now() - 2 * 60 * 60 * 1000;
+    const matchingHistory = history
+      .filter((h) => h.serviceId === quota.serviceId && h.metric === quota.metric)
+      .filter((h) => new Date(h.timestamp).getTime() >= twoHoursAgo)
+      .sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
+
+    if (matchingHistory.length < 2) return [];
+
+    const usedSeries = matchingHistory.map((h) => h.value).filter((v) => Number.isFinite(v));
+
+    if (usedSeries.length < 2) return [];
+
+    // For burn-down quotas, show remaining values
+    if (isBurnDown && quota.limit > 0) {
+      return usedSeries.map((v) => quota.limit - v);
+    }
+    return usedSeries;
+  }, [history, quota, isBurnDown, viewMode]);
+
+  // Calculate delta for sparkline
+  const delta = sparklineData.length > 1 ? sparklineData[sparklineData.length - 1] - sparklineData[0] : 0;
+  const deltaText = `${delta >= 0 ? '+' : ''}${delta.toFixed(2)}`;
+
   // Build tooltip text showing 1-hour change in native units
   const getArrowTooltip = () => {
     if (!oneHourChange) return trend === 'depleting' ? 'Depleting' : trend === 'replenishing' ? 'Replenishing' : 'Stable';
@@ -146,9 +176,9 @@ function CompactQuota({
   };
 
   return (
-    <div className="flex items-center gap-2 p-2 rounded-lg bg-white/5 hover:bg-white/10 transition-colors">
-      <RadialProgress percentage={percentage} size={32} strokeWidth={2.5} color={color}>
-        <span className="text-[10px] font-bold text-white">{Math.round(percentage)}%</span>
+    <div className="flex items-center gap-3 p-3 rounded-lg bg-white/5 hover:bg-white/10 transition-colors">
+      <RadialProgress percentage={percentage} size={44} strokeWidth={3.5} color={color}>
+        <span className="text-sm font-bold text-white">{Math.round(percentage)}%</span>
       </RadialProgress>
       
       <div className="flex-1 min-w-0">
@@ -164,7 +194,14 @@ function CompactQuota({
               <span className="text-[10px] text-emerald-400 cursor-help" title={getArrowTooltip()}>▲</span>
             )}
           </div>
-          <span className="text-[10px] text-zinc-500 font-mono">{timeRemaining}</span>
+          <div className="flex items-center gap-2">
+            {viewMode === 'expanded' && sparklineData.length > 1 && (
+              <span className={`text-xs font-semibold ${delta < 0 ? 'text-red-400' : delta > 0 ? 'text-emerald-400' : 'text-zinc-400'}`}>
+                {deltaText}
+              </span>
+            )}
+            <span className="text-xs text-zinc-300 font-mono">{timeRemaining}</span>
+          </div>
         </div>
         <div className="text-[10px] text-zinc-500">
           {isBurnDown ? (
@@ -174,6 +211,11 @@ function CompactQuota({
           )}
         </div>
       </div>
+
+      {/* Expanded view mode: Show detailed sparkline */}
+      {viewMode === 'expanded' && sparklineData.length > 1 && (
+        <QuotaSparkline values={sparklineData} color={color} isBurnDown={isBurnDown} />
+      )}
     </div>
   );
 }
@@ -254,6 +296,108 @@ function getQuotaTrend(
   return { trend: 'stable', oneHourChange: null };
 }
 
+// Detailed Sparkline for quota rows in expanded view
+function QuotaSparkline({
+  values,
+  color,
+  isBurnDown = false,
+}: {
+  values: number[];
+  color: string;
+  isBurnDown?: boolean;
+}) {
+  if (!values.length) return null;
+
+  const width = 120;
+  const height = 36;
+
+  const min = Math.min(...values);
+  const max = Math.max(...values);
+  const range = max - min;
+
+  if (range < 0.01) {
+    return (
+      <div className="flex flex-col items-center justify-center" style={{ width, height }}>
+        <span className="text-xs text-zinc-600 font-mono">—</span>
+        <span className="text-[10px] text-zinc-700">no change</span>
+      </div>
+    );
+  }
+
+  const plotWidth = width - 4;
+  const points = values.map((v, i) => {
+    const x = (i / (values.length - 1 || 1)) * plotWidth;
+    const normalizedY = ((v - min) / range);
+    const y = 3 + (1 - normalizedY) * (height - 6);
+    return `${x.toFixed(1)},${y.toFixed(1)}`;
+  }).join(' ');
+
+  const endValue = values[values.length - 1];
+  const startValue = values[0];
+  const isDepleting = endValue < startValue;
+  const isReplenishing = endValue > startValue;
+
+  return (
+    <div className="flex flex-col items-center gap-1">
+      <svg width={width} height={height} className="opacity-90">
+        <defs>
+          <linearGradient
+            id={`quota-gradient-${color.replace('#', '')}`}
+            x1="0%"
+            y1="0%"
+            x2="0%"
+            y2="100%"
+          >
+            <stop offset="0%" stopColor={color} stopOpacity="0.4" />
+            <stop offset="100%" stopColor={color} stopOpacity="0.05" />
+          </linearGradient>
+        </defs>
+
+        <line
+          x1="0"
+          y1={height - 3}
+          x2={width}
+          y2={height - 3}
+          stroke="rgba(255,255,255,0.1)"
+          strokeWidth="1"
+          strokeDasharray="2,2"
+        />
+
+        <polygon
+          points={`0,${height - 3} ${points} ${width},${height - 3}`}
+          fill={`url(#quota-gradient-${color.replace('#', '')})`}
+        />
+
+        <polyline
+          points={points}
+          fill="none"
+          stroke={color}
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+
+        <circle
+          cx={width - 4}
+          cy={3 + (1 - ((endValue - min) / range)) * (height - 6)}
+          r="3"
+          fill={color}
+        />
+      </svg>
+
+      {isBurnDown && (
+        <span
+          className={`text-[10px] font-medium ${
+            isDepleting ? 'text-red-400' : isReplenishing ? 'text-emerald-400' : 'text-zinc-500'
+          }`}
+        >
+          {isDepleting ? '↓ burning' : isReplenishing ? '↑ refilling' : '→ steady'}
+        </span>
+      )}
+    </div>
+  );
+}
+
 // Mini Sparkline for card header - shows burn down trend
 function MiniSparkline({ values, color }: { values: number[]; color: string }) {
   if (!values.length) return null;
@@ -276,15 +420,15 @@ function MiniSparkline({ values, color }: { values: number[]; color: string }) {
   // For burn down, we want to show the depletion visually
   // Higher values at the top, lower at bottom (like a fuel gauge emptying)
   const points = values.map((v, i) => {
-    const x = (i / (values.length - 1 || 1)) * 40;
+    const x = (i / (values.length - 1 || 1)) * 56;
     // Normalize to SVG height (2px padding top/bottom)
     const normalizedY = ((v - min) / range);
-    const y = 2 + (1 - normalizedY) * 10; // Invert so high values are at top
+    const y = 2 + (1 - normalizedY) * 16; // Invert so high values are at top
     return `${x},${y}`;
   }).join(' ');
 
   return (
-    <svg width="40" height="14" className="opacity-70">
+    <svg width="56" height="20" className="opacity-70">
       {/* Gradient fill under the line */}
       <defs>
         <linearGradient id={`spark-fill-${color.replace('#', '')}`} x1="0%" y1="0%" x2="0%" y2="100%">
@@ -295,7 +439,7 @@ function MiniSparkline({ values, color }: { values: number[]; color: string }) {
       
       {/* Area fill */}
       <polygon
-        points={`0,12 ${points} 40,12`}
+        points={`0,18 ${points} 56,18`}
         fill={`url(#spark-fill-${color.replace('#', '')})`}
       />
       
@@ -304,7 +448,7 @@ function MiniSparkline({ values, color }: { values: number[]; color: string }) {
         points={points}
         fill="none"
         stroke={color}
-        strokeWidth="1.5"
+        strokeWidth="2"
         strokeLinecap="round"
         strokeLinejoin="round"
       />
@@ -318,6 +462,7 @@ export function ServiceCard({
   isSelected,
   onSelect,
   history,
+  viewMode = 'compact',
 }: ServiceCardProps) {
   const { service, quotas, lastUpdated, isHealthy, error, authError } = status;
   const providerColor = getProviderColor(service.provider);
@@ -391,7 +536,7 @@ export function ServiceCard({
       onClick={handleCardClick}
     >
       {/* Card Header */}
-      <div className="p-3">
+      <div className="p-4">
         <div className="flex items-start justify-between mb-2">
           <div className="flex items-center gap-2">
             {/* Provider Color Indicator */}
@@ -414,10 +559,12 @@ export function ServiceCard({
           </div>
 
           <div className="flex items-center gap-1.5">
-            <MiniSparkline 
-              values={sparklineData.values} 
-              color={providerColor}
-            />
+            {viewMode !== 'expanded' && (
+              <MiniSparkline 
+                values={sparklineData.values} 
+                color={providerColor}
+              />
+            )}
             <button
               onClick={onRefresh}
               className="p-1.5 rounded-md bg-white/5 hover:bg-white/10 text-zinc-400 hover:text-white transition-colors"
@@ -431,9 +578,9 @@ export function ServiceCard({
 
         {/* Compact Quota Preview (first 2) */}
         {!isExpanded && sortedQuotas.length > 0 && (
-          <div className="space-y-1">
+          <div className="space-y-2">
             {sortedQuotas.slice(0, 2).map(quota => (
-              <CompactQuota key={quota.id} quota={quota} history={history} />
+              <CompactQuota key={quota.id} quota={quota} history={history} viewMode={viewMode} />
             ))}
             {sortedQuotas.length > 2 && (
               <button
@@ -483,9 +630,9 @@ export function ServiceCard({
 
         {/* Expanded View - All Quotas */}
         {isExpanded && (
-          <div className="mt-2 space-y-1 fade-in">
+          <div className="mt-2 space-y-2 fade-in">
             {sortedQuotas.map(quota => (
-              <CompactQuota key={quota.id} quota={quota} history={history} />
+              <CompactQuota key={quota.id} quota={quota} history={history} viewMode={viewMode} />
             ))}
             <button
               className="w-full py-1 text-[10px] text-zinc-500 hover:text-zinc-300 flex items-center justify-center gap-1"

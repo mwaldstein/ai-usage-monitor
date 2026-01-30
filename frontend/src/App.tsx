@@ -3,7 +3,6 @@ import { useWebSocket } from './hooks/useWebSocket';
 import { useServices, useUsageHistory } from './hooks/useApi';
 import { ServiceCard } from './components/ServiceCard';
 import { AddServiceModal } from './components/AddServiceModal';
-import { UsageDock } from './components/UsageDock';
 import { 
   Plus, 
   RefreshCw, 
@@ -15,13 +14,15 @@ import {
   LayoutGrid,
   List,
   ChevronUp,
-  Activity
+  Activity,
+  ArrowUp,
+  ArrowDown
 } from 'lucide-react';
 import { AIService } from './types';
 
 function App() {
   const { statuses, isConnected, lastUpdate, reloadCached, refresh, refreshService } = useWebSocket();
-  const { services, addService, updateService, deleteService, refresh: refreshServices } = useServices();
+  const { services, addService, updateService, deleteService, reorderServices, refresh: refreshServices } = useServices();
   const { history, refresh: refreshHistory } = useUsageHistory(undefined, 2); // Fetch 2 hours of history for comparisons
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
@@ -66,6 +67,24 @@ function App() {
   const handleEditService = (service: AIService) => {
     setEditingService(service);
     setIsModalOpen(true);
+  };
+
+  const handleReorderService = async (serviceId: string, direction: 'up' | 'down') => {
+    const currentIndex = services.findIndex(s => s.id === serviceId);
+    if (currentIndex === -1) return;
+
+    let newServices = [...services];
+    if (direction === 'up' && currentIndex > 0) {
+      [newServices[currentIndex], newServices[currentIndex - 1]] = [newServices[currentIndex - 1], newServices[currentIndex]];
+    } else if (direction === 'down' && currentIndex < services.length - 1) {
+      [newServices[currentIndex], newServices[currentIndex + 1]] = [newServices[currentIndex + 1], newServices[currentIndex]];
+    } else {
+      return; // Can't move in this direction
+    }
+
+    // Update backend and then refresh the display immediately
+    await reorderServices(newServices.map(s => s.id));
+    reloadCached(); // Force immediate refresh of WebSocket statuses
   };
 
   const handleCloseModal = () => {
@@ -193,6 +212,20 @@ function App() {
                   </div>
                   <div className="flex gap-1">
                     <button
+                      onClick={() => handleReorderService(service.id, 'up')}
+                      disabled={services.indexOf(service) === 0}
+                      className="p-1.5 text-zinc-400 hover:text-zinc-300 hover:bg-zinc-700/50 rounded-md transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                    >
+                      <ArrowUp size={12} />
+                    </button>
+                    <button
+                      onClick={() => handleReorderService(service.id, 'down')}
+                      disabled={services.indexOf(service) === services.length - 1}
+                      className="p-1.5 text-zinc-400 hover:text-zinc-300 hover:bg-zinc-700/50 rounded-md transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                    >
+                      <ArrowDown size={12} />
+                    </button>
+                    <button
                       onClick={() => handleEditService(service)}
                       className="p-1.5 text-zinc-400 hover:text-violet-400 hover:bg-violet-500/10 rounded-md transition-colors"
                     >
@@ -222,6 +255,7 @@ function App() {
               key={status.service.id}
               status={status}
               history={history}
+              viewMode={viewMode}
               onRefresh={() => refreshService(status.service.id)}
               isSelected={selectedService === status.service.id}
               onSelect={() => setSelectedService(
@@ -247,10 +281,6 @@ function App() {
           </div>
         )}
 
-        {/* Usage Trends Dock */}
-        {statuses.length > 0 && (
-          <UsageDock statuses={statuses} />
-        )}
       </main>
 
       {/* Connection Status Footer */}

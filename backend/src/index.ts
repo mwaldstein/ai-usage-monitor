@@ -113,6 +113,7 @@ async function sendStatusToClient(ws: WebSocket) {
       bearerToken: row.bearer_token,
       baseUrl: row.base_url,
       enabled: row.enabled === 1,
+      displayOrder: row.display_order ?? 0,
       createdAt: parseDbTimestamp(row.created_at),
       updatedAt: parseDbTimestamp(row.updated_at)
     }));
@@ -218,6 +219,7 @@ async function refreshQuotas() {
       bearerToken: row.bearer_token,
       baseUrl: row.base_url,
       enabled: row.enabled === 1,
+      displayOrder: row.display_order ?? 0,
       createdAt: parseDbTimestamp(row.created_at),
       updatedAt: parseDbTimestamp(row.updated_at)
     }));

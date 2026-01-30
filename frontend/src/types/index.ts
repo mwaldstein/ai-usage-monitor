@@ -6,6 +6,7 @@ export interface AIService {
   bearerToken?: string;  // For providers using Bearer token auth (e.g., Codex)
   baseUrl?: string;
   enabled: boolean;
+  displayOrder: number;
   createdAt: string;
   updatedAt: string;
 }

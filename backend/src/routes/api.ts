@@ -16,6 +16,7 @@ function mapServiceRow(row: any): AIService {
     bearerToken: row.bearer_token,
     baseUrl: row.base_url,
     enabled: row.enabled === 1,
+    displayOrder: row.display_order ?? 0,
     createdAt: parseDbTimestamp(row.created_at),
     updatedAt: parseDbTimestamp(row.updated_at)
   };
@@ -46,7 +47,7 @@ function mapQuotaRow(row: any): UsageQuota {
 router.get('/services', async (req, res) => {
   try {
     const db = getDatabase();
-    const rows = await db.all('SELECT * FROM services WHERE enabled = 1');
+    const rows = await db.all('SELECT * FROM services WHERE enabled = 1 ORDER BY display_order ASC, created_at ASC');
     
     // Map database columns (snake_case) to TypeScript properties (camelCase)
     const services = rows.map(mapServiceRow);
@@ -71,13 +72,17 @@ router.post('/services', async (req, res) => {
     const now = new Date().toISOString();
     const db = getDatabase();
     
+    // Get the next display order (append to end)
+    const countResult = await db.get('SELECT COUNT(*) as count FROM services');
+    const displayOrder = (countResult?.count || 0) + 1;
+    
     await db.run(
-      'INSERT INTO services (id, name, provider, api_key, bearer_token, base_url, enabled, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, 1, ?, ?)',
-      [id, name, provider, apiKey || null, bearerToken || null, baseUrl || null, now, now]
+      'INSERT INTO services (id, name, provider, api_key, bearer_token, base_url, enabled, display_order, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+      [id, name, provider, apiKey || null, bearerToken || null, baseUrl || null, 1, displayOrder, now, now]
     );
 
     const service = await db.get('SELECT * FROM services WHERE id = ?', [id]);
-    res.status(201).json(service);
+    res.status(201).json(mapServiceRow(service));
   } catch (error) {
     console.error('Error adding service:', error);
     res.status(500).json({ error: 'Failed to add service' });
@@ -88,7 +93,7 @@ router.post('/services', async (req, res) => {
 router.put('/services/:id', async (req, res) => {
   try {
     const { id } = req.params;
-    const { name, apiKey, bearerToken, baseUrl, enabled } = req.body;
+    const { name, apiKey, bearerToken, baseUrl, enabled, displayOrder } = req.body;
     
     const db = getDatabase();
 
@@ -123,6 +128,11 @@ router.put('/services/:id', async (req, res) => {
       params.push(enabled ? 1 : 0);
     }
 
+    if (typeof displayOrder === 'number') {
+      updates.push('display_order = ?');
+      params.push(displayOrder);
+    }
+
     if (updates.length === 0) {
       return res.status(400).json({ error: 'No valid fields to update' });
     }
@@ -135,7 +145,7 @@ router.put('/services/:id', async (req, res) => {
     );
 
     const service = await db.get('SELECT * FROM services WHERE id = ?', [id]);
-    res.json(service);
+    res.json(mapServiceRow(service));
   } catch (error) {
     console.error('Error updating service:', error);
     res.status(500).json({ error: 'Failed to update service' });
@@ -153,6 +163,37 @@ router.delete('/services/:id', async (req, res) => {
   } catch (error) {
     console.error('Error deleting service:', error);
     res.status(500).json({ error: 'Failed to delete service' });
+  }
+});
+
+// Reorder services (bulk update display order)
+router.post('/services/reorder', async (req, res) => {
+  try {
+    const { serviceIds } = req.body;
+    
+    if (!Array.isArray(serviceIds)) {
+      return res.status(400).json({ error: 'serviceIds must be an array' });
+    }
+    
+    const db = getDatabase();
+    const now = new Date().toISOString();
+    
+    // Update each service's display order
+    for (let i = 0; i < serviceIds.length; i++) {
+      await db.run(
+        'UPDATE services SET display_order = ?, updated_at = ? WHERE id = ?',
+        [i + 1, now, serviceIds[i]]
+      );
+    }
+    
+    // Return updated services
+    const rows = await db.all('SELECT * FROM services WHERE enabled = 1 ORDER BY display_order ASC, created_at ASC');
+    const services = rows.map(mapServiceRow);
+    
+    res.json(services);
+  } catch (error) {
+    console.error('Error reordering services:', error);
+    res.status(500).json({ error: 'Failed to reorder services' });
   }
 });
 

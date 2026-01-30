@@ -34,11 +34,14 @@ function mergeStatuses(prevStatuses: ServiceStatus[], newStatuses: ServiceStatus
   if (mode === 'full') {
     // Remove services that no longer exist
     const newServiceIds = new Set(newStatuses.map((s: ServiceStatus) => s.service.id));
-    return mergedStatuses.filter(s => newServiceIds.has(s.service.id));
+    const filtered = mergedStatuses.filter(s => newServiceIds.has(s.service.id));
+    // Sort by displayOrder to maintain user-defined order
+    return filtered.sort((a, b) => a.service.displayOrder - b.service.displayOrder);
   }
 
   // Partial updates shouldn't prune other services.
-  return mergedStatuses;
+  // Still sort to maintain order
+  return mergedStatuses.sort((a, b) => a.service.displayOrder - b.service.displayOrder);
 }
 
 const METRIC_ORDER: Record<string, number> = {

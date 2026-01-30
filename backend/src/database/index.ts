@@ -85,6 +85,14 @@ export async function initializeDatabase(): Promise<Database<sqlite3.Database>> 
     // ignore
   }
 
+  // Migration: Add display_order column to existing databases (if it doesn't exist)
+  try {
+    await db.exec(`ALTER TABLE services ADD COLUMN display_order INTEGER DEFAULT 0;`);
+    console.log('[Database] Migration: Added display_order column to services table');
+  } catch (error) {
+    // Column likely already exists, ignore error
+  }
+
   return db;
 }
 
