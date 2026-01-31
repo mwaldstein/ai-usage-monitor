@@ -13,7 +13,6 @@
 
 | File | Lines | Issue |
 |------|-------|-------|
-| `backend/src/routes/api.ts` | 726 | Mixes 10+ route handlers; violates SRP |
 | `frontend/src/components/AnalyticsView.tsx` | 690 | Chart data processing mixed with UI |
 | `frontend/src/components/ServiceCard.tsx` | 685 | Multiple sub-components + trend analysis |
 | `backend/src/services/opencode.ts` | 518 | Complex HTML parsing with 5+ fallback strategies |
