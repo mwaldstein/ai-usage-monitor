@@ -18,7 +18,7 @@
 |------|-------|-------|
 | `frontend/src/components/AnalyticsView.tsx` | ~350 | Chart data processing extracted to `useAnalyticsData` hook |
 | `frontend/src/components/ServiceCard.tsx` | ~200 | ~~Multiple sub-components + trend analysis~~ → Extracted to ServiceCard/ directory (71% reduction) |
-| `backend/src/services/opencode.ts` | 518 | Complex HTML parsing with 5+ fallback strategies |
+| `backend/src/services/opencode/` | ~~518~~ 195 | ~~Complex HTML parsing with 5+ fallback strategies~~ → Split into `hydrationParser.ts` (5 strategies as pure functions) and `index.ts` (service orchestration)
 | `frontend/src/components/AddServiceModal.tsx` | 432 | Large form with provider-specific conditional rendering |
 | `frontend/src/components/UsageDock.tsx` | 349 | Chart logic mixed with component |
 | `frontend/src/types/metricDefinitions.ts` | 323 | Definitions mixed with formatting functions (backend copy removed - consolidated to frontend-only) |
@@ -29,7 +29,7 @@
 
 **Backend:**
 - `backend/src/routes/api.ts`: POST /quotas/refresh handler (91 lines), GET /usage/analytics handler (145 lines)
-- `backend/src/services/opencode.ts`: `parseHydrationData()` (166 lines, 5 parsing strategies), `fetchQuotas()` (166 lines)
+- ~~`backend/src/services/opencode.ts`: `parseHydrationData()` (166 lines, 5 parsing strategies), `fetchQuotas()` (166 lines)~~ → Extracted to `opencode/hydrationParser.ts` with strategy pattern (5 pure functions)
 
 **Frontend:**
 - `frontend/src/components/AnalyticsView.tsx`: `chartData` useMemo (95 lines), `summaryStats` useMemo (45 lines)

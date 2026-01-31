@@ -6,7 +6,7 @@ import {
   AnthropicService,
   GenericAIService,
 } from "./implementations.ts";
-import { OpenCodeService } from "./opencode.ts";
+import { OpenCodeService } from "./opencode/index.ts";
 import { AMPService } from "./amp.ts";
 import { ZAIService } from "./zai.ts";
 import { CodexService } from "./codex.ts";

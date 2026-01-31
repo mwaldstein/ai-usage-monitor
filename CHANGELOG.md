@@ -12,6 +12,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Metric definitions module supporting AMP, z.ai, opencode, and Codex providers with specialized formatting rules
 
 ### Changed
+- Refactored `backend/src/services/opencode.ts`: split 512-line monolithic service into focused `opencode/` directory with `hydrationParser.ts` (230 lines, 5 parsing strategies as pure functions) and `index.ts` (195 lines, service orchestration). Separates HTML parsing complexity from service logic using strategy pattern
 - Refactored `backend/src/database/index.ts`: split 262-line monolithic module into 4 focused modules (`connection.ts`, `schema.ts`, `migrations.ts`, `maintenance.ts`) with index.ts reduced to just re-exports (2 lines), separating connection management, schema definitions, migration logic, and maintenance operations per SRP
 - Refactored `frontend/src/components/ServiceCard.tsx`: extracted sub-components (RadialProgress, MiniSparkline, QuotaSparkline, CompactQuota) and utilities (getQuotaTrend, formatCountdown, getProviderColor) into dedicated `ServiceCard/` directory, reducing main component from 685 to 197 lines (71% reduction)
 - Refactored `backend/src/routes/api.ts`: split 726-line monolithic router into 5 focused modules (`services.ts`, `quotas.ts`, `status.ts`, `usage.ts`, `mappers.ts`) improving maintainability and SRP compliance
