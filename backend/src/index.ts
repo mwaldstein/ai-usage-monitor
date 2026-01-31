@@ -13,7 +13,7 @@ import { VERSION, COMMIT_SHA } from "./version.ts";
 import apiRoutes from "./routes/api.ts";
 import { ServiceFactory } from "./services/factory.ts";
 import type { AIService, ServiceStatus } from "./types/index.ts";
-import { parseDbTimestampToTs, nowTs } from "./utils/dates.ts";
+import { nowTs } from "./utils/dates.ts";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -125,8 +125,8 @@ async function sendStatusToClient(ws: WebSocket) {
       baseUrl: row.base_url,
       enabled: row.enabled === 1,
       displayOrder: row.display_order ?? 0,
-      createdAt: parseDbTimestampToTs(row.created_at),
-      updatedAt: parseDbTimestampToTs(row.updated_at),
+      createdAt: row.created_at ?? 0,
+      updatedAt: row.updated_at ?? 0,
     }));
 
     const quotaRows = await db.all(`
@@ -156,9 +156,9 @@ async function sendStatusToClient(ws: WebSocket) {
         limit: row.limit_value,
         used: row.used_value,
         remaining: row.remaining_value,
-        resetAt: parseDbTimestampToTs(row.reset_at),
-        createdAt: parseDbTimestampToTs(row.created_at),
-        updatedAt: parseDbTimestampToTs(row.updated_at),
+        resetAt: row.reset_at ?? 0,
+        createdAt: row.created_at ?? 0,
+        updatedAt: row.updated_at ?? 0,
         type: row.type,
         replenishmentRate: row.replenishment_amount
           ? { amount: row.replenishment_amount, period: row.replenishment_period }
@@ -238,8 +238,8 @@ async function refreshQuotas() {
       baseUrl: row.base_url,
       enabled: row.enabled === 1,
       displayOrder: row.display_order ?? 0,
-      createdAt: parseDbTimestampToTs(row.created_at),
-      updatedAt: parseDbTimestampToTs(row.updated_at),
+      createdAt: row.created_at ?? 0,
+      updatedAt: row.updated_at ?? 0,
     }));
 
     const results: ServiceStatus[] = [];
@@ -271,7 +271,6 @@ async function refreshQuotas() {
           try {
             // Update quotas in database
             const now = nowTs();
-            const nowIso = new Date().toISOString();
             for (const quota of status.quotas) {
               await db.run(
                 `INSERT INTO quotas (id, service_id, metric, limit_value, used_value, remaining_value, type, replenishment_amount, replenishment_period, reset_at, created_at, updated_at) 
@@ -295,10 +294,10 @@ async function refreshQuotas() {
                   quota.type || null,
                   quota.replenishmentRate?.amount ?? null,
                   quota.replenishmentRate?.period ?? null,
-                  new Date(quota.resetAt * 1000).toISOString(),
-                  nowIso,
-                  nowIso,
-                  nowIso,
+                  quota.resetAt,
+                  now,
+                  now,
+                  now,
                 ],
               );
             }

@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 - Optimized `usage_history` database schema: composite primary key `(service_id, metric, ts)`, integer timestamps, `WITHOUT ROWID` for ~50% storage reduction and faster queries
+- Standardized all API/WebSocket timestamps to unix seconds (`ts`) for consistency and reduced parsing overhead
 - Added database maintenance: WAL mode, incremental auto_vacuum, daily checkpoint at 3:01 AM
 
 ### Fixed

@@ -3,7 +3,7 @@ import { randomUUID } from "crypto";
 import { getDatabase } from "../database/index.ts";
 import { ServiceFactory } from "../services/factory.ts";
 import type { AIService, ServiceStatus, UsageQuota } from "../types/index.ts";
-import { parseDbTimestampToTs, nowTs } from "../utils/dates.ts";
+import { nowTs } from "../utils/dates.ts";
 
 const router = Router();
 
@@ -17,8 +17,8 @@ function mapServiceRow(row: any): AIService {
     baseUrl: row.base_url,
     enabled: row.enabled === 1,
     displayOrder: row.display_order ?? 0,
-    createdAt: parseDbTimestampToTs(row.created_at),
-    updatedAt: parseDbTimestampToTs(row.updated_at),
+    createdAt: row.created_at ?? 0,
+    updatedAt: row.updated_at ?? 0,
   };
 }
 
@@ -30,9 +30,9 @@ function mapQuotaRow(row: any): UsageQuota {
     limit: row.limit_value,
     used: row.used_value,
     remaining: row.remaining_value,
-    resetAt: parseDbTimestampToTs(row.reset_at),
-    createdAt: parseDbTimestampToTs(row.created_at),
-    updatedAt: parseDbTimestampToTs(row.updated_at),
+    resetAt: row.reset_at ?? 0,
+    createdAt: row.created_at ?? 0,
+    updatedAt: row.updated_at ?? 0,
     type: row.type,
     replenishmentRate: row.replenishment_amount
       ? {
@@ -71,7 +71,7 @@ router.post("/services", async (req, res) => {
     }
 
     const id = randomUUID();
-    const now = new Date().toISOString();
+    const now = nowTs();
     const db = getDatabase();
 
     // Get the next display order (append to end)
@@ -151,7 +151,7 @@ router.put("/services/:id", async (req, res) => {
     }
 
     updates.push("updated_at = ?");
-    params.push(new Date().toISOString());
+    params.push(nowTs());
     await db.run(`UPDATE services SET ${updates.join(", ")} WHERE id = ?`, [...params, id]);
 
     const service = await db.get("SELECT * FROM services WHERE id = ?", [id]);
@@ -186,7 +186,7 @@ router.post("/services/reorder", async (req, res) => {
     }
 
     const db = getDatabase();
-    const now = new Date().toISOString();
+    const now = nowTs();
 
     // Update each service's display order
     for (let i = 0; i < serviceIds.length; i++) {
@@ -311,7 +311,6 @@ router.post("/quotas/refresh", async (req, res) => {
           try {
             // Update quotas in database
             const now = nowTs();
-            const nowIso = new Date().toISOString();
             for (const quota of status.quotas) {
               await db.run(
                 `INSERT INTO quotas (id, service_id, metric, limit_value, used_value, remaining_value, type, replenishment_amount, replenishment_period, reset_at, created_at, updated_at) 
@@ -335,10 +334,10 @@ router.post("/quotas/refresh", async (req, res) => {
                   quota.type || null,
                   quota.replenishmentRate?.amount ?? null,
                   quota.replenishmentRate?.period ?? null,
-                  new Date(quota.resetAt * 1000).toISOString(),
-                  nowIso,
-                  nowIso,
-                  nowIso,
+                  quota.resetAt,
+                  now,
+                  now,
+                  now,
                 ],
               );
 
@@ -399,7 +398,6 @@ router.post("/quotas/refresh/:serviceId", async (req, res) => {
     if (status.quotas && status.quotas.length > 0) {
       try {
         const now = nowTs();
-        const nowIso = new Date().toISOString();
         for (const quota of status.quotas) {
           await db.run(
             `INSERT INTO quotas (id, service_id, metric, limit_value, used_value, remaining_value, type, replenishment_amount, replenishment_period, reset_at, created_at, updated_at)
@@ -423,10 +421,10 @@ router.post("/quotas/refresh/:serviceId", async (req, res) => {
               quota.type || null,
               quota.replenishmentRate?.amount ?? null,
               quota.replenishmentRate?.period ?? null,
-              new Date(quota.resetAt * 1000).toISOString(),
-              nowIso,
-              nowIso,
-              nowIso,
+              quota.resetAt,
+              now,
+              now,
+              now,
             ],
           );
         }
@@ -476,7 +474,7 @@ router.get("/status", async (req, res) => {
         statuses.push({
           service,
           quotas: [],
-          lastUpdated: new Date(),
+          lastUpdated: nowTs(),
           isHealthy: false,
           authError: false,
           error: error instanceof Error ? error.message : "Unknown error",

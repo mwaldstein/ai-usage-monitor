@@ -22,6 +22,8 @@ export async function initializeDatabase(): Promise<Database<sqlite3.Database>> 
 
   // Run schema migrations BEFORE creating tables (for existing databases)
   await migrateUsageHistorySchema(db);
+  await migrateServicesSchema(db);
+  await migrateQuotasSchema(db);
 
   await db.exec(`
     CREATE TABLE IF NOT EXISTS services (
@@ -32,8 +34,8 @@ export async function initializeDatabase(): Promise<Database<sqlite3.Database>> 
       bearer_token TEXT,
       base_url TEXT,
       enabled INTEGER DEFAULT 1,
-      created_at TEXT NOT NULL,
-      updated_at TEXT NOT NULL
+      created_at INTEGER NOT NULL,
+      updated_at INTEGER NOT NULL
     );
 
     CREATE TABLE IF NOT EXISTS quotas (
@@ -46,9 +48,9 @@ export async function initializeDatabase(): Promise<Database<sqlite3.Database>> 
       type TEXT,
       replenishment_amount REAL,
       replenishment_period TEXT,
-      reset_at TEXT,
-      created_at TEXT NOT NULL,
-      updated_at TEXT NOT NULL,
+      reset_at INTEGER,
+      created_at INTEGER NOT NULL,
+      updated_at INTEGER NOT NULL,
       FOREIGN KEY (service_id) REFERENCES services(id) ON DELETE CASCADE
     );
 
@@ -92,6 +94,98 @@ export async function initializeDatabase(): Promise<Database<sqlite3.Database>> 
   } catch {}
 
   return db;
+}
+
+async function migrateServicesSchema(db: Database<sqlite3.Database>): Promise<void> {
+  // Check if services table exists and has TEXT timestamps
+  const tableInfo = await db.all(`PRAGMA table_info(services)`);
+  if (tableInfo.length === 0) return; // Table doesn't exist yet
+
+  const createdAtCol = tableInfo.find(
+    (col: { name: string; type: string }) => col.name === "created_at",
+  );
+  if (!createdAtCol || createdAtCol.type === "INTEGER") return; // Already migrated or new schema
+
+  console.log("[Database] Migration: Converting services timestamps to INTEGER...");
+
+  try {
+    await db.exec(`
+      CREATE TABLE IF NOT EXISTS services_new (
+        id TEXT PRIMARY KEY,
+        name TEXT NOT NULL,
+        provider TEXT NOT NULL,
+        api_key TEXT,
+        bearer_token TEXT,
+        base_url TEXT,
+        enabled INTEGER DEFAULT 1,
+        display_order INTEGER DEFAULT 0,
+        created_at INTEGER NOT NULL,
+        updated_at INTEGER NOT NULL
+      );
+
+      INSERT INTO services_new (id, name, provider, api_key, bearer_token, base_url, enabled, display_order, created_at, updated_at)
+      SELECT id, name, provider, api_key, bearer_token, base_url, enabled, COALESCE(display_order, 0),
+             CAST(strftime('%s', created_at) AS INTEGER),
+             CAST(strftime('%s', updated_at) AS INTEGER)
+      FROM services;
+
+      DROP TABLE services;
+      ALTER TABLE services_new RENAME TO services;
+    `);
+    console.log("[Database] Migration: services timestamps converted to INTEGER");
+  } catch (error) {
+    console.error("[Database] Migration failed:", error);
+    throw error;
+  }
+}
+
+async function migrateQuotasSchema(db: Database<sqlite3.Database>): Promise<void> {
+  // Check if quotas table exists and has TEXT timestamps
+  const tableInfo = await db.all(`PRAGMA table_info(quotas)`);
+  if (tableInfo.length === 0) return; // Table doesn't exist yet
+
+  const createdAtCol = tableInfo.find(
+    (col: { name: string; type: string }) => col.name === "created_at",
+  );
+  if (!createdAtCol || createdAtCol.type === "INTEGER") return; // Already migrated or new schema
+
+  console.log("[Database] Migration: Converting quotas timestamps to INTEGER...");
+
+  try {
+    await db.exec(`
+      CREATE TABLE IF NOT EXISTS quotas_new (
+        id TEXT PRIMARY KEY,
+        service_id TEXT NOT NULL,
+        metric TEXT NOT NULL,
+        limit_value REAL NOT NULL,
+        used_value REAL NOT NULL,
+        remaining_value REAL NOT NULL,
+        type TEXT,
+        replenishment_amount REAL,
+        replenishment_period TEXT,
+        reset_at INTEGER,
+        created_at INTEGER NOT NULL,
+        updated_at INTEGER NOT NULL,
+        FOREIGN KEY (service_id) REFERENCES services(id) ON DELETE CASCADE
+      );
+
+      INSERT INTO quotas_new (id, service_id, metric, limit_value, used_value, remaining_value, type, replenishment_amount, replenishment_period, reset_at, created_at, updated_at)
+      SELECT id, service_id, metric, limit_value, used_value, remaining_value, type, replenishment_amount, replenishment_period,
+             CASE WHEN reset_at IS NOT NULL THEN CAST(strftime('%s', reset_at) AS INTEGER) ELSE NULL END,
+             CAST(strftime('%s', created_at) AS INTEGER),
+             CAST(strftime('%s', updated_at) AS INTEGER)
+      FROM quotas;
+
+      DROP TABLE quotas;
+      ALTER TABLE quotas_new RENAME TO quotas;
+
+      CREATE INDEX IF NOT EXISTS idx_quotas_service ON quotas(service_id);
+    `);
+    console.log("[Database] Migration: quotas timestamps converted to INTEGER");
+  } catch (error) {
+    console.error("[Database] Migration failed:", error);
+    throw error;
+  }
 }
 
 async function migrateUsageHistorySchema(db: Database<sqlite3.Database>): Promise<void> {
