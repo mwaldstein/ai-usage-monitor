@@ -81,3 +81,6 @@ coverage/
 *.local
 .vercel
 .netlify
+
+# Sensitive HTTP traces
+traces/
