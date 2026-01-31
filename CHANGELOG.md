@@ -13,6 +13,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 - Refactored `backend/src/routes/api.ts`: split 726-line monolithic router into 5 focused modules (`services.ts`, `quotas.ts`, `status.ts`, `usage.ts`, `mappers.ts`) improving maintainability and SRP compliance
+- Refactored `frontend/src/components/AnalyticsView.tsx`: extracted chart data processing logic (95-line `chartData` useMemo, 45-line `summaryStats` useMemo, provider data transformation) into dedicated `useAnalyticsData` hook module, reducing component size from 690 to ~350 lines and separating data transformation concerns from UI rendering
 - Consolidated metric definitions to frontend-only: removed `backend/src/types/metricDefinitions.ts` (226 lines) and all `metricMetadata` fields from API responses. Display metadata is now a pure frontend concern, reducing payload size and eliminating frontend/backend synchronization issues
 - Optimized `usage_history` database schema: composite primary key `(service_id, metric, ts)`, integer timestamps, `WITHOUT ROWID` for ~50% storage reduction and faster queries
 - Standardized all API/WebSocket timestamps to unix seconds (`ts`) for consistency and reduced parsing overhead

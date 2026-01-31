@@ -6,6 +6,9 @@
 - **History pruning**: Implement intelligent data retention that maintains quota-refresh awareness for long-term usage trends while pruning full granularity
 - **Frontend log viewer**: Add UI capability to view backend logs without requiring server access
 - **JWT expiration warnings**: Display expiration time for JWT bearer token services and warn users when auth refresh needed
+- **Improved mobile support**: Reduce menu to minimal version for smaller screens
+- **Relocate "Add Service" button**: Move from menu to configure section for better UX
+- **CLI tool**: Minimal command-line tool that fetches quota data and prints formatted output; must support basic HTTP authentication
 
 ## Refactoring
 
@@ -13,7 +16,7 @@
 
 | File | Lines | Issue |
 |------|-------|-------|
-| `frontend/src/components/AnalyticsView.tsx` | 690 | Chart data processing mixed with UI |
+| `frontend/src/components/AnalyticsView.tsx` | ~350 | Chart data processing extracted to `useAnalyticsData` hook |
 | `frontend/src/components/ServiceCard.tsx` | 685 | Multiple sub-components + trend analysis |
 | `backend/src/services/opencode.ts` | 518 | Complex HTML parsing with 5+ fallback strategies |
 | `frontend/src/components/AddServiceModal.tsx` | 432 | Large form with provider-specific conditional rendering |
