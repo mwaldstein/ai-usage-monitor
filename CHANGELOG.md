@@ -13,6 +13,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - GitHub Actions deadlock: removed concurrency config from reusable workflow (`lint-format.yml`) that conflicted with calling workflow
 - Missing runtime dependencies: moved `pino`, `pino-pretty`, and `@opentelemetry/*` packages from root to backend `package.json`
 - Package.json syntax error: added missing comma between `dependencies` and `devDependencies` in root package.json
+- Backend typecheck failure: generate `version.ts` before running `tsc` to resolve missing module errors
 
 ### Changed
 - Frontend build: separated type checking (`typecheck` script) from build step; CI now runs type checks separately
