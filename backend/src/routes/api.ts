@@ -1,11 +1,11 @@
-import { Router } from 'express'
-import { randomUUID } from 'crypto'
-import { getDatabase } from '../database/index.ts'
-import { ServiceFactory } from '../services/factory.ts'
-import type { AIService, AIProvider, ServiceStatus, UsageQuota } from '../types/index.ts'
-import { normalizeDbTimestamp, parseDbTimestamp } from '../utils/dates.ts'
+import { Router } from "express";
+import { randomUUID } from "crypto";
+import { getDatabase } from "../database/index.ts";
+import { ServiceFactory } from "../services/factory.ts";
+import type { AIService, AIProvider, ServiceStatus, UsageQuota } from "../types/index.ts";
+import { normalizeDbTimestamp, parseDbTimestamp } from "../utils/dates.ts";
 
-const router = Router()
+const router = Router();
 
 function mapServiceRow(row: any): AIService {
   return {
@@ -19,7 +19,7 @@ function mapServiceRow(row: any): AIService {
     displayOrder: row.display_order ?? 0,
     createdAt: parseDbTimestamp(row.created_at),
     updatedAt: parseDbTimestamp(row.updated_at),
-  }
+  };
 }
 
 function mapQuotaRow(row: any): UsageQuota {
@@ -40,46 +40,46 @@ function mapQuotaRow(row: any): UsageQuota {
           period: row.replenishment_period,
         }
       : undefined,
-  }
+  };
 }
 
 // Get all services
-router.get('/services', async (req, res) => {
+router.get("/services", async (req, res) => {
   try {
-    const db = getDatabase()
+    const db = getDatabase();
     const rows = await db.all(
-      'SELECT * FROM services WHERE enabled = 1 ORDER BY display_order ASC, created_at ASC',
-    )
+      "SELECT * FROM services WHERE enabled = 1 ORDER BY display_order ASC, created_at ASC",
+    );
 
     // Map database columns (snake_case) to TypeScript properties (camelCase)
-    const services = rows.map(mapServiceRow)
+    const services = rows.map(mapServiceRow);
 
-    res.json(services)
+    res.json(services);
   } catch (error) {
-    console.error('Error fetching services:', error)
-    res.status(500).json({ error: 'Failed to fetch services' })
+    console.error("Error fetching services:", error);
+    res.status(500).json({ error: "Failed to fetch services" });
   }
-})
+});
 
 // Add a new service
-router.post('/services', async (req, res) => {
+router.post("/services", async (req, res) => {
   try {
-    const { name, provider, apiKey, bearerToken, baseUrl } = req.body
+    const { name, provider, apiKey, bearerToken, baseUrl } = req.body;
 
     if (!name || !provider) {
-      return res.status(400).json({ error: 'Name and provider are required' })
+      return res.status(400).json({ error: "Name and provider are required" });
     }
 
-    const id = randomUUID()
-    const now = new Date().toISOString()
-    const db = getDatabase()
+    const id = randomUUID();
+    const now = new Date().toISOString();
+    const db = getDatabase();
 
     // Get the next display order (append to end)
-    const countResult = await db.get('SELECT COUNT(*) as count FROM services')
-    const displayOrder = (countResult?.count || 0) + 1
+    const countResult = await db.get("SELECT COUNT(*) as count FROM services");
+    const displayOrder = (countResult?.count || 0) + 1;
 
     await db.run(
-      'INSERT INTO services (id, name, provider, api_key, bearer_token, base_url, enabled, display_order, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+      "INSERT INTO services (id, name, provider, api_key, bearer_token, base_url, enabled, display_order, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
       [
         id,
         name,
@@ -92,148 +92,148 @@ router.post('/services', async (req, res) => {
         now,
         now,
       ],
-    )
+    );
 
-    const service = await db.get('SELECT * FROM services WHERE id = ?', [id])
-    res.status(201).json(mapServiceRow(service))
+    const service = await db.get("SELECT * FROM services WHERE id = ?", [id]);
+    res.status(201).json(mapServiceRow(service));
   } catch (error) {
-    console.error('Error adding service:', error)
-    res.status(500).json({ error: 'Failed to add service' })
+    console.error("Error adding service:", error);
+    res.status(500).json({ error: "Failed to add service" });
   }
-})
+});
 
 // Update a service
-router.put('/services/:id', async (req, res) => {
+router.put("/services/:id", async (req, res) => {
   try {
-    const { id } = req.params
-    const { name, apiKey, bearerToken, baseUrl, enabled, displayOrder } = req.body
+    const { id } = req.params;
+    const { name, apiKey, bearerToken, baseUrl, enabled, displayOrder } = req.body;
 
-    const db = getDatabase()
+    const db = getDatabase();
 
     // Partial update: only overwrite fields explicitly provided.
     // This prevents accidental nulling of secrets/base URLs when the frontend
     // omits fields in the request body.
-    const updates: string[] = []
-    const params: any[] = []
+    const updates: string[] = [];
+    const params: any[] = [];
 
-    if (typeof name === 'string') {
-      updates.push('name = ?')
-      params.push(name)
+    if (typeof name === "string") {
+      updates.push("name = ?");
+      params.push(name);
     }
 
-    if (Object.prototype.hasOwnProperty.call(req.body, 'apiKey')) {
-      updates.push('api_key = ?')
-      params.push(apiKey ? apiKey : null)
+    if (Object.prototype.hasOwnProperty.call(req.body, "apiKey")) {
+      updates.push("api_key = ?");
+      params.push(apiKey ? apiKey : null);
     }
 
-    if (Object.prototype.hasOwnProperty.call(req.body, 'bearerToken')) {
-      updates.push('bearer_token = ?')
-      params.push(bearerToken ? bearerToken : null)
+    if (Object.prototype.hasOwnProperty.call(req.body, "bearerToken")) {
+      updates.push("bearer_token = ?");
+      params.push(bearerToken ? bearerToken : null);
     }
 
-    if (Object.prototype.hasOwnProperty.call(req.body, 'baseUrl')) {
-      updates.push('base_url = ?')
-      params.push(baseUrl ? baseUrl : null)
+    if (Object.prototype.hasOwnProperty.call(req.body, "baseUrl")) {
+      updates.push("base_url = ?");
+      params.push(baseUrl ? baseUrl : null);
     }
 
-    if (typeof enabled === 'boolean') {
-      updates.push('enabled = ?')
-      params.push(enabled ? 1 : 0)
+    if (typeof enabled === "boolean") {
+      updates.push("enabled = ?");
+      params.push(enabled ? 1 : 0);
     }
 
-    if (typeof displayOrder === 'number') {
-      updates.push('display_order = ?')
-      params.push(displayOrder)
+    if (typeof displayOrder === "number") {
+      updates.push("display_order = ?");
+      params.push(displayOrder);
     }
 
     if (updates.length === 0) {
-      return res.status(400).json({ error: 'No valid fields to update' })
+      return res.status(400).json({ error: "No valid fields to update" });
     }
 
-    updates.push('updated_at = ?')
-    params.push(new Date().toISOString())
-    await db.run(`UPDATE services SET ${updates.join(', ')} WHERE id = ?`, [...params, id])
+    updates.push("updated_at = ?");
+    params.push(new Date().toISOString());
+    await db.run(`UPDATE services SET ${updates.join(", ")} WHERE id = ?`, [...params, id]);
 
-    const service = await db.get('SELECT * FROM services WHERE id = ?', [id])
-    res.json(mapServiceRow(service))
+    const service = await db.get("SELECT * FROM services WHERE id = ?", [id]);
+    res.json(mapServiceRow(service));
   } catch (error) {
-    console.error('Error updating service:', error)
-    res.status(500).json({ error: 'Failed to update service' })
+    console.error("Error updating service:", error);
+    res.status(500).json({ error: "Failed to update service" });
   }
-})
+});
 
 // Delete a service
-router.delete('/services/:id', async (req, res) => {
+router.delete("/services/:id", async (req, res) => {
   try {
-    const { id } = req.params
-    const db = getDatabase()
+    const { id } = req.params;
+    const db = getDatabase();
 
-    await db.run('DELETE FROM services WHERE id = ?', [id])
-    res.status(204).send()
+    await db.run("DELETE FROM services WHERE id = ?", [id]);
+    res.status(204).send();
   } catch (error) {
-    console.error('Error deleting service:', error)
-    res.status(500).json({ error: 'Failed to delete service' })
+    console.error("Error deleting service:", error);
+    res.status(500).json({ error: "Failed to delete service" });
   }
-})
+});
 
 // Reorder services (bulk update display order)
-router.post('/services/reorder', async (req, res) => {
+router.post("/services/reorder", async (req, res) => {
   try {
-    const { serviceIds } = req.body
+    const { serviceIds } = req.body;
 
     if (!Array.isArray(serviceIds)) {
-      return res.status(400).json({ error: 'serviceIds must be an array' })
+      return res.status(400).json({ error: "serviceIds must be an array" });
     }
 
-    const db = getDatabase()
-    const now = new Date().toISOString()
+    const db = getDatabase();
+    const now = new Date().toISOString();
 
     // Update each service's display order
     for (let i = 0; i < serviceIds.length; i++) {
-      await db.run('UPDATE services SET display_order = ?, updated_at = ? WHERE id = ?', [
+      await db.run("UPDATE services SET display_order = ?, updated_at = ? WHERE id = ?", [
         i + 1,
         now,
         serviceIds[i],
-      ])
+      ]);
     }
 
     // Return updated services
     const rows = await db.all(
-      'SELECT * FROM services WHERE enabled = 1 ORDER BY display_order ASC, created_at ASC',
-    )
-    const services = rows.map(mapServiceRow)
+      "SELECT * FROM services WHERE enabled = 1 ORDER BY display_order ASC, created_at ASC",
+    );
+    const services = rows.map(mapServiceRow);
 
-    res.json(services)
+    res.json(services);
   } catch (error) {
-    console.error('Error reordering services:', error)
-    res.status(500).json({ error: 'Failed to reorder services' })
+    console.error("Error reordering services:", error);
+    res.status(500).json({ error: "Failed to reorder services" });
   }
-})
+});
 
 // Get all quotas
-router.get('/quotas', async (req, res) => {
+router.get("/quotas", async (req, res) => {
   try {
-    const db = getDatabase()
+    const db = getDatabase();
     const quotas = await db.all(`
       SELECT q.*, s.name as service_name, s.provider 
       FROM quotas q 
       JOIN services s ON q.service_id = s.id 
       WHERE s.enabled = 1
       ORDER BY s.name, q.metric
-    `)
-    res.json(quotas)
+    `);
+    res.json(quotas);
   } catch (error) {
-    console.error('Error fetching quotas:', error)
-    res.status(500).json({ error: 'Failed to fetch quotas' })
+    console.error("Error fetching quotas:", error);
+    res.status(500).json({ error: "Failed to fetch quotas" });
   }
-})
+});
 
 // Get cached status for all services (no upstream fetch)
-router.get('/status/cached', async (req, res) => {
+router.get("/status/cached", async (req, res) => {
   try {
-    const db = getDatabase()
-    const serviceRows = await db.all('SELECT * FROM services WHERE enabled = 1')
-    const services: AIService[] = serviceRows.map(mapServiceRow)
+    const db = getDatabase();
+    const serviceRows = await db.all("SELECT * FROM services WHERE enabled = 1");
+    const services: AIService[] = serviceRows.map(mapServiceRow);
 
     const quotaRows = await db.all(`
       SELECT * FROM (
@@ -250,22 +250,22 @@ router.get('/status/cached', async (req, res) => {
         WHERE s.enabled = 1
       )
       WHERE rn = 1
-    `)
+    `);
 
-    const quotasByService = new Map<string, UsageQuota[]>()
+    const quotasByService = new Map<string, UsageQuota[]>();
     for (const row of quotaRows) {
-      const quota = mapQuotaRow(row)
-      const list = quotasByService.get(quota.serviceId) || []
-      list.push(quota)
-      quotasByService.set(quota.serviceId, list)
+      const quota = mapQuotaRow(row);
+      const list = quotasByService.get(quota.serviceId) || [];
+      list.push(quota);
+      quotasByService.set(quota.serviceId, list);
     }
 
     const statuses: ServiceStatus[] = services.map((service) => {
-      const quotas = quotasByService.get(service.id) || []
+      const quotas = quotasByService.get(service.id) || [];
       const lastUpdated = quotas.reduce<Date>(
         (max, q) => (q.updatedAt > max ? q.updatedAt : max),
         new Date(0),
-      )
+      );
 
       return {
         service,
@@ -273,27 +273,27 @@ router.get('/status/cached', async (req, res) => {
         lastUpdated: lastUpdated.getTime() > 0 ? lastUpdated : new Date(service.updatedAt),
         isHealthy: quotas.length > 0,
         authError: false,
-        error: quotas.length > 0 ? undefined : 'No cached quota data yet',
-      }
-    })
+        error: quotas.length > 0 ? undefined : "No cached quota data yet",
+      };
+    });
 
-    res.json(statuses)
+    res.json(statuses);
   } catch (error) {
-    console.error('Error fetching cached status:', error)
-    res.status(500).json({ error: 'Failed to fetch cached status' })
+    console.error("Error fetching cached status:", error);
+    res.status(500).json({ error: "Failed to fetch cached status" });
   }
-})
+});
 
 // Refresh quotas for all services
-router.post('/quotas/refresh', async (req, res) => {
+router.post("/quotas/refresh", async (req, res) => {
   try {
-    const db = getDatabase()
-    const rows = await db.all('SELECT * FROM services WHERE enabled = 1')
+    const db = getDatabase();
+    const rows = await db.all("SELECT * FROM services WHERE enabled = 1");
 
     // Map database columns to TypeScript properties
-    const services: AIService[] = rows.map(mapServiceRow)
+    const services: AIService[] = rows.map(mapServiceRow);
 
-    const results: any[] = []
+    const results: any[] = [];
 
     // Process services sequentially to avoid one slow service blocking others
     for (const service of services) {
@@ -302,16 +302,16 @@ router.post('/quotas/refresh', async (req, res) => {
         const status = await Promise.race([
           ServiceFactory.getServiceStatus(service),
           new Promise<never>((_, reject) =>
-            setTimeout(() => reject(new Error('Service refresh timeout')), 15000),
+            setTimeout(() => reject(new Error("Service refresh timeout")), 15000),
           ),
-        ])
+        ]);
 
         // Only update database if service returned quotas successfully
         if (status.quotas && status.quotas.length > 0) {
           try {
             // Update quotas in database
             for (const quota of status.quotas) {
-              const now = new Date().toISOString()
+              const now = new Date().toISOString();
               await db.run(
                 `INSERT INTO quotas (id, service_id, metric, limit_value, used_value, remaining_value, type, replenishment_amount, replenishment_period, reset_at, created_at, updated_at) 
                  VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
@@ -339,23 +339,23 @@ router.post('/quotas/refresh', async (req, res) => {
                   now,
                   now,
                 ],
-              )
+              );
 
               // Log usage history for sparkline/trend UI.
               await db.run(
-                'INSERT INTO usage_history (id, service_id, metric, value, timestamp) VALUES (?, ?, ?, ?, ?)',
+                "INSERT INTO usage_history (id, service_id, metric, value, timestamp) VALUES (?, ?, ?, ?, ?)",
                 [randomUUID(), quota.serviceId, quota.metric, quota.used, now],
-              )
+              );
             }
           } catch (dbError) {
-            console.error(`Database error while saving quotas for ${service.name}:`, dbError)
+            console.error(`Database error while saving quotas for ${service.name}:`, dbError);
             // Don't let database errors break the entire refresh
           }
         }
 
-        results.push(status)
+        results.push(status);
       } catch (error) {
-        console.error(`Error refreshing quotas for ${service.name}:`, error)
+        console.error(`Error refreshing quotas for ${service.name}:`, error);
         // Continue processing other services even if one fails
         results.push({
           service,
@@ -363,42 +363,42 @@ router.post('/quotas/refresh', async (req, res) => {
           lastUpdated: new Date(),
           isHealthy: false,
           authError: false,
-          error: error instanceof Error ? error.message : 'Unknown error',
-        })
+          error: error instanceof Error ? error.message : "Unknown error",
+        });
       }
     }
 
-    res.json(results)
+    res.json(results);
   } catch (error) {
-    console.error('Error refreshing quotas:', error)
-    res.status(500).json({ error: 'Failed to refresh quotas' })
+    console.error("Error refreshing quotas:", error);
+    res.status(500).json({ error: "Failed to refresh quotas" });
   }
-})
+});
 
 // Refresh quotas for a specific service (upstream fetch)
-router.post('/quotas/refresh/:serviceId', async (req, res) => {
+router.post("/quotas/refresh/:serviceId", async (req, res) => {
   try {
-    const { serviceId } = req.params
-    const db = getDatabase()
-    const row = await db.get('SELECT * FROM services WHERE id = ? AND enabled = 1', [serviceId])
+    const { serviceId } = req.params;
+    const db = getDatabase();
+    const row = await db.get("SELECT * FROM services WHERE id = ? AND enabled = 1", [serviceId]);
 
     if (!row) {
-      return res.status(404).json({ error: 'Service not found' })
+      return res.status(404).json({ error: "Service not found" });
     }
 
-    const service = mapServiceRow(row)
+    const service = mapServiceRow(row);
 
     const status = await Promise.race([
       ServiceFactory.getServiceStatus(service),
       new Promise<never>((_, reject) =>
-        setTimeout(() => reject(new Error('Service refresh timeout')), 15000),
+        setTimeout(() => reject(new Error("Service refresh timeout")), 15000),
       ),
-    ])
+    ]);
 
     if (status.quotas && status.quotas.length > 0) {
       try {
         for (const quota of status.quotas) {
-          const now = new Date().toISOString()
+          const now = new Date().toISOString();
           await db.run(
             `INSERT INTO quotas (id, service_id, metric, limit_value, used_value, remaining_value, type, replenishment_amount, replenishment_period, reset_at, created_at, updated_at)
              VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
@@ -426,37 +426,37 @@ router.post('/quotas/refresh/:serviceId', async (req, res) => {
               now,
               now,
             ],
-          )
+          );
         }
 
         for (const quota of status.quotas) {
           await db.run(
-            'INSERT INTO usage_history (id, service_id, metric, value, timestamp) VALUES (?, ?, ?, ?, ?)',
+            "INSERT INTO usage_history (id, service_id, metric, value, timestamp) VALUES (?, ?, ?, ?, ?)",
             [randomUUID(), quota.serviceId, quota.metric, quota.used, new Date().toISOString()],
-          )
+          );
         }
       } catch (dbError) {
-        console.error(`Database error while saving quotas for ${service.name}:`, dbError)
+        console.error(`Database error while saving quotas for ${service.name}:`, dbError);
       }
     }
 
-    res.json(status)
+    res.json(status);
   } catch (error) {
-    console.error('Error refreshing quotas for service:', error)
-    res.status(500).json({ error: 'Failed to refresh service' })
+    console.error("Error refreshing quotas for service:", error);
+    res.status(500).json({ error: "Failed to refresh service" });
   }
-})
+});
 
 // Get status for all services
-router.get('/status', async (req, res) => {
+router.get("/status", async (req, res) => {
   try {
-    const db = getDatabase()
-    const rows = await db.all('SELECT * FROM services WHERE enabled = 1')
+    const db = getDatabase();
+    const rows = await db.all("SELECT * FROM services WHERE enabled = 1");
 
     // Map database columns to TypeScript properties
-    const services: AIService[] = rows.map(mapServiceRow)
+    const services: AIService[] = rows.map(mapServiceRow);
 
-    const statuses: any[] = []
+    const statuses: any[] = [];
 
     // Process services sequentially with timeout
     for (const service of services) {
@@ -464,12 +464,12 @@ router.get('/status', async (req, res) => {
         const status = await Promise.race([
           ServiceFactory.getServiceStatus(service),
           new Promise<never>((_, reject) =>
-            setTimeout(() => reject(new Error('Service status timeout')), 15000),
+            setTimeout(() => reject(new Error("Service status timeout")), 15000),
           ),
-        ])
-        statuses.push(status)
+        ]);
+        statuses.push(status);
       } catch (error) {
-        console.error(`Error fetching status for ${service.name}:`, error)
+        console.error(`Error fetching status for ${service.name}:`, error);
         // Continue processing other services even if one fails
         statuses.push({
           service,
@@ -477,26 +477,26 @@ router.get('/status', async (req, res) => {
           lastUpdated: new Date(),
           isHealthy: false,
           authError: false,
-          error: error instanceof Error ? error.message : 'Unknown error',
-        })
+          error: error instanceof Error ? error.message : "Unknown error",
+        });
       }
     }
 
-    res.json(statuses)
+    res.json(statuses);
   } catch (error) {
-    console.error('Error fetching status:', error)
-    res.status(500).json({ error: 'Failed to fetch status' })
+    console.error("Error fetching status:", error);
+    res.status(500).json({ error: "Failed to fetch status" });
   }
-})
+});
 
 // Get usage history
-router.get('/usage/history', async (req, res) => {
+router.get("/usage/history", async (req, res) => {
   try {
-    const { serviceId, metric, hours = 24 } = req.query
-    const db = getDatabase()
+    const { serviceId, metric, hours = 24 } = req.query;
+    const db = getDatabase();
 
-    const hoursNum = Math.max(1, Math.min(168, parseInt(String(hours), 10) || 24))
-    const sinceIso = new Date(Date.now() - hoursNum * 60 * 60 * 1000).toISOString()
+    const hoursNum = Math.max(1, Math.min(168, parseInt(String(hours), 10) || 24));
+    const sinceIso = new Date(Date.now() - hoursNum * 60 * 60 * 1000).toISOString();
 
     let query = `
       SELECT
@@ -509,102 +509,102 @@ router.get('/usage/history', async (req, res) => {
       FROM usage_history uh
       JOIN services s ON uh.service_id = s.id
       WHERE uh.timestamp >= ?
-    `
-    const params: any[] = []
-    params.push(sinceIso)
+    `;
+    const params: any[] = [];
+    params.push(sinceIso);
 
     if (serviceId) {
-      query += ' AND uh.service_id = ?'
-      params.push(serviceId)
+      query += " AND uh.service_id = ?";
+      params.push(serviceId);
     }
 
     if (metric) {
-      query += ' AND uh.metric = ?'
-      params.push(metric)
+      query += " AND uh.metric = ?";
+      params.push(metric);
     }
 
-    query += ' ORDER BY uh.timestamp DESC'
+    query += " ORDER BY uh.timestamp DESC";
 
-    const history = await db.all(query, params)
+    const history = await db.all(query, params);
     const normalized = (history || []).map((row: any) => ({
       ...row,
       timestamp: normalizeDbTimestamp(row.timestamp) || row.timestamp,
-    }))
-    res.json(normalized)
+    }));
+    res.json(normalized);
   } catch (error) {
-    console.error('Error fetching usage history:', error)
-    res.status(500).json({ error: 'Failed to fetch usage history' })
+    console.error("Error fetching usage history:", error);
+    res.status(500).json({ error: "Failed to fetch usage history" });
   }
-})
+});
 
 // Get usage analytics (aggregated time-series data for charts)
-router.get('/usage/analytics', async (req, res) => {
+router.get("/usage/analytics", async (req, res) => {
   try {
-    const { days = 30, serviceId, interval = '1h', groupBy = 'service' } = req.query
-    const db = getDatabase()
+    const { days = 30, serviceId, interval = "1h", groupBy = "service" } = req.query;
+    const db = getDatabase();
 
-    const daysNum = Math.max(1, Math.min(365, parseInt(String(days), 10) || 30))
-    const sinceIso = new Date(Date.now() - daysNum * 24 * 60 * 60 * 1000).toISOString()
+    const daysNum = Math.max(1, Math.min(365, parseInt(String(days), 10) || 30));
+    const sinceIso = new Date(Date.now() - daysNum * 24 * 60 * 60 * 1000).toISOString();
 
     console.log(
       `[API /usage/analytics] days=${daysNum}, interval=${interval}, groupBy=${groupBy}, since=${sinceIso}`,
-    )
+    );
 
     // Parse interval parameter (e.g., '5m', '15m', '1h', '1d')
-    const intervalMatch = String(interval).match(/^(\d+)(m|h|d)$/)
+    const intervalMatch = String(interval).match(/^(\d+)(m|h|d)$/);
     const intervalMinutes = intervalMatch
       ? parseInt(intervalMatch[1]) *
-        (intervalMatch[2] === 'd' ? 1440 : intervalMatch[2] === 'h' ? 60 : 1)
-      : 60 // default to 1 hour
+        (intervalMatch[2] === "d" ? 1440 : intervalMatch[2] === "h" ? 60 : 1)
+      : 60; // default to 1 hour
 
     // Create time bucket expression based on interval
     // SQLite strftime format and unixepoch calculations
-    let timeBucket: string
+    let timeBucket: string;
     if (intervalMinutes >= 1440) {
       // Daily or longer
-      timeBucket = `date(uh.timestamp)`
+      timeBucket = `date(uh.timestamp)`;
     } else if (intervalMinutes >= 60) {
       // Hourly
-      const hours = intervalMinutes / 60
+      const hours = intervalMinutes / 60;
       timeBucket =
         hours === 1
           ? `datetime((strftime('%s', uh.timestamp) / 3600) * 3600, 'unixepoch')`
-          : `datetime((strftime('%s', uh.timestamp) / ${hours * 3600}) * ${hours * 3600}, 'unixepoch')`
+          : `datetime((strftime('%s', uh.timestamp) / ${hours * 3600}) * ${hours * 3600}, 'unixepoch')`;
     } else {
       // Sub-hourly (minutes)
-      const seconds = intervalMinutes * 60
-      timeBucket = `datetime((strftime('%s', uh.timestamp) / ${seconds}) * ${seconds}, 'unixepoch')`
+      const seconds = intervalMinutes * 60;
+      timeBucket = `datetime((strftime('%s', uh.timestamp) / ${seconds}) * ${seconds}, 'unixepoch')`;
     }
 
     // Build query based on groupBy parameter
-    const groupByColumn = String(groupBy)
-    let selectColumns: string
-    let groupByClause: string
+    const groupByColumn = String(groupBy);
+    let selectColumns: string;
+    let groupByClause: string;
 
-    if (groupByColumn === 'metric') {
+    if (groupByColumn === "metric") {
       // When grouping by metric, aggregate across all services
       selectColumns = `
         'All Services' as service_name,
         'all' as provider,
         'all' as serviceId,
-        uh.metric as metric`
-      groupByClause = `uh.metric, ${timeBucket}`
-    } else if (groupByColumn === 'provider') {
+        uh.metric as metric`;
+      groupByClause = `uh.metric, ${timeBucket}`;
+    } else if (groupByColumn === "provider") {
       // When grouping by provider, aggregate by provider
       selectColumns = `
         s.provider as service_name,
         s.provider as provider,
         s.provider as serviceId,
-        uh.metric as metric`
-      groupByClause = `s.provider, uh.metric, ${timeBucket}`
+        uh.metric as metric`;
+      groupByClause = `s.provider, uh.metric, ${timeBucket}`;
     } else {
       // Default: group by service
       selectColumns = `
         s.name as service_name,
         s.provider as provider,
         uh.service_id as serviceId,
-        uh.metric as metric`
-      groupByClause = `s.name, s.provider, uh.service_id, uh.metric, ${timeBucket}`
+        uh.metric as metric`;
+      groupByClause = `s.name, s.provider, uh.service_id, uh.metric, ${timeBucket}`;
     }
 
     // Get time-series data aggregated by time bucket
@@ -621,21 +621,21 @@ router.get('/usage/analytics', async (req, res) => {
       FROM usage_history uh
       JOIN services s ON uh.service_id = s.id
       WHERE uh.timestamp >= ?
-    `
+    `;
 
-    const params: any[] = [sinceIso]
+    const params: any[] = [sinceIso];
 
     if (serviceId) {
-      timeSeriesQuery += ' AND uh.service_id = ?'
-      params.push(serviceId)
+      timeSeriesQuery += " AND uh.service_id = ?";
+      params.push(serviceId);
     }
 
     timeSeriesQuery += `
       GROUP BY ${groupByClause}
       ORDER BY timestamp ASC, metric
-    `
+    `;
 
-    const timeSeries = await db.all(timeSeriesQuery, params)
+    const timeSeries = await db.all(timeSeriesQuery, params);
 
     // Get current quota limits for utilization calculation
     const quotasQuery = `
@@ -650,11 +650,11 @@ router.get('/usage/analytics', async (req, res) => {
       FROM quotas q
       JOIN services s ON q.service_id = s.id
       WHERE s.enabled = 1
-    `
+    `;
 
     const quotas = serviceId
-      ? await db.all(quotasQuery + ' AND q.service_id = ?', [serviceId])
-      : await db.all(quotasQuery)
+      ? await db.all(quotasQuery + " AND q.service_id = ?", [serviceId])
+      : await db.all(quotasQuery);
 
     // Get summary statistics
     let summaryQuery = `
@@ -673,21 +673,21 @@ router.get('/usage/analytics', async (req, res) => {
       FROM usage_history uh
       JOIN services s ON uh.service_id = s.id
       WHERE uh.timestamp >= ?
-    `
+    `;
 
-    const summaryParams: any[] = [sinceIso]
+    const summaryParams: any[] = [sinceIso];
 
     if (serviceId) {
-      summaryQuery += ' AND uh.service_id = ?'
-      summaryParams.push(serviceId)
+      summaryQuery += " AND uh.service_id = ?";
+      summaryParams.push(serviceId);
     }
 
     summaryQuery += `
       GROUP BY s.name, s.provider, uh.service_id, uh.metric
       ORDER BY total_consumed DESC
-    `
+    `;
 
-    const summary = await db.all(summaryQuery, summaryParams)
+    const summary = await db.all(summaryQuery, summaryParams);
 
     res.json({
       timeSeries,
@@ -695,21 +695,21 @@ router.get('/usage/analytics', async (req, res) => {
       summary,
       days: daysNum,
       generatedAt: new Date().toISOString(),
-    })
+    });
   } catch (error) {
-    console.error('Error fetching usage analytics:', error)
-    res.status(500).json({ error: 'Failed to fetch usage analytics' })
+    console.error("Error fetching usage analytics:", error);
+    res.status(500).json({ error: "Failed to fetch usage analytics" });
   }
-})
+});
 
 // Get provider comparison data
-router.get('/usage/providers', async (req, res) => {
+router.get("/usage/providers", async (req, res) => {
   try {
-    const { days = 30 } = req.query
-    const db = getDatabase()
+    const { days = 30 } = req.query;
+    const db = getDatabase();
 
-    const daysNum = Math.max(1, Math.min(365, parseInt(String(days), 10) || 30))
-    const sinceIso = new Date(Date.now() - daysNum * 24 * 60 * 60 * 1000).toISOString()
+    const daysNum = Math.max(1, Math.min(365, parseInt(String(days), 10) || 30));
+    const sinceIso = new Date(Date.now() - daysNum * 24 * 60 * 60 * 1000).toISOString();
 
     const query = `
       SELECT 
@@ -725,19 +725,19 @@ router.get('/usage/providers', async (req, res) => {
       WHERE uh.timestamp >= ?
       GROUP BY s.provider
       ORDER BY total_usage DESC
-    `
+    `;
 
-    const providers = await db.all(query, [sinceIso])
+    const providers = await db.all(query, [sinceIso]);
 
     res.json({
       providers,
       days: daysNum,
       generatedAt: new Date().toISOString(),
-    })
+    });
   } catch (error) {
-    console.error('Error fetching provider comparison:', error)
-    res.status(500).json({ error: 'Failed to fetch provider comparison' })
+    console.error("Error fetching provider comparison:", error);
+    res.status(500).json({ error: "Failed to fetch provider comparison" });
   }
-})
+});
 
-export default router
+export default router;

@@ -1,18 +1,18 @@
-import sqlite3 from 'sqlite3'
-import { open, Database } from 'sqlite'
-import path from 'path'
+import sqlite3 from "sqlite3";
+import { open, Database } from "sqlite";
+import path from "path";
 
-let db: Database<sqlite3.Database> | null = null
+let db: Database<sqlite3.Database> | null = null;
 
 export async function initializeDatabase(): Promise<Database<sqlite3.Database>> {
-  if (db) return db
+  if (db) return db;
 
-  const dbPath = path.join(process.cwd(), 'data', 'ai-usage.db')
+  const dbPath = path.join(process.cwd(), "data", "ai-usage.db");
 
   db = await open({
     filename: dbPath,
     driver: sqlite3.Database,
-  })
+  });
 
   await db.exec(`
     CREATE TABLE IF NOT EXISTS services (
@@ -55,50 +55,50 @@ export async function initializeDatabase(): Promise<Database<sqlite3.Database>> 
     CREATE INDEX IF NOT EXISTS idx_quotas_service ON quotas(service_id);
     CREATE INDEX IF NOT EXISTS idx_usage_history_service ON usage_history(service_id);
     CREATE INDEX IF NOT EXISTS idx_usage_history_timestamp ON usage_history(timestamp);
-  `)
+  `);
 
   // Migration: Add bearer_token column to existing databases (if it doesn't exist)
   try {
-    await db.exec(`ALTER TABLE services ADD COLUMN bearer_token TEXT;`)
-    console.log('[Database] Migration: Added bearer_token column to services table')
+    await db.exec(`ALTER TABLE services ADD COLUMN bearer_token TEXT;`);
+    console.log("[Database] Migration: Added bearer_token column to services table");
   } catch (error) {
     // Column likely already exists, ignore error
   }
 
   // Migrations: Add quota metadata columns (if they don't exist)
   try {
-    await db.exec(`ALTER TABLE quotas ADD COLUMN type TEXT;`)
-    console.log('[Database] Migration: Added type column to quotas table')
+    await db.exec(`ALTER TABLE quotas ADD COLUMN type TEXT;`);
+    console.log("[Database] Migration: Added type column to quotas table");
   } catch (error) {
     // ignore
   }
   try {
-    await db.exec(`ALTER TABLE quotas ADD COLUMN replenishment_amount REAL;`)
-    console.log('[Database] Migration: Added replenishment_amount column to quotas table')
+    await db.exec(`ALTER TABLE quotas ADD COLUMN replenishment_amount REAL;`);
+    console.log("[Database] Migration: Added replenishment_amount column to quotas table");
   } catch (error) {
     // ignore
   }
   try {
-    await db.exec(`ALTER TABLE quotas ADD COLUMN replenishment_period TEXT;`)
-    console.log('[Database] Migration: Added replenishment_period column to quotas table')
+    await db.exec(`ALTER TABLE quotas ADD COLUMN replenishment_period TEXT;`);
+    console.log("[Database] Migration: Added replenishment_period column to quotas table");
   } catch (error) {
     // ignore
   }
 
   // Migration: Add display_order column to existing databases (if it doesn't exist)
   try {
-    await db.exec(`ALTER TABLE services ADD COLUMN display_order INTEGER DEFAULT 0;`)
-    console.log('[Database] Migration: Added display_order column to services table')
+    await db.exec(`ALTER TABLE services ADD COLUMN display_order INTEGER DEFAULT 0;`);
+    console.log("[Database] Migration: Added display_order column to services table");
   } catch (error) {
     // Column likely already exists, ignore error
   }
 
-  return db
+  return db;
 }
 
 export function getDatabase(): Database<sqlite3.Database> {
   if (!db) {
-    throw new Error('Database not initialized. Call initializeDatabase() first.')
+    throw new Error("Database not initialized. Call initializeDatabase() first.");
   }
-  return db
+  return db;
 }

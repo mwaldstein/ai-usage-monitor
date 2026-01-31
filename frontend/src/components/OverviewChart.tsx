@@ -1,35 +1,35 @@
-import type { ServiceStatus } from '../types'
-import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from 'recharts'
+import type { ServiceStatus } from "../types";
+import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from "recharts";
 
 interface OverviewChartProps {
-  statuses: ServiceStatus[]
+  statuses: ServiceStatus[];
 }
 
 export function OverviewChart({ statuses }: OverviewChartProps) {
   // Aggregate quota data by provider
   const data = statuses
     .map((status) => {
-      const totalUsed = status.quotas.reduce((sum, q) => sum + q.used, 0)
-      const totalLimit = status.quotas.reduce((sum, q) => sum + q.limit, 0)
+      const totalUsed = status.quotas.reduce((sum, q) => sum + q.used, 0);
+      const totalLimit = status.quotas.reduce((sum, q) => sum + q.limit, 0);
       return {
         name: status.service.name,
         used: totalUsed,
         limit: totalLimit,
         remaining: totalLimit - totalUsed,
-      }
+      };
     })
-    .filter((d) => d.limit > 0)
+    .filter((d) => d.limit > 0);
 
   const COLORS = [
-    '#3B82F6',
-    '#10B981',
-    '#F59E0B',
-    '#EF4444',
-    '#8B5CF6',
-    '#EC4899',
-    '#06B6D4',
-    '#84CC16',
-  ]
+    "#3B82F6",
+    "#10B981",
+    "#F59E0B",
+    "#EF4444",
+    "#8B5CF6",
+    "#EC4899",
+    "#06B6D4",
+    "#84CC16",
+  ];
 
   if (data.length === 0) {
     return (
@@ -37,7 +37,7 @@ export function OverviewChart({ statuses }: OverviewChartProps) {
         <h3 className="text-lg font-semibold mb-4">Usage Overview</h3>
         <p className="text-gray-500">No quota data available</p>
       </div>
-    )
+    );
   }
 
   return (
@@ -66,5 +66,5 @@ export function OverviewChart({ statuses }: OverviewChartProps) {
         </ResponsiveContainer>
       </div>
     </div>
-  )
+  );
 }

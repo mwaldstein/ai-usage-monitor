@@ -4,7 +4,7 @@
 
 :root {
   font-family:
-    'Inter',
+    "Inter",
     system-ui,
     -apple-system,
     sans-serif;
@@ -104,7 +104,7 @@ body {
 }
 
 .gradient-border::before {
-  content: '';
+  content: "";
   position: absolute;
   inset: -1px;
   border-radius: 13px;

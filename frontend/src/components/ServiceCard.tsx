@@ -1,39 +1,39 @@
-import { useState, useEffect, useMemo } from 'react'
-import type { ServiceStatus, UsageQuota, UsageHistory } from '../types'
-import { RefreshCw, ExternalLink, ChevronDown, AlertCircle, CheckCircle2 } from 'lucide-react'
+import { useState, useEffect, useMemo } from "react";
+import type { ServiceStatus, UsageQuota, UsageHistory } from "../types";
+import { RefreshCw, ExternalLink, ChevronDown, AlertCircle, CheckCircle2 } from "lucide-react";
 
 interface ServiceCardProps {
-  status: ServiceStatus
-  onRefresh: () => void
-  isSelected: boolean
-  onSelect: () => void
-  history?: UsageHistory[]
-  viewMode?: 'compact' | 'expanded'
-  isConnected?: boolean
+  status: ServiceStatus;
+  onRefresh: () => void;
+  isSelected: boolean;
+  onSelect: () => void;
+  history?: UsageHistory[];
+  viewMode?: "compact" | "expanded";
+  isConnected?: boolean;
 }
 
 function formatCountdown(milliseconds: number): string {
-  if (milliseconds <= 0) return 'now'
+  if (milliseconds <= 0) return "now";
 
-  const seconds = Math.floor((milliseconds / 1000) % 60)
-  const minutes = Math.floor((milliseconds / (1000 * 60)) % 60)
-  const hours = Math.floor((milliseconds / (1000 * 60 * 60)) % 24)
-  const days = Math.floor(milliseconds / (1000 * 60 * 60 * 24))
+  const seconds = Math.floor((milliseconds / 1000) % 60);
+  const minutes = Math.floor((milliseconds / (1000 * 60)) % 60);
+  const hours = Math.floor((milliseconds / (1000 * 60 * 60)) % 24);
+  const days = Math.floor(milliseconds / (1000 * 60 * 60 * 24));
 
-  if (days > 0) return `${days}d ${hours}h`
-  if (hours > 0) return `${hours}h ${minutes}m`
-  if (minutes > 0) return `${minutes}m`
-  return `${seconds}s`
+  if (days > 0) return `${days}d ${hours}h`;
+  if (hours > 0) return `${hours}h ${minutes}m`;
+  if (minutes > 0) return `${minutes}m`;
+  return `${seconds}s`;
 }
 
 function getProviderColor(provider: string): string {
   const colors: Record<string, string> = {
-    opencode: '#8b5cf6',
-    amp: '#06b6d4',
-    zai: '#10b981',
-    codex: '#f59e0b',
-  }
-  return colors[provider.toLowerCase()] || '#71717a'
+    opencode: "#8b5cf6",
+    amp: "#06b6d4",
+    zai: "#10b981",
+    codex: "#f59e0b",
+  };
+  return colors[provider.toLowerCase()] || "#71717a";
 }
 
 // Radial Progress Component
@@ -44,15 +44,15 @@ function RadialProgress({
   color,
   children,
 }: {
-  percentage: number
-  size?: number
-  strokeWidth?: number
-  color: string
-  children?: React.ReactNode
+  percentage: number;
+  size?: number;
+  strokeWidth?: number;
+  color: string;
+  children?: React.ReactNode;
 }) {
-  const radius = (size - strokeWidth) / 2
-  const circumference = radius * 2 * Math.PI
-  const offset = circumference - (percentage / 100) * circumference
+  const radius = (size - strokeWidth) / 2;
+  const circumference = radius * 2 * Math.PI;
+  const offset = circumference - (percentage / 100) * circumference;
 
   return (
     <div className="relative" style={{ width: size, height: size }}>
@@ -82,106 +82,106 @@ function RadialProgress({
       </svg>
       <div className="absolute inset-0 flex items-center justify-center">{children}</div>
     </div>
-  )
+  );
 }
 
 // Compact Quota Display
 function CompactQuota({
   quota,
   history,
-  viewMode = 'compact',
+  viewMode = "compact",
 }: {
-  quota: UsageQuota
-  history?: UsageHistory[]
-  viewMode?: 'compact' | 'expanded'
+  quota: UsageQuota;
+  history?: UsageHistory[];
+  viewMode?: "compact" | "expanded";
 }) {
-  const used = quota.used ?? 0
-  const remaining = quota.remaining ?? 0
-  const limit = quota.limit ?? 0
+  const used = quota.used ?? 0;
+  const remaining = quota.remaining ?? 0;
+  const limit = quota.limit ?? 0;
 
-  const quotaType = quota.type || 'rate_limit'
-  const isBurnDown = quotaType === 'usage' || quotaType === 'credits'
-  const percentage = limit > 0 ? (isBurnDown ? remaining / limit : used / limit) * 100 : 0
+  const quotaType = quota.type || "rate_limit";
+  const isBurnDown = quotaType === "usage" || quotaType === "credits";
+  const percentage = limit > 0 ? (isBurnDown ? remaining / limit : used / limit) * 100 : 0;
 
-  const isCritical = isBurnDown ? percentage < 10 : percentage > 90
-  const isWarning = isBurnDown ? percentage < 25 : percentage > 70
+  const isCritical = isBurnDown ? percentage < 10 : percentage > 90;
+  const isWarning = isBurnDown ? percentage < 25 : percentage > 70;
 
-  const [timeRemaining, setTimeRemaining] = useState<string>('')
+  const [timeRemaining, setTimeRemaining] = useState<string>("");
 
   useEffect(() => {
     const calculateTime = () => {
-      const reset = new Date(quota.resetAt)
-      const now = new Date()
-      const diffMs = reset.getTime() - now.getTime()
-      setTimeRemaining(formatCountdown(diffMs))
-    }
+      const reset = new Date(quota.resetAt);
+      const now = new Date();
+      const diffMs = reset.getTime() - now.getTime();
+      setTimeRemaining(formatCountdown(diffMs));
+    };
 
-    calculateTime()
-    const interval = setInterval(calculateTime, 1000)
-    return () => clearInterval(interval)
-  }, [quota.resetAt])
+    calculateTime();
+    const interval = setInterval(calculateTime, 1000);
+    return () => clearInterval(interval);
+  }, [quota.resetAt]);
 
-  let color = '#10b981' // green
+  let color = "#10b981"; // green
   if (isCritical)
-    color = '#ef4444' // red
-  else if (isWarning) color = '#f59e0b' // amber
+    color = "#ef4444"; // red
+  else if (isWarning) color = "#f59e0b"; // amber
 
-  const { trend, oneHourChange } = getQuotaTrend(quota, isBurnDown, history)
+  const { trend, oneHourChange } = getQuotaTrend(quota, isBurnDown, history);
 
   // Generate sparkline data for this quota in expanded view mode only
   const sparklineData = useMemo(() => {
-    if (viewMode !== 'expanded' || !history || history.length === 0) return []
+    if (viewMode !== "expanded" || !history || history.length === 0) return [];
 
-    const twoHoursAgo = Date.now() - 2 * 60 * 60 * 1000
+    const twoHoursAgo = Date.now() - 2 * 60 * 60 * 1000;
     const matchingHistory = history
       .filter((h) => h.serviceId === quota.serviceId && h.metric === quota.metric)
       .filter((h) => new Date(h.timestamp).getTime() >= twoHoursAgo)
-      .sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime())
+      .sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
 
-    if (matchingHistory.length < 2) return []
+    if (matchingHistory.length < 2) return [];
 
-    const usedSeries = matchingHistory.map((h) => h.value).filter((v) => Number.isFinite(v))
+    const usedSeries = matchingHistory.map((h) => h.value).filter((v) => Number.isFinite(v));
 
-    if (usedSeries.length < 2) return []
+    if (usedSeries.length < 2) return [];
 
     // For burn-down quotas, show remaining values
     if (isBurnDown && quota.limit > 0) {
-      return usedSeries.map((v) => quota.limit - v)
+      return usedSeries.map((v) => quota.limit - v);
     }
-    return usedSeries
-  }, [history, quota, isBurnDown, viewMode])
+    return usedSeries;
+  }, [history, quota, isBurnDown, viewMode]);
 
   // Calculate delta for sparkline
   const delta =
-    sparklineData.length > 1 ? sparklineData[sparklineData.length - 1] - sparklineData[0] : 0
-  const deltaText = `${delta >= 0 ? '+' : ''}${delta.toFixed(2)}`
+    sparklineData.length > 1 ? sparklineData[sparklineData.length - 1] - sparklineData[0] : 0;
+  const deltaText = `${delta >= 0 ? "+" : ""}${delta.toFixed(2)}`;
 
   // Build tooltip text showing 1-hour change in native units
   const getArrowTooltip = () => {
     if (!oneHourChange)
-      return trend === 'depleting'
-        ? 'Depleting'
-        : trend === 'replenishing'
-          ? 'Replenishing'
-          : 'Stable'
+      return trend === "depleting"
+        ? "Depleting"
+        : trend === "replenishing"
+          ? "Replenishing"
+          : "Stable";
 
-    const metricLower = quota.metric.toLowerCase()
+    const metricLower = quota.metric.toLowerCase();
     const isCurrency =
-      metricLower.includes('ubi') || metricLower.includes('credits') || metricLower.includes('$')
+      metricLower.includes("ubi") || metricLower.includes("credits") || metricLower.includes("$");
     const isPercentage =
-      metricLower.includes('%') ||
-      metricLower.includes('percent') ||
-      metricLower.includes('rolling')
+      metricLower.includes("%") ||
+      metricLower.includes("percent") ||
+      metricLower.includes("rolling");
 
     // Format values based on metric type
     const formatValue = (val: number) => {
-      if (isCurrency) return `$${val.toFixed(2)}`
-      if (isPercentage) return `${val.toFixed(1)}%`
-      return val.toFixed(1)
-    }
+      if (isCurrency) return `$${val.toFixed(2)}`;
+      if (isPercentage) return `${val.toFixed(1)}%`;
+      return val.toFixed(1);
+    };
 
-    return `${oneHourChange.minutesAgo}m: ${formatValue(oneHourChange.from)} → ${formatValue(oneHourChange.to)}`
-  }
+    return `${oneHourChange.minutesAgo}m: ${formatValue(oneHourChange.from)} → ${formatValue(oneHourChange.to)}`;
+  };
 
   return (
     <div className="flex items-center gap-3 p-3 rounded-lg bg-white/5 hover:bg-white/10 transition-colors">
@@ -193,23 +193,23 @@ function CompactQuota({
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-1.5">
             <span className="text-xs font-medium text-zinc-300 truncate">
-              {quota.metric.replace(/_/g, ' ')}
+              {quota.metric.replace(/_/g, " ")}
             </span>
-            {trend === 'depleting' && (
+            {trend === "depleting" && (
               <span className="text-[10px] text-red-400 cursor-help" title={getArrowTooltip()}>
                 ▼
               </span>
             )}
-            {trend === 'replenishing' && (
+            {trend === "replenishing" && (
               <span className="text-[10px] text-emerald-400 cursor-help" title={getArrowTooltip()}>
                 ▲
               </span>
             )}
           </div>
           <div className="flex items-center gap-2">
-            {viewMode === 'expanded' && sparklineData.length > 1 && (
+            {viewMode === "expanded" && sparklineData.length > 1 && (
               <span
-                className={`text-xs font-semibold ${delta < 0 ? 'text-red-400' : delta > 0 ? 'text-emerald-400' : 'text-zinc-400'}`}
+                className={`text-xs font-semibold ${delta < 0 ? "text-red-400" : delta > 0 ? "text-emerald-400" : "text-zinc-400"}`}
               >
                 {deltaText}
               </span>
@@ -231,11 +231,11 @@ function CompactQuota({
       </div>
 
       {/* Expanded view mode: Show detailed sparkline */}
-      {viewMode === 'expanded' && sparklineData.length > 1 && (
+      {viewMode === "expanded" && sparklineData.length > 1 && (
         <QuotaSparkline values={sparklineData} color={color} isBurnDown={isBurnDown} />
       )}
     </div>
-  )
+  );
 }
 
 // Calculate trend for a quota based on its type and usage pattern
@@ -245,73 +245,73 @@ function getQuotaTrend(
   isBurnDown: boolean,
   history?: UsageHistory[],
 ): {
-  trend: 'depleting' | 'replenishing' | 'stable'
-  oneHourChange: { from: number; to: number; minutesAgo: number } | null
+  trend: "depleting" | "replenishing" | "stable";
+  oneHourChange: { from: number; to: number; minutesAgo: number } | null;
 } {
-  const used = quota.used ?? 0
-  const remaining = quota.remaining ?? 0
-  const limit = quota.limit ?? 0
+  const used = quota.used ?? 0;
+  const remaining = quota.remaining ?? 0;
+  const limit = quota.limit ?? 0;
 
   // Determine what value to track based on quota type.
   // We display remaining for burn-down quotas and used for rate limits.
-  const currentValue = isBurnDown ? remaining : used
+  const currentValue = isBurnDown ? remaining : used;
 
-  let trend: 'depleting' | 'replenishing' | 'stable' = 'stable'
-  let oneHourChange: { from: number; to: number; minutesAgo: number } | null = null
+  let trend: "depleting" | "replenishing" | "stable" = "stable";
+  let oneHourChange: { from: number; to: number; minutesAgo: number } | null = null;
 
   // Try to find real historical data from the last 2 hours.
   // We pick the record closest to ~60 minutes ago, but fall back to the
   // oldest available point in that window.
   if (history && history.length > 0) {
-    const nowMs = Date.now()
-    const targetMs = nowMs - 60 * 60 * 1000
-    const twoHoursAgo = nowMs - 2 * 60 * 60 * 1000
-    const fiveMinutesAgo = nowMs - 5 * 60 * 1000
+    const nowMs = Date.now();
+    const targetMs = nowMs - 60 * 60 * 1000;
+    const twoHoursAgo = nowMs - 2 * 60 * 60 * 1000;
+    const fiveMinutesAgo = nowMs - 5 * 60 * 1000;
 
     const matchingEntries = history
       .filter((h) => h.serviceId === quota.serviceId && h.metric === quota.metric)
       .map((h) => ({ h, ts: Date.parse(h.timestamp) }))
       .filter(({ ts }) => Number.isFinite(ts) && ts >= twoHoursAgo && ts <= fiveMinutesAgo)
-      .sort((a, b) => a.ts - b.ts) // oldest -> newest
+      .sort((a, b) => a.ts - b.ts); // oldest -> newest
 
     if (matchingEntries.length > 0) {
-      let chosen = matchingEntries[0]
-      let bestDist = Math.abs(chosen.ts - targetMs)
+      let chosen = matchingEntries[0];
+      let bestDist = Math.abs(chosen.ts - targetMs);
       for (const e of matchingEntries) {
-        const d = Math.abs(e.ts - targetMs)
+        const d = Math.abs(e.ts - targetMs);
         if (d < bestDist) {
-          bestDist = d
-          chosen = e
+          bestDist = d;
+          chosen = e;
         }
       }
 
       // usage_history.value is stored as the quota's "used" value.
-      const historicalUsed = chosen.h.value
-      const historicalValue = isBurnDown && limit > 0 ? limit - historicalUsed : historicalUsed
-      const valueChange = currentValue - historicalValue
+      const historicalUsed = chosen.h.value;
+      const historicalValue = isBurnDown && limit > 0 ? limit - historicalUsed : historicalUsed;
+      const valueChange = currentValue - historicalValue;
 
       // Only show arrows when there is a real change.
-      const epsilon = 0.01
+      const epsilon = 0.01;
       if (Math.abs(valueChange) <= epsilon) {
-        return { trend: 'stable', oneHourChange: null }
+        return { trend: "stable", oneHourChange: null };
       }
 
       if (isBurnDown) {
         // For burn-down: decreasing remaining = depleting
-        trend = valueChange < 0 ? 'depleting' : 'replenishing'
+        trend = valueChange < 0 ? "depleting" : "replenishing";
       } else {
         // For rate limits: increasing used = depleting
-        trend = valueChange > 0 ? 'depleting' : 'replenishing'
+        trend = valueChange > 0 ? "depleting" : "replenishing";
       }
 
-      const minutesAgo = Math.max(1, Math.round((nowMs - chosen.ts) / 60000))
-      oneHourChange = { from: historicalValue, to: currentValue, minutesAgo }
-      return { trend, oneHourChange }
+      const minutesAgo = Math.max(1, Math.round((nowMs - chosen.ts) / 60000));
+      oneHourChange = { from: historicalValue, to: currentValue, minutesAgo };
+      return { trend, oneHourChange };
     }
   }
 
   // No historical data found - don't show any trend arrow
-  return { trend: 'stable', oneHourChange: null }
+  return { trend: "stable", oneHourChange: null };
 }
 
 // Detailed Sparkline for quota rows in expanded view
@@ -320,18 +320,18 @@ function QuotaSparkline({
   color,
   isBurnDown = false,
 }: {
-  values: number[]
-  color: string
-  isBurnDown?: boolean
+  values: number[];
+  color: string;
+  isBurnDown?: boolean;
 }) {
-  if (!values.length) return null
+  if (!values.length) return null;
 
-  const width = 120
-  const height = 36
+  const width = 120;
+  const height = 36;
 
-  const min = Math.min(...values)
-  const max = Math.max(...values)
-  const range = max - min
+  const min = Math.min(...values);
+  const max = Math.max(...values);
+  const range = max - min;
 
   if (range < 0.01) {
     return (
@@ -339,30 +339,30 @@ function QuotaSparkline({
         <span className="text-xs text-zinc-600 font-mono">—</span>
         <span className="text-[10px] text-zinc-700">no change</span>
       </div>
-    )
+    );
   }
 
-  const plotWidth = width - 4
+  const plotWidth = width - 4;
   const points = values
     .map((v, i) => {
-      const x = (i / (values.length - 1 || 1)) * plotWidth
-      const normalizedY = (v - min) / range
-      const y = 3 + (1 - normalizedY) * (height - 6)
-      return `${x.toFixed(1)},${y.toFixed(1)}`
+      const x = (i / (values.length - 1 || 1)) * plotWidth;
+      const normalizedY = (v - min) / range;
+      const y = 3 + (1 - normalizedY) * (height - 6);
+      return `${x.toFixed(1)},${y.toFixed(1)}`;
     })
-    .join(' ')
+    .join(" ");
 
-  const endValue = values[values.length - 1]
-  const startValue = values[0]
-  const isDepleting = endValue < startValue
-  const isReplenishing = endValue > startValue
+  const endValue = values[values.length - 1];
+  const startValue = values[0];
+  const isDepleting = endValue < startValue;
+  const isReplenishing = endValue > startValue;
 
   return (
     <div className="flex flex-col items-center gap-1">
       <svg width={width} height={height} className="opacity-90">
         <defs>
           <linearGradient
-            id={`quota-gradient-${color.replace('#', '')}`}
+            id={`quota-gradient-${color.replace("#", "")}`}
             x1="0%"
             y1="0%"
             x2="0%"
@@ -385,7 +385,7 @@ function QuotaSparkline({
 
         <polygon
           points={`0,${height - 3} ${points} ${width},${height - 3}`}
-          fill={`url(#quota-gradient-${color.replace('#', '')})`}
+          fill={`url(#quota-gradient-${color.replace("#", "")})`}
         />
 
         <polyline
@@ -408,51 +408,51 @@ function QuotaSparkline({
       {isBurnDown && (
         <span
           className={`text-[10px] font-medium ${
-            isDepleting ? 'text-red-400' : isReplenishing ? 'text-emerald-400' : 'text-zinc-500'
+            isDepleting ? "text-red-400" : isReplenishing ? "text-emerald-400" : "text-zinc-500"
           }`}
         >
-          {isDepleting ? '↓ burning' : isReplenishing ? '↑ refilling' : '→ steady'}
+          {isDepleting ? "↓ burning" : isReplenishing ? "↑ refilling" : "→ steady"}
         </span>
       )}
     </div>
-  )
+  );
 }
 
 // Mini Sparkline for card header - shows burn down trend
 function MiniSparkline({ values, color }: { values: number[]; color: string }) {
-  if (!values.length) return null
+  if (!values.length) return null;
 
   // Keep the rendering stable: filter any non-finite points.
-  values = values.filter((v) => Number.isFinite(v))
-  if (!values.length) return null
+  values = values.filter((v) => Number.isFinite(v));
+  if (!values.length) return null;
 
-  const min = Math.min(...values)
-  const max = Math.max(...values)
-  const range = max - min
+  const min = Math.min(...values);
+  const max = Math.max(...values);
+  const range = max - min;
 
   // If no meaningful change, show flat line indicator instead of sparkline
   if (range < 0.01) {
-    return <span className="text-[10px] text-zinc-600 font-mono px-1">—</span>
+    return <span className="text-[10px] text-zinc-600 font-mono px-1">—</span>;
   }
 
   // For burn down, we want to show the depletion visually
   // Higher values at the top, lower at bottom (like a fuel gauge emptying)
   const points = values
     .map((v, i) => {
-      const x = (i / (values.length - 1 || 1)) * 56
+      const x = (i / (values.length - 1 || 1)) * 56;
       // Normalize to SVG height (2px padding top/bottom)
-      const normalizedY = (v - min) / range
-      const y = 2 + (1 - normalizedY) * 16 // Invert so high values are at top
-      return `${x},${y}`
+      const normalizedY = (v - min) / range;
+      const y = 2 + (1 - normalizedY) * 16; // Invert so high values are at top
+      return `${x},${y}`;
     })
-    .join(' ')
+    .join(" ");
 
   return (
     <svg width="56" height="20" className="opacity-70">
       {/* Gradient fill under the line */}
       <defs>
         <linearGradient
-          id={`spark-fill-${color.replace('#', '')}`}
+          id={`spark-fill-${color.replace("#", "")}`}
           x1="0%"
           y1="0%"
           x2="0%"
@@ -466,7 +466,7 @@ function MiniSparkline({ values, color }: { values: number[]; color: string }) {
       {/* Area fill */}
       <polygon
         points={`0,18 ${points} 56,18`}
-        fill={`url(#spark-fill-${color.replace('#', '')})`}
+        fill={`url(#spark-fill-${color.replace("#", "")})`}
       />
 
       {/* Line */}
@@ -479,7 +479,7 @@ function MiniSparkline({ values, color }: { values: number[]; color: string }) {
         strokeLinejoin="round"
       />
     </svg>
-  )
+  );
 }
 
 export function ServiceCard({
@@ -488,45 +488,45 @@ export function ServiceCard({
   isSelected,
   onSelect,
   history,
-  viewMode = 'compact',
+  viewMode = "compact",
   isConnected = true,
 }: ServiceCardProps) {
-  const { service, quotas, lastUpdated, isHealthy, error, authError } = status
-  const providerColor = getProviderColor(service.provider)
-  const [isExpanded, setIsExpanded] = useState(false)
+  const { service, quotas, lastUpdated, isHealthy, error, authError } = status;
+  const providerColor = getProviderColor(service.provider);
+  const [isExpanded, setIsExpanded] = useState(false);
 
   const sortedQuotas = useMemo(() => {
-    if (service.provider === 'zai') {
+    if (service.provider === "zai") {
       return [...quotas].sort((a, b) => {
-        const aPriority = a.metric === 'tokens_consumption' ? 0 : 1
-        const bPriority = b.metric === 'tokens_consumption' ? 0 : 1
-        return aPriority - bPriority || a.metric.localeCompare(b.metric)
-      })
+        const aPriority = a.metric === "tokens_consumption" ? 0 : 1;
+        const bPriority = b.metric === "tokens_consumption" ? 0 : 1;
+        return aPriority - bPriority || a.metric.localeCompare(b.metric);
+      });
     }
-    return quotas
-  }, [quotas, service.provider])
+    return quotas;
+  }, [quotas, service.provider]);
 
   // Generate burn down sparkline data from first quota using actual history
   const sparklineData = useMemo(() => {
-    if (!sortedQuotas.length) return { values: [], isBurnDown: false }
+    if (!sortedQuotas.length) return { values: [], isBurnDown: false };
 
-    const firstQuota = sortedQuotas[0]
-    const quotaType = firstQuota.type || 'rate_limit'
-    const isBurnDown = quotaType === 'usage' || quotaType === 'credits'
+    const firstQuota = sortedQuotas[0];
+    const quotaType = firstQuota.type || "rate_limit";
+    const isBurnDown = quotaType === "usage" || quotaType === "credits";
 
     // Try to use actual historical data
     if (history && history.length > 0) {
       // Calculate 2 hours ago
-      const twoHoursAgo = Date.now() - 2 * 60 * 60 * 1000
+      const twoHoursAgo = Date.now() - 2 * 60 * 60 * 1000;
 
       // Filter history entries for this quota's serviceId and metric from last 2 hours
       const matchingHistory = history
         .filter((h) => h.serviceId === firstQuota.serviceId && h.metric === firstQuota.metric)
         .filter((h) => new Date(h.timestamp).getTime() >= twoHoursAgo)
-        .sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()) // Oldest to newest
+        .sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()); // Oldest to newest
 
       if (matchingHistory.length >= 3) {
-        const rawValues = matchingHistory.map((h) => h.value).filter((v) => Number.isFinite(v))
+        const rawValues = matchingHistory.map((h) => h.value).filter((v) => Number.isFinite(v));
 
         if (rawValues.length >= 3) {
           // usage_history.value is stored as the quota's "used" value.
@@ -534,28 +534,28 @@ export function ServiceCard({
           const series =
             isBurnDown && firstQuota.limit > 0
               ? rawValues.map((v) => firstQuota.limit - v)
-              : rawValues
+              : rawValues;
 
-          return { values: series, isBurnDown }
+          return { values: series, isBurnDown };
         }
       }
     }
 
     // No (or insufficient) history available: don't render a sparkline.
-    return { values: [], isBurnDown }
-  }, [quotas, history])
+    return { values: [], isBurnDown };
+  }, [quotas, history]);
 
   const handleCardClick = (e: React.MouseEvent) => {
     // Don't expand if clicking refresh button
-    if ((e.target as HTMLElement).closest('button')) return
-    onSelect()
-    setIsExpanded(!isExpanded)
-  }
+    if ((e.target as HTMLElement).closest("button")) return;
+    onSelect();
+    setIsExpanded(!isExpanded);
+  };
 
   return (
     <div
       className={`glass rounded-xl overflow-hidden card-compact cursor-pointer ${
-        isSelected ? 'ring-1 ring-violet-500/50' : ''
+        isSelected ? "ring-1 ring-violet-500/50" : ""
       }`}
       onClick={handleCardClick}
     >
@@ -582,14 +582,14 @@ export function ServiceCard({
           </div>
 
           <div className="flex items-center gap-1.5">
-            {viewMode !== 'expanded' && (
+            {viewMode !== "expanded" && (
               <MiniSparkline values={sparklineData.values} color={providerColor} />
             )}
             <button
               onClick={onRefresh}
               disabled={!isConnected}
-              title={isConnected ? 'Refresh' : 'Offline - cannot refresh'}
-              className={`p-1.5 rounded-md bg-white/5 hover:bg-white/10 text-zinc-400 hover:text-white transition-colors ${!isConnected ? 'opacity-40 cursor-not-allowed' : ''}`}
+              title={isConnected ? "Refresh" : "Offline - cannot refresh"}
+              className={`p-1.5 rounded-md bg-white/5 hover:bg-white/10 text-zinc-400 hover:text-white transition-colors ${!isConnected ? "opacity-40 cursor-not-allowed" : ""}`}
             >
               <RefreshCw size={12} />
             </button>
@@ -624,15 +624,15 @@ export function ServiceCard({
             <a
               href="#"
               onClick={(e) => {
-                e.preventDefault()
-                e.stopPropagation()
+                e.preventDefault();
+                e.stopPropagation();
                 const urls: Record<string, string> = {
-                  zai: 'https://z.ai',
-                  opencode: 'https://opencode.ai',
-                  amp: 'https://ampcode.com',
-                  codex: 'https://chatgpt.com',
-                }
-                window.open(urls[service.provider] || '#', '_blank')
+                  zai: "https://z.ai",
+                  opencode: "https://opencode.ai",
+                  amp: "https://ampcode.com",
+                  codex: "https://chatgpt.com",
+                };
+                window.open(urls[service.provider] || "#", "_blank");
               }}
               className="text-[10px] text-violet-400 hover:text-violet-300 inline-flex items-center gap-1 mt-1"
             >
@@ -676,5 +676,5 @@ export function ServiceCard({
         </div>
       </div>
     </div>
-  )
+  );
 }

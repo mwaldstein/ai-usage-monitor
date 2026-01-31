@@ -1,6 +1,6 @@
-import { useState, useMemo, useCallback } from 'react'
-import { useUsageAnalytics, useProviderAnalytics } from '../hooks/useApi'
-import type { AIService, ServiceStatus } from '../types'
+import { useState, useMemo, useCallback } from "react";
+import { useUsageAnalytics, useProviderAnalytics } from "../hooks/useApi";
+import type { AIService, ServiceStatus } from "../types";
 import {
   LineChart,
   Line,
@@ -12,7 +12,7 @@ import {
   Tooltip,
   Legend,
   ResponsiveContainer,
-} from 'recharts'
+} from "recharts";
 import {
   TrendingUp,
   Calendar,
@@ -23,258 +23,258 @@ import {
   AlertCircle,
   ChevronDown,
   ChevronUp,
-} from 'lucide-react'
+} from "lucide-react";
 
 interface AnalyticsViewProps {
-  services: AIService[]
-  statuses?: ServiceStatus[]
-  isConnected: boolean
+  services: AIService[];
+  statuses?: ServiceStatus[];
+  isConnected: boolean;
 }
 
 interface DepletionInfo {
-  service: string
-  metric: string
-  daysLeft: number
-  utilization: number
+  service: string;
+  metric: string;
+  daysLeft: number;
+  utilization: number;
 }
 
-type TimeRange = 1 | 7 | 30 | 90
-type ChartMetric = 'used' | 'remaining' | 'utilization' | 'remaining_pct'
-type GroupBy = 'service' | 'provider' | 'metric'
-type Interval = '5m' | '15m' | '1h' | '4h' | '1d'
+type TimeRange = 1 | 7 | 30 | 90;
+type ChartMetric = "used" | "remaining" | "utilization" | "remaining_pct";
+type GroupBy = "service" | "provider" | "metric";
+type Interval = "5m" | "15m" | "1h" | "4h" | "1d";
 
 const COLORS = [
-  '#3B82F6',
-  '#10B981',
-  '#F59E0B',
-  '#EF4444',
-  '#8B5CF6',
-  '#EC4899',
-  '#06B6D4',
-  '#84CC16',
-  '#F97316',
-  '#14B8A6',
-]
+  "#3B82F6",
+  "#10B981",
+  "#F59E0B",
+  "#EF4444",
+  "#8B5CF6",
+  "#EC4899",
+  "#06B6D4",
+  "#84CC16",
+  "#F97316",
+  "#14B8A6",
+];
 
 function formatTimestamp(timestampStr: string, interval: Interval): string {
-  const date = new Date(timestampStr)
+  const date = new Date(timestampStr);
 
   switch (interval) {
-    case '5m':
-    case '15m':
+    case "5m":
+    case "15m":
       // For short intervals, show time only
-      return date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })
-    case '1h':
-    case '4h':
+      return date.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" });
+    case "1h":
+    case "4h":
       // For hour intervals, show date + time
       return (
-        date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) +
-        ' ' +
-        date.toLocaleTimeString('en-US', { hour: 'numeric', hour12: true })
-      )
-    case '1d':
+        date.toLocaleDateString("en-US", { month: "short", day: "numeric" }) +
+        " " +
+        date.toLocaleTimeString("en-US", { hour: "numeric", hour12: true })
+      );
+    case "1d":
     default:
       // For daily intervals, show date only
-      return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+      return date.toLocaleDateString("en-US", { month: "short", day: "numeric" });
   }
 }
 
 function formatNumber(num: number): string {
-  if (num >= 1000000) return (num / 1000000).toFixed(1) + 'M'
-  if (num >= 1000) return (num / 1000).toFixed(1) + 'K'
-  return num.toFixed(0)
+  if (num >= 1000000) return (num / 1000000).toFixed(1) + "M";
+  if (num >= 1000) return (num / 1000).toFixed(1) + "K";
+  return num.toFixed(0);
 }
 
 interface DepletionInfo {
-  service: string
-  metric: string
-  daysLeft: number
-  utilization: number
+  service: string;
+  metric: string;
+  daysLeft: number;
+  utilization: number;
 }
 
 export function AnalyticsView({ services, isConnected }: AnalyticsViewProps) {
-  const [timeRange, setTimeRange] = useState<TimeRange>(30)
-  const [selectedService, setSelectedService] = useState<string>('')
-  const [chartMetric, setChartMetric] = useState<ChartMetric>('used')
-  const [groupBy, setGroupBy] = useState<GroupBy>('service')
-  const [expandedCards, setExpandedCards] = useState<Set<string>>(new Set())
-  const [interval, setInterval] = useState<Interval>('1h')
+  const [timeRange, setTimeRange] = useState<TimeRange>(30);
+  const [selectedService, setSelectedService] = useState<string>("");
+  const [chartMetric, setChartMetric] = useState<ChartMetric>("used");
+  const [groupBy, setGroupBy] = useState<GroupBy>("service");
+  const [expandedCards, setExpandedCards] = useState<Set<string>>(new Set());
+  const [interval, setInterval] = useState<Interval>("1h");
 
   const {
     analytics,
     loading: analyticsLoading,
     error: analyticsError,
     refresh: refreshAnalytics,
-  } = useUsageAnalytics(selectedService || undefined, timeRange, interval, groupBy)
+  } = useUsageAnalytics(selectedService || undefined, timeRange, interval, groupBy);
 
   const {
     providerAnalytics,
     loading: providersLoading,
     error: providersError,
     refresh: refreshProviders,
-  } = useProviderAnalytics(timeRange)
+  } = useProviderAnalytics(timeRange);
 
   const toggleCard = useCallback((cardId: string) => {
     setExpandedCards((prev) => {
-      const newSet = new Set(prev)
+      const newSet = new Set(prev);
       if (newSet.has(cardId)) {
-        newSet.delete(cardId)
+        newSet.delete(cardId);
       } else {
-        newSet.add(cardId)
+        newSet.add(cardId);
       }
-      return newSet
-    })
-  }, [])
+      return newSet;
+    });
+  }, []);
 
   const handleRefresh = useCallback(() => {
-    refreshAnalytics()
-    refreshProviders()
-  }, [refreshAnalytics, refreshProviders])
+    refreshAnalytics();
+    refreshProviders();
+  }, [refreshAnalytics, refreshProviders]);
 
   // Process time series data for charts
   // For proper burndown visualization, we use max_value which represents
   // the highest usage in each time bucket (closest to "current" usage at period end)
   const chartData = useMemo(() => {
-    if (!analytics?.timeSeries) return []
+    if (!analytics?.timeSeries) return [];
 
     // Build lookup maps for quota limits and types
-    const quotaLimits = new Map<string, number>()
-    const quotaTypes = new Map<string, 'usage' | 'credits' | 'rate_limit'>()
+    const quotaLimits = new Map<string, number>();
+    const quotaTypes = new Map<string, "usage" | "credits" | "rate_limit">();
 
     console.log(
       `[Analytics] Building quota maps: groupBy=${groupBy}, ${analytics?.quotas?.length || 0} quotas`,
-    )
+    );
 
     if (analytics?.quotas) {
       analytics.quotas.forEach((quota) => {
         const key =
-          groupBy === 'metric'
+          groupBy === "metric"
             ? quota.metric
-            : groupBy === 'provider'
+            : groupBy === "provider"
               ? quota.provider
-              : `${quota.service_name}:${quota.metric}`
+              : `${quota.service_name}:${quota.metric}`;
 
         // Use the limit directly (don't sum - backend may return multiple records)
         // If multiple services have same metric, we still want individual service limits
         // For metric grouping, we'll use the first limit we encounter
         if (!quotaLimits.has(key)) {
-          quotaLimits.set(key, quota.limit)
-          quotaTypes.set(key, quota.type || 'rate_limit')
+          quotaLimits.set(key, quota.limit);
+          quotaTypes.set(key, quota.type || "rate_limit");
         }
-      })
+      });
     }
 
-    console.log(`[Analytics] Quota limits map:`, Object.fromEntries(quotaLimits))
+    console.log(`[Analytics] Quota limits map:`, Object.fromEntries(quotaLimits));
     console.log(
       `[Analytics] Time series keys:`,
       analytics?.timeSeries
         ?.slice(0, 3)
         .map((p) => ({ metric: p.metric, service: p.service_name, max: p.max_value })),
-    )
+    );
 
     // Group by timestamp and organize by the groupBy key
-    const byTimestamp = new Map<string, any>()
+    const byTimestamp = new Map<string, any>();
 
     analytics.timeSeries.forEach((point) => {
-      const timestamp = point.timestamp
+      const timestamp = point.timestamp;
       if (!byTimestamp.has(timestamp)) {
         byTimestamp.set(timestamp, {
           timestamp,
           displayTime: formatTimestamp(timestamp, interval),
-        })
+        });
       }
 
-      const entry = byTimestamp.get(timestamp)
+      const entry = byTimestamp.get(timestamp);
 
       // Use the appropriate key based on what the backend grouped by
       // IMPORTANT: Must match the key format used when building quotaLimits map
-      let key: string
-      if (groupBy === 'metric') {
-        key = point.metric
-      } else if (groupBy === 'provider') {
-        key = point.provider
+      let key: string;
+      if (groupBy === "metric") {
+        key = point.metric;
+      } else if (groupBy === "provider") {
+        key = point.provider;
       } else {
         // service grouping - MUST match format used in quota map: `${service_name}:${metric}`
         key =
-          point.service_name === 'All Services'
+          point.service_name === "All Services"
             ? point.metric
-            : `${point.service_name}:${point.metric}`
+            : `${point.service_name}:${point.metric}`;
       }
 
       // For usage tracking, max_value represents the highest usage level in the period
       // This is better than avg for burndown-style charts
-      const usageValue = point.max_value
-      const limit = quotaLimits.get(key) || 0
-      const quotaType = quotaTypes.get(key) || 'rate_limit'
-      const isBurnDown = quotaType === 'usage' || quotaType === 'credits'
+      const usageValue = point.max_value;
+      const limit = quotaLimits.get(key) || 0;
+      const quotaType = quotaTypes.get(key) || "rate_limit";
+      const isBurnDown = quotaType === "usage" || quotaType === "credits";
 
       // Calculate value based on selected metric type
-      let value: number
-      if (chartMetric === 'used') {
+      let value: number;
+      if (chartMetric === "used") {
         // For burn-down quotas, show remaining; for others, show used
-        value = isBurnDown && limit > 0 ? limit - usageValue : usageValue
-      } else if (chartMetric === 'remaining') {
+        value = isBurnDown && limit > 0 ? limit - usageValue : usageValue;
+      } else if (chartMetric === "remaining") {
         // remaining = limit - used (what's left)
-        value = limit > 0 ? Math.max(0, limit - usageValue) : 0
-      } else if (chartMetric === 'remaining_pct') {
+        value = limit > 0 ? Math.max(0, limit - usageValue) : 0;
+      } else if (chartMetric === "remaining_pct") {
         // remaining percentage = (remaining / limit) * 100
-        const remaining = limit > 0 ? Math.max(0, limit - usageValue) : 0
-        value = limit > 0 ? (remaining / limit) * 100 : 0
+        const remaining = limit > 0 ? Math.max(0, limit - usageValue) : 0;
+        value = limit > 0 ? (remaining / limit) * 100 : 0;
       } else {
         // utilization percentage (% used)
-        value = limit > 0 ? (usageValue / limit) * 100 : 0
+        value = limit > 0 ? (usageValue / limit) * 100 : 0;
       }
 
-      entry[key] = value
-    })
+      entry[key] = value;
+    });
 
     return Array.from(byTimestamp.values()).sort(
       (a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime(),
-    )
-  }, [analytics?.timeSeries, analytics?.quotas, groupBy, chartMetric, interval])
+    );
+  }, [analytics?.timeSeries, analytics?.quotas, groupBy, chartMetric, interval]);
 
   // Get unique keys for chart lines/bars
   // Need to check all data points since different metrics may appear at different timestamps
   const chartKeys = useMemo(() => {
-    if (chartData.length === 0) return []
-    const allKeys = new Set<string>()
+    if (chartData.length === 0) return [];
+    const allKeys = new Set<string>();
     chartData.forEach((point) => {
       Object.keys(point).forEach((key) => {
-        if (key !== 'timestamp' && key !== 'displayTime') {
-          allKeys.add(key)
+        if (key !== "timestamp" && key !== "displayTime") {
+          allKeys.add(key);
         }
-      })
-    })
-    return Array.from(allKeys).slice(0, 8) // Limit to 8 items for readability
-  }, [chartData])
+      });
+    });
+    return Array.from(allKeys).slice(0, 8); // Limit to 8 items for readability
+  }, [chartData]);
 
   // Calculate summary statistics
   const summaryStats = useMemo(() => {
-    if (!analytics?.summary || analytics.summary.length === 0) return null
+    if (!analytics?.summary || analytics.summary.length === 0) return null;
 
-    const totalConsumed = analytics.summary.reduce((sum, s) => sum + s.total_consumed, 0)
-    const activeServices = new Set(analytics.summary.map((s) => s.serviceId)).size
-    const activeMetrics = new Set(analytics.summary.map((s) => s.metric)).size
-    const avgDailyConsumption = totalConsumed / timeRange
+    const totalConsumed = analytics.summary.reduce((sum, s) => sum + s.total_consumed, 0);
+    const activeServices = new Set(analytics.summary.map((s) => s.serviceId)).size;
+    const activeMetrics = new Set(analytics.summary.map((s) => s.metric)).size;
+    const avgDailyConsumption = totalConsumed / timeRange;
 
     // Find fastest depleting quota
     let fastestDepletion: {
-      service: string
-      metric: string
-      daysLeft: number
-      utilization: number
-    } | null = null
+      service: string;
+      metric: string;
+      daysLeft: number;
+      utilization: number;
+    } | null = null;
 
     analytics.summary.forEach((summary) => {
       const quota = analytics.quotas?.find(
         (q) => q.serviceId === summary.serviceId && q.metric === summary.metric,
-      )
+      );
 
       if (quota && quota.limit > 0 && summary.total_consumed > 0) {
-        const dailyRate = summary.total_consumed / Math.max(1, summary.active_days)
-        const remaining = quota.limit - quota.used
-        const daysLeft = dailyRate > 0 ? remaining / dailyRate : Infinity
-        const utilization = (quota.used / quota.limit) * 100
+        const dailyRate = summary.total_consumed / Math.max(1, summary.active_days);
+        const remaining = quota.limit - quota.used;
+        const daysLeft = dailyRate > 0 ? remaining / dailyRate : Infinity;
+        const utilization = (quota.used / quota.limit) * 100;
 
         if (!fastestDepletion || (daysLeft < fastestDepletion.daysLeft && daysLeft > 0)) {
           fastestDepletion = {
@@ -282,10 +282,10 @@ export function AnalyticsView({ services, isConnected }: AnalyticsViewProps) {
             metric: summary.metric,
             daysLeft,
             utilization,
-          }
+          };
         }
       }
-    })
+    });
 
     return {
       totalConsumed,
@@ -293,23 +293,23 @@ export function AnalyticsView({ services, isConnected }: AnalyticsViewProps) {
       activeMetrics,
       avgDailyConsumption,
       fastestDepletion: fastestDepletion as DepletionInfo | null,
-    }
-  }, [analytics, timeRange])
+    };
+  }, [analytics, timeRange]);
 
   // Process provider comparison data
   const providerData = useMemo(() => {
-    if (!providerAnalytics?.providers) return []
+    if (!providerAnalytics?.providers) return [];
     return providerAnalytics.providers.map((p) => ({
       name: p.provider,
       total: p.total_usage,
       average: p.avg_usage,
       peak: p.peak_usage,
       services: p.service_count,
-    }))
-  }, [providerAnalytics])
+    }));
+  }, [providerAnalytics]);
 
-  const loading = analyticsLoading || providersLoading
-  const error = analyticsError || providersError
+  const loading = analyticsLoading || providersLoading;
+  const error = analyticsError || providersError;
 
   return (
     <div className="min-h-screen bg-[#0f0f11] text-[#fafafa]">
@@ -349,9 +349,9 @@ export function AnalyticsView({ services, isConnected }: AnalyticsViewProps) {
                       disabled={analyticsLoading}
                       className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all ${
                         timeRange === days
-                          ? 'bg-zinc-700 text-white'
-                          : 'text-zinc-400 hover:text-white'
-                      } ${analyticsLoading ? 'opacity-50 cursor-not-allowed' : ''}`}
+                          ? "bg-zinc-700 text-white"
+                          : "text-zinc-400 hover:text-white"
+                      } ${analyticsLoading ? "opacity-50 cursor-not-allowed" : ""}`}
                     >
                       {days}d
                     </button>
@@ -365,10 +365,10 @@ export function AnalyticsView({ services, isConnected }: AnalyticsViewProps) {
               <button
                 onClick={handleRefresh}
                 disabled={!isConnected || loading}
-                className={`btn-icon tooltip ${!isConnected || loading ? 'opacity-40 cursor-not-allowed' : ''}`}
+                className={`btn-icon tooltip ${!isConnected || loading ? "opacity-40 cursor-not-allowed" : ""}`}
                 data-tooltip="Refresh data"
               >
-                <RefreshCw size={14} className={loading ? 'animate-spin' : ''} />
+                <RefreshCw size={14} className={loading ? "animate-spin" : ""} />
               </button>
             </div>
           </div>
@@ -433,8 +433,8 @@ export function AnalyticsView({ services, isConnected }: AnalyticsViewProps) {
                   size={14}
                   className={
                     summaryStats.fastestDepletion && summaryStats.fastestDepletion.daysLeft < 7
-                      ? 'text-red-400'
-                      : 'text-blue-400'
+                      ? "text-red-400"
+                      : "text-blue-400"
                   }
                 />
                 <span className="text-xs text-zinc-400 uppercase tracking-wider">Depletion</span>
@@ -442,20 +442,20 @@ export function AnalyticsView({ services, isConnected }: AnalyticsViewProps) {
               <div
                 className={`text-2xl font-bold ${
                   summaryStats.fastestDepletion && summaryStats.fastestDepletion.daysLeft < 7
-                    ? 'text-red-400'
-                    : 'text-white'
+                    ? "text-red-400"
+                    : "text-white"
                 }`}
               >
                 {summaryStats.fastestDepletion
                   ? summaryStats.fastestDepletion.daysLeft === Infinity
-                    ? '∞'
+                    ? "∞"
                     : `${Math.ceil(summaryStats.fastestDepletion.daysLeft)}d`
-                  : 'N/A'}
+                  : "N/A"}
               </div>
               <div className="text-xs text-zinc-500 mt-1 truncate">
                 {summaryStats.fastestDepletion
                   ? `${summaryStats.fastestDepletion.service} - ${summaryStats.fastestDepletion.metric}`
-                  : 'No depletion data'}
+                  : "No depletion data"}
               </div>
             </div>
           </div>
@@ -468,19 +468,19 @@ export function AnalyticsView({ services, isConnected }: AnalyticsViewProps) {
               <span className="text-xs text-zinc-500">Interval:</span>
               <div className="flex items-center bg-zinc-800/50 rounded-lg p-0.5 border border-white/5">
                 {[
-                  { key: '5m', label: '5m' },
-                  { key: '15m', label: '15m' },
-                  { key: '1h', label: '1h' },
-                  { key: '4h', label: '4h' },
-                  { key: '1d', label: '1d' },
+                  { key: "5m", label: "5m" },
+                  { key: "15m", label: "15m" },
+                  { key: "1h", label: "1h" },
+                  { key: "4h", label: "4h" },
+                  { key: "1d", label: "1d" },
                 ].map((i) => (
                   <button
                     key={i.key}
                     onClick={() => setInterval(i.key as Interval)}
                     className={`px-2.5 py-1.5 rounded-md text-xs font-medium transition-all ${
                       interval === i.key
-                        ? 'bg-zinc-700 text-white'
-                        : 'text-zinc-400 hover:text-white'
+                        ? "bg-zinc-700 text-white"
+                        : "text-zinc-400 hover:text-white"
                     }`}
                   >
                     {i.label}
@@ -492,12 +492,12 @@ export function AnalyticsView({ services, isConnected }: AnalyticsViewProps) {
             <div className="flex items-center gap-2">
               <span className="text-xs text-zinc-500">Group by:</span>
               <div className="flex items-center bg-zinc-800/50 rounded-lg p-0.5 border border-white/5">
-                {(['service', 'provider', 'metric'] as GroupBy[]).map((g) => (
+                {(["service", "provider", "metric"] as GroupBy[]).map((g) => (
                   <button
                     key={g}
                     onClick={() => setGroupBy(g)}
                     className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all capitalize ${
-                      groupBy === g ? 'bg-zinc-700 text-white' : 'text-zinc-400 hover:text-white'
+                      groupBy === g ? "bg-zinc-700 text-white" : "text-zinc-400 hover:text-white"
                     }`}
                   >
                     {g}
@@ -511,18 +511,18 @@ export function AnalyticsView({ services, isConnected }: AnalyticsViewProps) {
             <span className="text-xs text-zinc-500">Metric:</span>
             <div className="flex items-center bg-zinc-800/50 rounded-lg p-0.5 border border-white/5">
               {[
-                { key: 'used', label: 'Used' },
-                { key: 'remaining', label: 'Remaining' },
-                { key: 'utilization', label: '% Used' },
-                { key: 'remaining_pct', label: '% Left' },
+                { key: "used", label: "Used" },
+                { key: "remaining", label: "Remaining" },
+                { key: "utilization", label: "% Used" },
+                { key: "remaining_pct", label: "% Left" },
               ].map((m) => (
                 <button
                   key={m.key}
                   onClick={() => setChartMetric(m.key as ChartMetric)}
                   className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all ${
                     chartMetric === m.key
-                      ? 'bg-zinc-700 text-white'
-                      : 'text-zinc-400 hover:text-white'
+                      ? "bg-zinc-700 text-white"
+                      : "text-zinc-400 hover:text-white"
                   }`}
                 >
                   {m.label}
@@ -551,9 +551,9 @@ export function AnalyticsView({ services, isConnected }: AnalyticsViewProps) {
                     stroke="#71717a"
                     fontSize={10}
                     tickLine={false}
-                    angle={interval === '5m' || interval === '15m' ? -45 : 0}
-                    textAnchor={interval === '5m' || interval === '15m' ? 'end' : 'middle'}
-                    height={interval === '5m' || interval === '15m' ? 60 : 30}
+                    angle={interval === "5m" || interval === "15m" ? -45 : 0}
+                    textAnchor={interval === "5m" || interval === "15m" ? "end" : "middle"}
+                    height={interval === "5m" || interval === "15m" ? 60 : 30}
                   />
                   <YAxis
                     stroke="#71717a"
@@ -563,14 +563,14 @@ export function AnalyticsView({ services, isConnected }: AnalyticsViewProps) {
                   />
                   <Tooltip
                     contentStyle={{
-                      backgroundColor: '#18181b',
-                      border: '1px solid #27272a',
-                      borderRadius: '8px',
-                      fontSize: '12px',
+                      backgroundColor: "#18181b",
+                      border: "1px solid #27272a",
+                      borderRadius: "8px",
+                      fontSize: "12px",
                     }}
-                    labelStyle={{ color: '#a1a1aa' }}
+                    labelStyle={{ color: "#a1a1aa" }}
                   />
-                  <Legend wrapperStyle={{ fontSize: '11px', paddingTop: '10px' }} />
+                  <Legend wrapperStyle={{ fontSize: "11px", paddingTop: "10px" }} />
                   {chartKeys.map((key, index) => (
                     <Line
                       key={key}
@@ -613,14 +613,14 @@ export function AnalyticsView({ services, isConnected }: AnalyticsViewProps) {
                   />
                   <Tooltip
                     contentStyle={{
-                      backgroundColor: '#18181b',
-                      border: '1px solid #27272a',
-                      borderRadius: '8px',
-                      fontSize: '12px',
+                      backgroundColor: "#18181b",
+                      border: "1px solid #27272a",
+                      borderRadius: "8px",
+                      fontSize: "12px",
                     }}
-                    labelStyle={{ color: '#a1a1aa' }}
+                    labelStyle={{ color: "#a1a1aa" }}
                   />
-                  <Legend wrapperStyle={{ fontSize: '11px' }} />
+                  <Legend wrapperStyle={{ fontSize: "11px" }} />
                   <Bar dataKey="total" fill="#3B82F6" name="Total Usage" radius={[4, 4, 0, 0]} />
                   <Bar dataKey="average" fill="#10B981" name="Average" radius={[4, 4, 0, 0]} />
                 </BarChart>
@@ -634,17 +634,17 @@ export function AnalyticsView({ services, isConnected }: AnalyticsViewProps) {
           <div className="glass rounded-xl border border-white/5 overflow-hidden">
             <div
               className="p-4 flex items-center justify-between cursor-pointer hover:bg-white/5 transition-colors"
-              onClick={() => toggleCard('breakdown')}
+              onClick={() => toggleCard("breakdown")}
             >
               <h3 className="text-sm font-semibold text-zinc-300">Detailed Service Breakdown</h3>
-              {expandedCards.has('breakdown') ? (
+              {expandedCards.has("breakdown") ? (
                 <ChevronUp size={16} className="text-zinc-400" />
               ) : (
                 <ChevronDown size={16} className="text-zinc-400" />
               )}
             </div>
 
-            {expandedCards.has('breakdown') && (
+            {expandedCards.has("breakdown") && (
               <div className="border-t border-white/5">
                 <div className="overflow-x-auto">
                   <table className="w-full text-xs">
@@ -689,5 +689,5 @@ export function AnalyticsView({ services, isConnected }: AnalyticsViewProps) {
         )}
       </main>
     </div>
-  )
+  );
 }

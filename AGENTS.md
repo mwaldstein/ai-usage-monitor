@@ -40,8 +40,15 @@ cd frontend
 npm install          # Install dependencies
 npm run dev          # Development server (Vite, port 3000)
 npm run build        # Production build (tsc -b && vite build)
-npm run lint         # ESLint check
 npm run preview      # Preview production build
+```
+
+### Linting & Formatting (Root)
+```bash
+npm run lint         # Lint backend and frontend with oxlint
+npm run lint:fix     # Fix linting issues
+npm run fmt          # Format code with oxfmt
+npm run fmt:check    # Check formatting without modifying files
 ```
 
 ### Testing

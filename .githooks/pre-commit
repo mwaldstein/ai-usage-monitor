@@ -27,73 +27,35 @@ is_lint_file() {
   esac
 }
 
-backend_fmt_paths=()
-backend_lint_paths=()
-backend_fmt_repo_paths=()
-
-frontend_fmt_paths=()
-frontend_lint_paths=()
-frontend_fmt_repo_paths=()
+fmt_paths=()
+lint_paths=()
+fmt_repo_paths=()
 
 for f in "${staged_files[@]}"; do
-  if [[ "$f" == backend/* ]]; then
-    rel="${f#backend/}"
+  if [[ "$f" == backend/* ]] || [[ "$f" == frontend/* ]]; then
     if is_fmt_file "$f"; then
-      backend_fmt_paths+=("$rel")
-      backend_fmt_repo_paths+=("$f")
+      fmt_paths+=("$f")
+      fmt_repo_paths+=("$f")
     fi
     if is_lint_file "$f"; then
-      backend_lint_paths+=("$rel")
-    fi
-  elif [[ "$f" == frontend/* ]]; then
-    rel="${f#frontend/}"
-    if is_fmt_file "$f"; then
-      frontend_fmt_paths+=("$rel")
-      frontend_fmt_repo_paths+=("$f")
-    fi
-    if is_lint_file "$f"; then
-      frontend_lint_paths+=("$rel")
+      lint_paths+=("$f")
     fi
   fi
 done
 
-run_oxfmt() {
-  local pkg_dir="$1"
-  shift
-  local -a paths=("$@");
-  if [ "${#paths[@]}" -eq 0 ]; then
-    return 0
-  fi
-
-  echo "[pre-commit] oxfmt ($pkg_dir)"
-  (cd "$pkg_dir" && npx --no-install oxfmt --write --no-error-on-unmatched-pattern "${paths[@]}")
-}
-
-run_oxlint() {
-  local pkg_dir="$1"
-  shift
-  local -a paths=("$@");
-  if [ "${#paths[@]}" -eq 0 ]; then
-    return 0
-  fi
-
-  echo "[pre-commit] oxlint ($pkg_dir)"
-  (cd "$pkg_dir" && npx --no-install oxlint "${paths[@]}")
-}
-
 # 1) Auto-fix formatting for staged files
-run_oxfmt backend "${backend_fmt_paths[@]}"
-run_oxfmt frontend "${frontend_fmt_paths[@]}"
-
-# Re-stage any formatting changes (only the files that were staged to begin with)
-if [ "${#backend_fmt_repo_paths[@]}" -gt 0 ]; then
-  git add -- "${backend_fmt_repo_paths[@]}"
+if [ "${#fmt_paths[@]}" -gt 0 ]; then
+  echo "[pre-commit] oxfmt"
+  npx --no-install oxfmt --write --no-error-on-unmatched-pattern "${fmt_paths[@]}"
 fi
 
-if [ "${#frontend_fmt_repo_paths[@]}" -gt 0 ]; then
-  git add -- "${frontend_fmt_repo_paths[@]}"
+# Re-stage any formatting changes
+if [ "${#fmt_repo_paths[@]}" -gt 0 ]; then
+  git add -- "${fmt_repo_paths[@]}"
 fi
 
 # 2) Verify lint for staged files
-run_oxlint backend "${backend_lint_paths[@]}"
-run_oxlint frontend "${frontend_lint_paths[@]}"
+if [ "${#lint_paths[@]}" -gt 0 ]; then
+  echo "[pre-commit] oxlint"
+  npx --no-install oxlint "${lint_paths[@]}"
+fi
