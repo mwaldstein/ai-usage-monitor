@@ -138,7 +138,7 @@ docker-compose up -d
 - Component co-location: keep components small and focused
 
 ### Database
-- SQLite3 with better-sqlite3 API
+- SQLite3
 - Use parameterized queries to prevent SQL injection
 - Store dates as ISO strings
 - Enable WAL mode for better concurrency
