@@ -16,7 +16,7 @@
 
 | File | Lines | Issue |
 |------|-------|-------|
-| `frontend/src/components/AnalyticsView.tsx` | ~350 | Chart data processing extracted to `useAnalyticsData` hook |
+| ~~`frontend/src/components/AnalyticsView.tsx`~~ | ~~494~~ | ~~Chart data processing extracted to `useAnalyticsData` hook~~ → Extracted 95-line `chartData` useMemo, 45-line `summaryStats` useMemo, and provider data transformation into dedicated `useAnalyticsData.ts` module with `useChartData`, `useChartKeys`, `useSummaryStats`, and `useProviderData` hooks |
 | `frontend/src/components/ServiceCard.tsx` | ~200 | ~~Multiple sub-components + trend analysis~~ → Extracted to ServiceCard/ directory (71% reduction) |
 | `backend/src/services/opencode/` | ~~518~~ 195 | ~~Complex HTML parsing with 5+ fallback strategies~~ → Split into `hydrationParser.ts` (5 strategies as pure functions) and `index.ts` (service orchestration)
 | `frontend/src/components/AddServiceModal/` | ~~432~~ 130 | ~~Large form with provider-specific conditional rendering~~ → Split into directory: `providerConfigs.ts` (182 lines of static data), `ProviderSelector.tsx`, `InstructionsPanel.tsx`, `ServiceFormFields.tsx`, and `index.tsx` (main orchestration, 54% reduction) |
@@ -32,6 +32,6 @@
 - ~~`backend/src/services/opencode.ts`: `parseHydrationData()` (166 lines, 5 parsing strategies), `fetchQuotas()` (166 lines)~~ → Extracted to `opencode/hydrationParser.ts` with strategy pattern (5 pure functions)
 
 **Frontend:**
-- `frontend/src/components/AnalyticsView.tsx`: `chartData` useMemo (95 lines), `summaryStats` useMemo (45 lines)
+- ~~`frontend/src/components/AnalyticsView.tsx`: `chartData` useMemo (95 lines), `summaryStats` useMemo (45 lines)~~ → Extracted to `useAnalyticsData.ts` with `useChartData`, `useChartKeys`, `useSummaryStats` hooks
 - `frontend/src/components/ServiceCard.tsx`: `getQuotaTrend()` (71 lines), `CompactQuota` component (149 lines), `QuotaSparkline` component (101 lines)
 - ~~`frontend/src/components/UsageDock.tsx`: `trends` useMemo (86 lines)~~ → Extracted to `useDockTrends` hook with `TrendItem` interface and `getTrendColor` utility

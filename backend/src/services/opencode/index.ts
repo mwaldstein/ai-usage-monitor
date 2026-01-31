@@ -102,7 +102,7 @@ export class OpenCodeService extends BaseAIService {
     };
   }
 
-  private buildSubscriptionPlanQuota(plan: string, now: number): UsageQuota {
+  private buildSubscriptionPlanQuota(plan: string, _now: number): UsageQuota {
     const nowDate = new Date();
     const planValue = parseInt(plan) || 0;
 
