@@ -57,7 +57,10 @@ const COLORS = [
 ];
 
 function formatTimestamp(timestampStr: string, interval: Interval): string {
-  const date = new Date(timestampStr);
+  // Backend returns UTC timestamps without timezone suffix (e.g., "2026-01-31 14:00:00")
+  // Append 'Z' to ensure they're parsed as UTC, then toLocale* methods convert to user's local time
+  const normalized = timestampStr.endsWith("Z") ? timestampStr : timestampStr + "Z";
+  const date = new Date(normalized);
 
   switch (interval) {
     case "5m":
