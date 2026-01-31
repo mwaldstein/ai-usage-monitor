@@ -1,6 +1,5 @@
 import { BaseAIService } from "./base.ts";
 import type { UsageQuota } from "../types/index.ts";
-import { getMetricAnnotation } from "../types/metricDefinitions.ts";
 import { randomUUID } from "crypto";
 import axios from "axios";
 import { nowTs } from "../utils/dates.ts";
@@ -131,7 +130,6 @@ export class CodexService extends BaseAIService {
           createdAt: nowTs(),
           updatedAt: nowTs(),
           type: "usage",
-          metricMetadata: getMetricAnnotation("codex", "rolling_5hour"),
         });
       }
 
@@ -152,7 +150,6 @@ export class CodexService extends BaseAIService {
           createdAt: nowTs(),
           updatedAt: nowTs(),
           type: "usage",
-          metricMetadata: getMetricAnnotation("codex", "weekly"),
         });
       }
 
@@ -173,7 +170,6 @@ export class CodexService extends BaseAIService {
           createdAt: nowTs(),
           updatedAt: nowTs(),
           type: "usage",
-          metricMetadata: getMetricAnnotation("codex", "code_reviews"),
         });
       }
 
@@ -190,7 +186,6 @@ export class CodexService extends BaseAIService {
           createdAt: nowTs(),
           updatedAt: nowTs(),
           type: "credits",
-          metricMetadata: getMetricAnnotation("codex", "credits"),
         });
       }
     } catch (error: any) {

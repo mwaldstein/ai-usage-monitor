@@ -1,6 +1,5 @@
 import { BaseAIService } from "./base.ts";
 import type { UsageQuota, AIService } from "../types/index.ts";
-import { getMetricAnnotation } from "../types/metricDefinitions.ts";
 import { randomUUID } from "crypto";
 import { nowTs, dateToTs } from "../utils/dates.ts";
 import { logger } from "../utils/logger.ts";
@@ -429,7 +428,6 @@ export class OpenCodeService extends BaseAIService {
           createdAt: nowTs(),
           updatedAt: nowTs(),
           type: "usage", // Burn down display - bar empties as you use it
-          metricMetadata: getMetricAnnotation("opencode", "rolling_5hour_usage"),
         });
       }
 
@@ -451,7 +449,6 @@ export class OpenCodeService extends BaseAIService {
           createdAt: nowTs(),
           updatedAt: nowTs(),
           type: "usage", // Burn down display - bar empties as you use it
-          metricMetadata: getMetricAnnotation("opencode", "weekly_usage"),
         });
       }
 
@@ -468,7 +465,6 @@ export class OpenCodeService extends BaseAIService {
           resetAt: dateToTs(new Date(nowDate.getFullYear(), nowDate.getMonth() + 1, 1)),
           createdAt: nowTs(),
           updatedAt: nowTs(),
-          metricMetadata: getMetricAnnotation("opencode", "monthly_usage"),
         });
       }
 
@@ -487,7 +483,6 @@ export class OpenCodeService extends BaseAIService {
           createdAt: nowTs(),
           updatedAt: nowTs(),
           type: "credits", // Credit balance style - focus on remaining
-          metricMetadata: getMetricAnnotation("opencode", "account_balance"),
         });
       }
 
@@ -504,7 +499,6 @@ export class OpenCodeService extends BaseAIService {
           resetAt: dateToTs(new Date(nowDate.getFullYear(), nowDate.getMonth() + 1, 1)),
           createdAt: nowTs(),
           updatedAt: nowTs(),
-          metricMetadata: getMetricAnnotation("opencode", "subscription_plan"),
         });
       }
 

@@ -12,6 +12,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Metric definitions module supporting AMP, z.ai, opencode, and Codex providers with specialized formatting rules
 
 ### Changed
+- Consolidated metric definitions to frontend-only: removed `backend/src/types/metricDefinitions.ts` (226 lines) and all `metricMetadata` fields from API responses. Display metadata is now a pure frontend concern, reducing payload size and eliminating frontend/backend synchronization issues
 - Optimized `usage_history` database schema: composite primary key `(service_id, metric, ts)`, integer timestamps, `WITHOUT ROWID` for ~50% storage reduction and faster queries
 - Standardized all API/WebSocket timestamps to unix seconds (`ts`) for consistency and reduced parsing overhead
 - Added database maintenance: WAL mode, incremental auto_vacuum, daily checkpoint at 3:01 AM

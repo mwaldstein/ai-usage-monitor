@@ -26,7 +26,6 @@ export interface UsageQuota {
     period: "hour" | "day" | "minute";
   };
   type?: "usage" | "credits" | "rate_limit";
-  metricMetadata?: MetricAnnotation; // Display configuration for this metric
 }
 
 export interface UsageHistory {

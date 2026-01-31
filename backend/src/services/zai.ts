@@ -1,6 +1,5 @@
 import { BaseAIService } from "./base.ts";
 import type { UsageQuota } from "../types/index.ts";
-import { getMetricAnnotation } from "../types/metricDefinitions.ts";
 import { randomUUID } from "crypto";
 import { nowTs, dateToTs } from "../utils/dates.ts";
 import { logger } from "../utils/logger.ts";
@@ -88,7 +87,6 @@ export class ZAIService extends BaseAIService {
             metricName = "tokens_consumption";
           }
 
-          const metadata = getMetricAnnotation("zai", metricName);
           const quota: UsageQuota = {
             id: quotaId,
             serviceId: this.service.id,
@@ -102,7 +100,6 @@ export class ZAIService extends BaseAIService {
             createdAt: nowTs(),
             updatedAt: nowTs(),
             type: "usage",
-            metricMetadata: metadata,
           };
 
           if (metricName === "tokens_consumption") {
@@ -128,7 +125,6 @@ export class ZAIService extends BaseAIService {
                 createdAt: nowTs(),
                 updatedAt: nowTs(),
                 type: "usage",
-                metricMetadata: getMetricAnnotation("zai", modelMetric),
               });
             }
           }

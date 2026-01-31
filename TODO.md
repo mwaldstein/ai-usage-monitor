@@ -9,11 +9,6 @@
 
 ## Refactoring
 
-- **Metric definitions consolidation**: Currently metric definitions exist in both frontend and backend with different implementations. Either:
-  - Consolidate to shared location if backend truly needs display config, or
-  - Move entirely to frontend if only relevant to display (backend would just provide raw data)
-  - Consider whether backend `getMetricAnnotation()` calls are actually necessary or if metadata could be frontend-only
-
 ### Large Files (>200 lines)
 
 | File | Lines | Issue |
@@ -24,7 +19,7 @@
 | `backend/src/services/opencode.ts` | 518 | Complex HTML parsing with 5+ fallback strategies |
 | `frontend/src/components/AddServiceModal.tsx` | 432 | Large form with provider-specific conditional rendering |
 | `frontend/src/components/UsageDock.tsx` | 349 | Chart logic mixed with component |
-| `frontend/src/types/metricDefinitions.ts` | 323 | Definitions mixed with formatting functions |
+| `frontend/src/types/metricDefinitions.ts` | 323 | Definitions mixed with formatting functions (backend copy removed - consolidated to frontend-only) |
 | `backend/src/database/index.ts` | 262 | Schema + migrations + maintenance in one file |
 | `frontend/src/hooks/useApi.ts` | 271 | 5+ different hooks in single file |
 
