@@ -1,4 +1,4 @@
-import { logger } from "../utils/logger.ts";
+import { logger } from "../../utils/logger.ts";
 
 // Types
 export interface OpenCodeBillingData {

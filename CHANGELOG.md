@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.0] - 2026-01-31
+
 ### Added
 - Comprehensive metric annotation system: provider-specific display configuration with format (currency/percentage/integer/decimal/scientific), custom thresholds, and priority-based sorting
 - Metric definitions module supporting AMP, z.ai, opencode, and Codex providers with specialized formatting rules
@@ -35,6 +37,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 - Removed inline "Loading..." text in analytics view that caused layout shift; loading state now indicated by spinning refresh icon only
 - Analytics chart time axis now displays in user's local timezone instead of UTC
+- Fixed import path in `backend/src/services/opencode/hydrationParser.ts`: corrected logger import from `../utils/logger.ts` to `../../utils/logger.ts`
 
 ## [0.2.0] - 2026-01-30
 
@@ -99,7 +102,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 - Added missing dependencies (uuid, sqlite) for Docker builds
 
-[Unreleased]: https://github.com/mwaldstein/ai-usage-monitor/compare/v0.2.0...HEAD
+[Unreleased]: https://github.com/mwaldstein/ai-usage-monitor/compare/v0.3.0...HEAD
+[0.3.0]: https://github.com/mwaldstein/ai-usage-monitor/compare/v0.2.0...v0.3.0
 [0.2.0]: https://github.com/mwaldstein/ai-usage-monitor/compare/v0.1.2...v0.2.0
 [0.1.2]: https://github.com/mwaldstein/ai-usage-monitor/compare/v0.1.1...v0.1.2
 [0.1.1]: https://github.com/mwaldstein/ai-usage-monitor/compare/v0.1.0...v0.1.1
