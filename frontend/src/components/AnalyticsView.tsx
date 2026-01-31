@@ -357,9 +357,6 @@ export function AnalyticsView({ services, isConnected }: AnalyticsViewProps) {
                     </button>
                   ))}
                 </div>
-                {analyticsLoading && (
-                  <span className="text-xs text-zinc-500 animate-pulse">Loading...</span>
-                )}
               </div>
 
               <button
