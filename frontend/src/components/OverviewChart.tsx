@@ -1,8 +1,20 @@
-import type { ServiceStatus } from "../types";
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from "recharts";
+import type { PieLabelRenderProps } from "recharts";
+import type { ServiceStatus } from "../types";
 
 interface OverviewChartProps {
   statuses: ServiceStatus[];
+}
+
+function formatPieLabel({ name, percent }: PieLabelRenderProps): string {
+  const labelName = typeof name === "string" ? name : name == null ? "Unknown" : String(name);
+  const labelPercent = typeof percent === "number" ? percent : 0;
+  return `${labelName}: ${(labelPercent * 100).toFixed(0)}%`;
+}
+
+function formatTooltipValue(value: number | undefined): string {
+  if (typeof value === "number") return value.toFixed(2);
+  return "0.00";
 }
 
 export function OverviewChart({ statuses }: OverviewChartProps) {
@@ -51,7 +63,7 @@ export function OverviewChart({ statuses }: OverviewChartProps) {
               cx="50%"
               cy="50%"
               labelLine={false}
-              label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
+              label={formatPieLabel}
               outerRadius={80}
               fill="#8884d8"
               dataKey="used"
@@ -60,7 +72,7 @@ export function OverviewChart({ statuses }: OverviewChartProps) {
                 <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
               ))}
             </Pie>
-            <Tooltip formatter={(value: number) => value.toFixed(2)} />
+            <Tooltip formatter={formatTooltipValue} />
             <Legend />
           </PieChart>
         </ResponsiveContainer>
