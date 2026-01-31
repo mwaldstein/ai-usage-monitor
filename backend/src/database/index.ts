@@ -1,6 +1,7 @@
 import sqlite3 from "sqlite3";
 import { open, Database } from "sqlite";
 import path from "path";
+import { logger } from "../utils/logger.ts";
 
 let db: Database<sqlite3.Database> | null = null;
 
@@ -70,27 +71,27 @@ export async function initializeDatabase(): Promise<Database<sqlite3.Database>> 
   // Migration: Add bearer_token column to existing databases (if it doesn't exist)
   try {
     await db.exec(`ALTER TABLE services ADD COLUMN bearer_token TEXT;`);
-    console.log("[Database] Migration: Added bearer_token column to services table");
+    logger.info("[Database] Migration: Added bearer_token column to services table");
   } catch {}
 
   // Migrations: Add quota metadata columns (if they don't exist)
   try {
     await db.exec(`ALTER TABLE quotas ADD COLUMN type TEXT;`);
-    console.log("[Database] Migration: Added type column to quotas table");
+    logger.info("[Database] Migration: Added type column to quotas table");
   } catch {}
   try {
     await db.exec(`ALTER TABLE quotas ADD COLUMN replenishment_amount REAL;`);
-    console.log("[Database] Migration: Added replenishment_amount column to quotas table");
+    logger.info("[Database] Migration: Added replenishment_amount column to quotas table");
   } catch {}
   try {
     await db.exec(`ALTER TABLE quotas ADD COLUMN replenishment_period TEXT;`);
-    console.log("[Database] Migration: Added replenishment_period column to quotas table");
+    logger.info("[Database] Migration: Added replenishment_period column to quotas table");
   } catch {}
 
   // Migration: Add display_order column to existing databases (if it doesn't exist)
   try {
     await db.exec(`ALTER TABLE services ADD COLUMN display_order INTEGER DEFAULT 0;`);
-    console.log("[Database] Migration: Added display_order column to services table");
+    logger.info("[Database] Migration: Added display_order column to services table");
   } catch {}
 
   return db;
@@ -106,7 +107,7 @@ async function migrateServicesSchema(db: Database<sqlite3.Database>): Promise<vo
   );
   if (!createdAtCol || createdAtCol.type === "INTEGER") return; // Already migrated or new schema
 
-  console.log("[Database] Migration: Converting services timestamps to INTEGER...");
+  logger.info("[Database] Migration: Converting services timestamps to INTEGER...");
 
   try {
     await db.exec(`
@@ -132,9 +133,9 @@ async function migrateServicesSchema(db: Database<sqlite3.Database>): Promise<vo
       DROP TABLE services;
       ALTER TABLE services_new RENAME TO services;
     `);
-    console.log("[Database] Migration: services timestamps converted to INTEGER");
+    logger.info("[Database] Migration: services timestamps converted to INTEGER");
   } catch (error) {
-    console.error("[Database] Migration failed:", error);
+    logger.error({ err: error }, "[Database] Migration failed");
     throw error;
   }
 }
@@ -149,7 +150,7 @@ async function migrateQuotasSchema(db: Database<sqlite3.Database>): Promise<void
   );
   if (!createdAtCol || createdAtCol.type === "INTEGER") return; // Already migrated or new schema
 
-  console.log("[Database] Migration: Converting quotas timestamps to INTEGER...");
+  logger.info("[Database] Migration: Converting quotas timestamps to INTEGER...");
 
   try {
     await db.exec(`
@@ -181,9 +182,9 @@ async function migrateQuotasSchema(db: Database<sqlite3.Database>): Promise<void
 
       CREATE INDEX IF NOT EXISTS idx_quotas_service ON quotas(service_id);
     `);
-    console.log("[Database] Migration: quotas timestamps converted to INTEGER");
+    logger.info("[Database] Migration: quotas timestamps converted to INTEGER");
   } catch (error) {
-    console.error("[Database] Migration failed:", error);
+    logger.error({ err: error }, "[Database] Migration failed");
     throw error;
   }
 }
@@ -199,7 +200,7 @@ async function migrateUsageHistorySchema(db: Database<sqlite3.Database>): Promis
     return;
   }
 
-  console.log(
+  logger.info(
     "[Database] Migration: Converting usage_history to new schema (composite PK, INTEGER ts)...",
   );
 
@@ -229,9 +230,9 @@ async function migrateUsageHistorySchema(db: Database<sqlite3.Database>): Promis
       CREATE INDEX IF NOT EXISTS idx_usage_history_ts ON usage_history(ts);
     `);
 
-    console.log("[Database] Migration: usage_history schema migration complete");
+    logger.info("[Database] Migration: usage_history schema migration complete");
   } catch (error) {
-    console.error("[Database] Migration failed:", error);
+    logger.error({ err: error }, "[Database] Migration failed");
     throw error;
   }
 }
@@ -253,8 +254,8 @@ export async function runMaintenance(): Promise<void> {
     // Run incremental vacuum to reclaim space from deleted rows
     await db.exec(`PRAGMA incremental_vacuum;`);
 
-    console.log("[Database] Maintenance complete: WAL checkpoint and incremental vacuum");
+    logger.info("[Database] Maintenance complete: WAL checkpoint and incremental vacuum");
   } catch (error) {
-    console.error("[Database] Maintenance failed:", error);
+    logger.error({ err: error }, "[Database] Maintenance failed");
   }
 }

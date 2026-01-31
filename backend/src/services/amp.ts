@@ -2,6 +2,7 @@ import { BaseAIService } from "./base.ts";
 import type { UsageQuota } from "../types/index.ts";
 import { randomUUID } from "crypto";
 import { nowTs } from "../utils/dates.ts";
+import { logger } from "../utils/logger.ts";
 
 interface AMPQuotaData {
   bucket: string;
@@ -38,7 +39,7 @@ export class AMPService extends BaseAIService {
 
       return null;
     } catch (error) {
-      console.error("Error parsing AMP quota response:", error);
+      logger.error({ err: error }, "Error parsing AMP quota response");
       return null;
     }
   }
@@ -72,7 +73,7 @@ export class AMPService extends BaseAIService {
 
       return null;
     } catch (error) {
-      console.error("Error parsing AMP paid balance response:", error);
+      logger.error({ err: error }, "Error parsing AMP paid balance response");
       return null;
     }
   }
@@ -110,7 +111,7 @@ export class AMPService extends BaseAIService {
 
       return null;
     } catch (error) {
-      console.error("Error parsing billing balance from HTML:", error);
+      logger.error({ err: error }, "Error parsing billing balance from HTML");
       return null;
     }
   }
@@ -119,7 +120,7 @@ export class AMPService extends BaseAIService {
     try {
       // Check if API key (session cookie) is provided
       if (!this.service.apiKey) {
-        console.warn(
+        logger.warn(
           "No session cookie provided for AMP service. Authentication required. Please copy your session cookie from the browser and paste it as the API key.",
         );
         return [];
@@ -159,7 +160,7 @@ export class AMPService extends BaseAIService {
       const quotaData = this.parseQuotaResponse(response.data);
 
       if (!quotaData) {
-        console.warn("Could not parse AMP quota data");
+        logger.warn("Could not parse AMP quota data");
         return [];
       }
 
@@ -206,7 +207,7 @@ export class AMPService extends BaseAIService {
 
       return quotas;
     } catch (error) {
-      console.error(`Error fetching AMP quotas for ${this.service.name}:`, error);
+      logger.error({ err: error }, `Error fetching AMP quotas for ${this.service.name}`);
       return [];
     }
   }

@@ -2,6 +2,7 @@ import { BaseAIService } from "./base.ts";
 import type { UsageQuota } from "../types/index.ts";
 import { randomUUID } from "crypto";
 import { nowTs, dateToTs } from "../utils/dates.ts";
+import { logger } from "../utils/logger.ts";
 
 /**
  * OpenAIService - Fetches billing and usage data from OpenAI API
@@ -68,7 +69,7 @@ export class OpenAIService extends BaseAIService {
 
       return quotas;
     } catch (error) {
-      console.error(`Error fetching OpenAI quotas for ${this.service.name}:`, error);
+      logger.error({ err: error }, `Error fetching OpenAI quotas for ${this.service.name}`);
       throw error;
     }
   }
@@ -107,7 +108,7 @@ export class GoogleAIService extends BaseAIService {
 
       return quotas;
     } catch (error) {
-      console.error(`Error fetching Google AI quotas for ${this.service.name}:`, error);
+      logger.error({ err: error }, `Error fetching Google AI quotas for ${this.service.name}`);
       throw error;
     }
   }
@@ -166,7 +167,7 @@ export class AnthropicService extends BaseAIService {
 
       return quotas;
     } catch (error) {
-      console.error(`Error fetching Anthropic quotas for ${this.service.name}:`, error);
+      logger.error({ err: error }, `Error fetching Anthropic quotas for ${this.service.name}`);
       throw error;
     }
   }
@@ -205,7 +206,7 @@ export class GenericAIService extends BaseAIService {
 
       return quotas;
     } catch (error) {
-      console.error(`Error fetching quotas for ${this.service.name}:`, error);
+      logger.error({ err: error }, `Error fetching quotas for ${this.service.name}`);
       return []; // Return empty for generic services that may not have quota endpoints
     }
   }

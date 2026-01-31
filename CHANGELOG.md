@@ -12,6 +12,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Standardized all API/WebSocket timestamps to unix seconds (`ts`) for consistency and reduced parsing overhead
 - Added database maintenance: WAL mode, incremental auto_vacuum, daily checkpoint at 3:01 AM
 - Suppressed dotenv startup log message with `quiet: true`
+- Replaced unstructured `console.log`/`console.error` with structured Pino logging throughout backend
+- Added OpenTelemetry instrumentation with automatic trace context injection into logs (trace_id, span_id)
+- Added `LOG_LEVEL` environment variable support for runtime log level configuration
 
 ### Fixed
 - Removed inline "Loading..." text in analytics view that caused layout shift; loading state now indicated by spinning refresh icon only

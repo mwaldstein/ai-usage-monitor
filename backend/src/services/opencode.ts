@@ -2,6 +2,7 @@ import { BaseAIService } from "./base.ts";
 import type { UsageQuota, AIService } from "../types/index.ts";
 import { randomUUID } from "crypto";
 import { nowTs, dateToTs } from "../utils/dates.ts";
+import { logger } from "../utils/logger.ts";
 
 interface OpenCodeBillingData {
   customerID: string;
@@ -245,7 +246,7 @@ export class OpenCodeService extends BaseAIService {
         }
       }
     } catch (error) {
-      console.error("Error parsing hydration data:", error);
+      logger.error({ err: error }, "Error parsing hydration data");
     }
 
     return result;
@@ -326,8 +327,8 @@ export class OpenCodeService extends BaseAIService {
 
       return JSON.parse(jsonStr);
     } catch (e) {
-      console.error("Failed to parse direct object:", objStr.substring(0, 150));
-      console.error("Error:", (e as Error).message);
+      logger.error({ data: objStr.substring(0, 150) }, "Failed to parse direct object");
+      logger.error({ err: e }, "Error");
       return null;
     }
   }
@@ -340,8 +341,8 @@ export class OpenCodeService extends BaseAIService {
       // Use the same logic as parseDirectObject
       return this.parseDirectObject(dataStr);
     } catch (e) {
-      console.error("Failed to parse object:", objStr.substring(0, 150));
-      console.error("Error:", (e as Error).message);
+      logger.error({ data: objStr.substring(0, 150) }, "Failed to parse object");
+      logger.error({ err: e }, "Error");
       return null;
     }
   }
@@ -350,7 +351,7 @@ export class OpenCodeService extends BaseAIService {
     try {
       const workspaceId = this.extractWorkspaceId();
       if (!workspaceId) {
-        console.warn(
+        logger.warn(
           "No workspace ID found for opencode service. Set baseUrl to include workspace ID (e.g., https://opencode.ai/workspace/WRK_ID)",
         );
         return [];
@@ -358,7 +359,7 @@ export class OpenCodeService extends BaseAIService {
 
       // Check if API key (session cookie) is provided
       if (!this.service.apiKey) {
-        console.warn(
+        logger.warn(
           "No session cookie provided for opencode service. Authentication required. Please copy your session cookie from the browser and paste it as the API key.",
         );
         return [];
@@ -376,7 +377,7 @@ export class OpenCodeService extends BaseAIService {
 
       // Check if we got HTML back
       if (!html || typeof html !== "string" || html.length === 0) {
-        console.error(`Empty or invalid HTML response for ${this.service.name}`);
+        logger.error(`Empty or invalid HTML response for ${this.service.name}`);
         throw new Error("Invalid response: empty HTML");
       }
 
@@ -393,7 +394,7 @@ export class OpenCodeService extends BaseAIService {
           (html.includes("login") && html.includes("password"));
 
         if (isAuthPage) {
-          console.error(`Authentication required for ${this.service.name} - received login page`);
+          logger.error(`Authentication required for ${this.service.name} - received login page`);
           const error = new Error(
             "Authentication failed: Session cookie expired or invalid. Please get a new session cookie from your browser.",
           );
@@ -401,7 +402,7 @@ export class OpenCodeService extends BaseAIService {
           throw error;
         } else {
           // Not an auth page, but no data found - page structure might have changed
-          console.error(`No billing or subscription data found in HTML for ${this.service.name}`);
+          logger.error(`No billing or subscription data found in HTML for ${this.service.name}`);
           throw new Error("No quota data found in response.");
         }
       }
@@ -503,7 +504,7 @@ export class OpenCodeService extends BaseAIService {
 
       return quotas;
     } catch (error) {
-      console.error(`Error fetching opencode quotas for ${this.service.name}:`, error);
+      logger.error({ err: error }, `Error fetching opencode quotas for ${this.service.name}`);
       return [];
     }
   }

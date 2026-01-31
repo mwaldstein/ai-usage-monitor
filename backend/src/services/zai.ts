@@ -2,6 +2,7 @@ import { BaseAIService } from "./base.ts";
 import type { UsageQuota } from "../types/index.ts";
 import { randomUUID } from "crypto";
 import { nowTs, dateToTs } from "../utils/dates.ts";
+import { logger } from "../utils/logger.ts";
 
 interface ZAISubscription {
   id: string;
@@ -54,7 +55,7 @@ export class ZAIService extends BaseAIService {
     try {
       // Check if API key (Bearer token) is provided
       if (!this.service.apiKey) {
-        console.warn(
+        logger.warn(
           "No API token provided for z.ai service. Please provide your Bearer token from localStorage (z-ai-open-platform-token-production or z-ai-website-token).",
         );
         return [];
@@ -168,12 +169,12 @@ export class ZAIService extends BaseAIService {
           }
         }
       } catch (subError) {
-        console.warn("Could not fetch z.ai subscription info:", subError);
+        logger.warn({ err: subError }, "Could not fetch z.ai subscription info");
       }
 
       return quotas;
     } catch (error) {
-      console.error(`Error fetching z.ai quotas for ${this.service.name}:`, error);
+      logger.error({ err: error }, `Error fetching z.ai quotas for ${this.service.name}`);
       return [];
     }
   }

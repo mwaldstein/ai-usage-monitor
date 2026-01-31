@@ -14,6 +14,11 @@ import apiRoutes from "./routes/api.ts";
 import { ServiceFactory } from "./services/factory.ts";
 import type { AIService, ServiceStatus } from "./types/index.ts";
 import { nowTs } from "./utils/dates.ts";
+import { logger } from "./utils/logger.ts";
+import { initTracing, shutdownTracing } from "./utils/tracing.ts";
+
+// Initialize OpenTelemetry tracing early (before any logging)
+const tracingSdk = initTracing();
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -70,7 +75,7 @@ if (process.env.NODE_ENV === "production") {
 const clients = new Set<WebSocket>();
 
 wss.on("connection", (ws) => {
-  console.log("Client connected");
+  logger.info("Client connected");
   clients.add(ws);
 
   ws.on("message", (message) => {
@@ -79,20 +84,20 @@ wss.on("connection", (ws) => {
 
       if (data.type === "subscribe") {
         // Client subscribed to updates
-        console.log("Client subscribed to updates");
+        logger.info("Client subscribed to updates");
       }
     } catch (error) {
-      console.error("Error parsing WebSocket message:", error);
+      logger.error({ err: error }, "Error parsing WebSocket message");
     }
   });
 
   ws.on("close", () => {
-    console.log("Client disconnected");
+    logger.info("Client disconnected");
     clients.delete(ws);
   });
 
   ws.on("error", (error) => {
-    console.error("WebSocket error:", error);
+    logger.error({ err: error }, "WebSocket error");
     clients.delete(ws);
   });
 
@@ -192,7 +197,7 @@ async function sendStatusToClient(ws: WebSocket) {
       }),
     );
   } catch (error) {
-    console.error("Error sending status to client:", error);
+    logger.error({ err: error }, "Error sending status to client");
     ws.send(
       JSON.stringify({
         type: "error",
@@ -218,13 +223,13 @@ let refreshInProgress = false;
 // Refresh quotas periodically
 async function refreshQuotas() {
   if (refreshInProgress) {
-    console.log("Refresh already in progress; skipping this run");
+    logger.info("Refresh already in progress; skipping this run");
     return;
   }
 
   refreshInProgress = true;
   try {
-    console.log("Refreshing quotas...");
+    logger.info("Refreshing quotas...");
     const db = getDatabase();
     const rows = await db.all("SELECT * FROM services WHERE enabled = 1");
 
@@ -252,7 +257,10 @@ async function refreshQuotas() {
 
       // Stagger refreshes evenly across the refresh window
       if (i > 0 && staggerDelayMs > 0) {
-        console.log(`Staggering ${service.name}: waiting ${Math.round(staggerDelayMs / 1000)}s`);
+        logger.info(
+          { service: service.name, waitSeconds: Math.round(staggerDelayMs / 1000) },
+          "Staggering service refresh",
+        );
         await new Promise((resolve) => setTimeout(resolve, staggerDelayMs));
       }
 
@@ -310,12 +318,15 @@ async function refreshQuotas() {
               );
             }
           } catch (dbError) {
-            console.error(`Database error while saving quotas for ${service.name}:`, dbError);
+            logger.error(
+              { err: dbError, service: service.name },
+              "Database error while saving quotas",
+            );
             // Don't let database errors break the entire refresh
           }
         }
       } catch (error) {
-        console.error(`Error refreshing quotas for ${service.name}:`, error);
+        logger.error({ err: error, service: service.name }, "Error refreshing quotas for service");
         results.push({
           service,
           quotas: [],
@@ -334,9 +345,9 @@ async function refreshQuotas() {
       ts: nowTs(),
     });
 
-    console.log("Quotas refreshed successfully");
+    logger.info("Quotas refreshed successfully");
   } catch (error) {
-    console.error("Error refreshing quotas:", error);
+    logger.error({ err: error }, "Error refreshing quotas");
   } finally {
     refreshInProgress = false;
   }
@@ -353,7 +364,7 @@ async function startServer() {
 
     // Initialize database
     await initializeDatabase();
-    console.log("Database initialized");
+    logger.info("Database initialized");
 
     // Schedule periodic refresh
     scheduledTask = cron.schedule(REFRESH_INTERVAL, refreshQuotas);
@@ -363,31 +374,34 @@ async function startServer() {
     maintenanceTask = cron.schedule("1 3 * * *", runMaintenance);
 
     // Initial quota refresh (run async so server starts immediately)
-    console.log("Starting initial quota refresh (async)...");
-    refreshQuotas().catch((error) => console.error("Initial refresh error:", error));
+    logger.info("Starting initial quota refresh (async)...");
+    refreshQuotas().catch((error) => logger.error({ err: error }, "Initial refresh error"));
 
     // Handle server startup errors (e.g., port in use) - MUST be attached BEFORE listen()
     server.on("error", (error: any) => {
       if (error.code === "EADDRINUSE") {
-        console.error(`Port ${PORT} is already in use. Waiting 3 seconds before retrying...`);
+        logger.error(
+          { port: PORT },
+          "Port is already in use. Waiting 3 seconds before retrying...",
+        );
         setTimeout(() => {
-          console.log("Retrying server startup...");
+          logger.info("Retrying server startup...");
           server.listen(PORT);
         }, 3000);
       } else {
-        console.error("Server error:", error);
+        logger.error({ err: error }, "Server error");
         process.exit(1);
       }
     });
 
     // Start server
     server.listen(PORT, () => {
-      console.log(`Server running on port ${PORT}`);
-      console.log(`WebSocket server ready`);
-      console.log(`Quota refresh interval: ${REFRESH_INTERVAL}`);
+      logger.info({ port: PORT }, "Server running");
+      logger.info("WebSocket server ready");
+      logger.info({ refreshInterval: REFRESH_INTERVAL }, "Quota refresh interval configured");
     });
   } catch (error) {
-    console.error("Failed to start server:", error);
+    logger.error({ err: error }, "Failed to start server");
     process.exit(1);
   }
 }
@@ -396,33 +410,36 @@ startServer();
 
 // Graceful shutdown handler
 async function gracefulShutdown(signal: string) {
-  console.log(`${signal} received, shutting down gracefully`);
+  logger.info({ signal }, "Received signal, shutting down gracefully");
 
   // Stop accepting new connections
-  console.log("Closing HTTP server...");
+  logger.info("Closing HTTP server...");
   server.close(() => {
-    console.log("HTTP server closed");
+    logger.info("HTTP server closed");
   });
 
   // Close all WebSocket connections
-  console.log("Closing WebSocket connections...");
+  logger.info("Closing WebSocket connections...");
   wss.clients.forEach((ws) => {
     ws.close();
   });
   wss.close(() => {
-    console.log("WebSocket server closed");
+    logger.info("WebSocket server closed");
   });
 
   // Stop cron jobs
   if (scheduledTask || maintenanceTask) {
-    console.log("Stopping cron jobs...");
+    logger.info("Stopping cron jobs...");
     scheduledTask?.stop();
     maintenanceTask?.stop();
   }
 
+  // Shutdown OpenTelemetry tracing
+  await shutdownTracing(tracingSdk);
+
   // Give connections time to close, then exit
   setTimeout(() => {
-    console.log("Shutdown complete");
+    logger.info("Shutdown complete");
     process.exit(0);
   }, 3000);
 }
@@ -432,7 +449,7 @@ process.on("SIGINT", () => gracefulShutdown("SIGINT"));
 
 // Handle uncaught errors - don't shut down on non-fatal errors during quota refresh
 process.on("uncaughtException", (error) => {
-  console.error("Uncaught exception:", error);
+  logger.error({ err: error }, "Uncaught exception");
   // Only shut down for truly fatal errors, not service fetch errors
   if (
     error.message &&
@@ -445,7 +462,7 @@ process.on("uncaughtException", (error) => {
 });
 
 process.on("unhandledRejection", (reason, promise) => {
-  console.error("Unhandled rejection at:", promise, "reason:", reason);
+  logger.error({ reason, promise }, "Unhandled rejection");
   // Log but don't shut down - let the individual service error handlers deal with it
   // This prevents one misconfigured service from killing the entire server
 });

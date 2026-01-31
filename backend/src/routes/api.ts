@@ -4,6 +4,7 @@ import { getDatabase } from "../database/index.ts";
 import { ServiceFactory } from "../services/factory.ts";
 import type { AIService, ServiceStatus, UsageQuota } from "../types/index.ts";
 import { nowTs } from "../utils/dates.ts";
+import { logger } from "../utils/logger.ts";
 
 const router = Router();
 
@@ -56,7 +57,7 @@ router.get("/services", async (req, res) => {
 
     res.json(services);
   } catch (error) {
-    console.error("Error fetching services:", error);
+    logger.error({ err: error }, "Error fetching services");
     res.status(500).json({ error: "Failed to fetch services" });
   }
 });
@@ -97,7 +98,7 @@ router.post("/services", async (req, res) => {
     const service = await db.get("SELECT * FROM services WHERE id = ?", [id]);
     res.status(201).json(mapServiceRow(service));
   } catch (error) {
-    console.error("Error adding service:", error);
+    logger.error({ err: error }, "Error adding service");
     res.status(500).json({ error: "Failed to add service" });
   }
 });
@@ -157,7 +158,7 @@ router.put("/services/:id", async (req, res) => {
     const service = await db.get("SELECT * FROM services WHERE id = ?", [id]);
     res.json(mapServiceRow(service));
   } catch (error) {
-    console.error("Error updating service:", error);
+    logger.error({ err: error }, "Error updating service");
     res.status(500).json({ error: "Failed to update service" });
   }
 });
@@ -171,7 +172,7 @@ router.delete("/services/:id", async (req, res) => {
     await db.run("DELETE FROM services WHERE id = ?", [id]);
     res.status(204).send();
   } catch (error) {
-    console.error("Error deleting service:", error);
+    logger.error({ err: error }, "Error deleting service");
     res.status(500).json({ error: "Failed to delete service" });
   }
 });
@@ -205,7 +206,7 @@ router.post("/services/reorder", async (req, res) => {
 
     res.json(services);
   } catch (error) {
-    console.error("Error reordering services:", error);
+    logger.error({ err: error }, "Error reordering services");
     res.status(500).json({ error: "Failed to reorder services" });
   }
 });
@@ -223,7 +224,7 @@ router.get("/quotas", async (req, res) => {
     `);
     res.json(quotas);
   } catch (error) {
-    console.error("Error fetching quotas:", error);
+    logger.error({ err: error }, "Error fetching quotas");
     res.status(500).json({ error: "Failed to fetch quotas" });
   }
 });
@@ -279,7 +280,7 @@ router.get("/status/cached", async (req, res) => {
 
     res.json(statuses);
   } catch (error) {
-    console.error("Error fetching cached status:", error);
+    logger.error({ err: error }, "Error fetching cached status");
     res.status(500).json({ error: "Failed to fetch cached status" });
   }
 });
@@ -348,14 +349,17 @@ router.post("/quotas/refresh", async (req, res) => {
               );
             }
           } catch (dbError) {
-            console.error(`Database error while saving quotas for ${service.name}:`, dbError);
+            logger.error(
+              { err: dbError },
+              `Database error while saving quotas for ${service.name}`,
+            );
             // Don't let database errors break the entire refresh
           }
         }
 
         results.push(status);
       } catch (error) {
-        console.error(`Error refreshing quotas for ${service.name}:`, error);
+        logger.error({ err: error }, `Error refreshing quotas for ${service.name}`);
         // Continue processing other services even if one fails
         results.push({
           service,
@@ -370,7 +374,7 @@ router.post("/quotas/refresh", async (req, res) => {
 
     res.json(results);
   } catch (error) {
-    console.error("Error refreshing quotas:", error);
+    logger.error({ err: error }, "Error refreshing quotas");
     res.status(500).json({ error: "Failed to refresh quotas" });
   }
 });
@@ -436,13 +440,13 @@ router.post("/quotas/refresh/:serviceId", async (req, res) => {
           );
         }
       } catch (dbError) {
-        console.error(`Database error while saving quotas for ${service.name}:`, dbError);
+        logger.error({ err: dbError }, `Database error while saving quotas for ${service.name}`);
       }
     }
 
     res.json(status);
   } catch (error) {
-    console.error("Error refreshing quotas for service:", error);
+    logger.error({ err: error }, "Error refreshing quotas for service");
     res.status(500).json({ error: "Failed to refresh service" });
   }
 });
@@ -469,7 +473,7 @@ router.get("/status", async (req, res) => {
         ]);
         statuses.push(status);
       } catch (error) {
-        console.error(`Error fetching status for ${service.name}:`, error);
+        logger.error({ err: error }, `Error fetching status for ${service.name}`);
         // Continue processing other services even if one fails
         statuses.push({
           service,
@@ -484,7 +488,7 @@ router.get("/status", async (req, res) => {
 
     res.json(statuses);
   } catch (error) {
-    console.error("Error fetching status:", error);
+    logger.error({ err: error }, "Error fetching status");
     res.status(500).json({ error: "Failed to fetch status" });
   }
 });
@@ -527,7 +531,7 @@ router.get("/usage/history", async (req, res) => {
     const history = await db.all(query, params);
     res.json(history);
   } catch (error) {
-    console.error("Error fetching usage history:", error);
+    logger.error({ err: error }, "Error fetching usage history");
     res.status(500).json({ error: "Failed to fetch usage history" });
   }
 });
@@ -541,9 +545,7 @@ router.get("/usage/analytics", async (req, res) => {
     const daysNum = Math.max(1, Math.min(365, parseInt(String(days), 10) || 30));
     const sinceTs = Math.floor((Date.now() - daysNum * 24 * 60 * 60 * 1000) / 1000);
 
-    console.log(
-      `[API /usage/analytics] days=${daysNum}, interval=${interval}, groupBy=${groupBy}, sinceTs=${sinceTs}`,
-    );
+    logger.info({ days: daysNum, interval, groupBy, sinceTs }, "API /usage/analytics request");
 
     // Parse interval parameter (e.g., '5m', '15m', '1h', '1d')
     const intervalMatch = String(interval).match(/^(\d+)(m|h|d)$/);
@@ -677,7 +679,7 @@ router.get("/usage/analytics", async (req, res) => {
       generatedAt: nowTs(),
     });
   } catch (error) {
-    console.error("Error fetching usage analytics:", error);
+    logger.error({ err: error }, "Error fetching usage analytics");
     res.status(500).json({ error: "Failed to fetch usage analytics" });
   }
 });
@@ -715,7 +717,7 @@ router.get("/usage/providers", async (req, res) => {
       generatedAt: nowTs(),
     });
   } catch (error) {
-    console.error("Error fetching provider comparison:", error);
+    logger.error({ err: error }, "Error fetching provider comparison");
     res.status(500).json({ error: "Failed to fetch provider comparison" });
   }
 });

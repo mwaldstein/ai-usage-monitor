@@ -3,6 +3,7 @@ import type { UsageQuota } from "../types/index.ts";
 import { randomUUID } from "crypto";
 import axios from "axios";
 import { nowTs } from "../utils/dates.ts";
+import { logger } from "../utils/logger.ts";
 
 // Interfaces for Codex usage data from the API response
 interface CodexWindow {
@@ -65,7 +66,7 @@ export class CodexService extends BaseAIService {
     try {
       // Check if authentication is provided (bearer token or cookie)
       if (!this.service.bearerToken && !this.service.apiKey) {
-        console.error(
+        logger.error(
           `[Codex:${serviceName}] ERROR: No authentication provided. Please provide either a Bearer token or session cookie.`,
         );
         return quotas;
@@ -188,20 +189,10 @@ export class CodexService extends BaseAIService {
         });
       }
     } catch (error: any) {
-      console.error(`[Codex:${serviceName}] ERROR during fetch:`);
-      console.error(`  - Message: ${error.message || "Unknown error"}`);
-
-      if (error.response) {
-        console.error(`  - Status: ${error.response.status} ${error.response.statusText}`);
-      } else if (error.request) {
-        console.error(`  - Status: No response received`);
-      }
-
-      if (error.config) {
-        const method = error.config.method?.toUpperCase() || "GET";
-        const url = `${error.config.baseURL}${error.config.url}`;
-        console.error(`  - Request: ${method} ${url}`);
-      }
+      logger.error(
+        { err: error },
+        `[Codex:${serviceName}] ERROR during fetch: ${error.message || "Unknown error"}`,
+      );
     }
 
     return quotas;
