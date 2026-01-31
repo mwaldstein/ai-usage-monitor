@@ -4,7 +4,7 @@ import {
   getEffectiveMetricAnnotation,
   formatMetricValue,
   getMetricDisplayName,
-} from "../../types/metricDefinitions";
+} from "../../types/metricFormatters";
 import { RadialProgress } from "./RadialProgress";
 import { QuotaSparkline } from "./QuotaSparkline";
 import { formatCountdown, getQuotaTrend } from "./utils";

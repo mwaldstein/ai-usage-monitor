@@ -21,7 +21,7 @@
 | `backend/src/services/opencode/` | ~~518~~ 195 | ~~Complex HTML parsing with 5+ fallback strategies~~ → Split into `hydrationParser.ts` (5 strategies as pure functions) and `index.ts` (service orchestration)
 | `frontend/src/components/AddServiceModal/` | ~~432~~ 130 | ~~Large form with provider-specific conditional rendering~~ → Split into directory: `providerConfigs.ts` (182 lines of static data), `ProviderSelector.tsx`, `InstructionsPanel.tsx`, `ServiceFormFields.tsx`, and `index.tsx` (main orchestration, 54% reduction) |
 | `frontend/src/components/UsageDock/` | ~~349~~ 120 | ~~Chart logic mixed with component~~ → Extracted 86-line `trends` useMemo into `useDockTrends` hook, `BurnDownSparkline` component, and utility functions (66% reduction) |
-| `frontend/src/types/metricDefinitions.ts` | 323 | Definitions mixed with formatting functions (backend copy removed - consolidated to frontend-only) |
+| `frontend/src/types/metricDefinitions.ts` | ~~323~~ 184 | ~~Definitions mixed with formatting functions~~ → Split into `metricDefinitions.ts` (184 lines, pure definitions) and `metricFormatters.ts` (139 lines, formatting utilities). Separation of concerns: data definitions vs. transformation logic |
 | `backend/src/database/index.ts` | ~~262~~ 2 | ~~Schema + migrations + maintenance in one file~~ → Split into 4 modules (connection.ts, schema.ts, migrations.ts, maintenance.ts), reducing index.ts to just re-exports |
 | `frontend/src/hooks/useApi.ts` | ~~271~~ 3 | ~~5+ different hooks in single file~~ → Split into `useServices.ts` (CRUD operations), `useUsage.ts` (history, analytics, provider analytics), and `useVersion.ts`. useApi.ts reduced to re-exports only (99% reduction) |
 

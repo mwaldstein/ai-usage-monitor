@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, useCallback } from "react";
 import type { ServiceStatus } from "../types";
-import { getMetricAnnotation } from "../types/metricDefinitions";
+import { getMetricAnnotation } from "../types/metricFormatters";
 
 import { getApiBaseUrl, getWebSocketUrl } from "../services/backendUrls";
 
