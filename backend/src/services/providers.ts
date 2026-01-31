@@ -1,4 +1,4 @@
-import { AIProvider, ProviderConfig } from '../types'
+import { AIProvider, ProviderConfig } from '../types/index.js'
 
 export const providerConfigs: Record<AIProvider, ProviderConfig> = {
   openai: {

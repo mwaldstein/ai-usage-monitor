@@ -1,9 +1,9 @@
 import { Router } from 'express'
 import { randomUUID } from 'crypto'
-import { getDatabase } from '../database'
-import { ServiceFactory } from '../services/factory'
-import { AIService, AIProvider, ServiceStatus, UsageQuota } from '../types'
-import { normalizeDbTimestamp, parseDbTimestamp } from '../utils/dates'
+import { getDatabase } from '../database/index.js'
+import { ServiceFactory } from '../services/factory.js'
+import { AIService, AIProvider, ServiceStatus, UsageQuota } from '../types/index.js'
+import { normalizeDbTimestamp, parseDbTimestamp } from '../utils/dates.js'
 
 const router = Router()
 

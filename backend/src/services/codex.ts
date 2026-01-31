@@ -1,5 +1,5 @@
-import { BaseAIService } from './base'
-import { UsageQuota, AIService } from '../types'
+import { BaseAIService } from './base.js'
+import { UsageQuota, AIService } from '../types/index.js'
 import { randomUUID } from 'crypto'
 import axios from 'axios'
 

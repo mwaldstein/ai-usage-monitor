@@ -1,5 +1,5 @@
 # Build stage for frontend
-FROM node:22-alpine AS frontend-builder
+FROM node:24-alpine AS frontend-builder
 
 WORKDIR /app/frontend
 
@@ -10,7 +10,7 @@ COPY frontend/ ./
 RUN npm run build
 
 # Build stage for backend
-FROM node:22-alpine AS backend-builder
+FROM node:24-alpine AS backend-builder
 
 # Accept git commit SHA as build argument
 ARG GIT_COMMIT_SHA=unknown
@@ -25,7 +25,7 @@ COPY backend/ ./
 RUN npm run build
 
 # Production stage
-FROM node:22-alpine
+FROM node:24-alpine
 
 WORKDIR /app
 

@@ -8,12 +8,12 @@ import cron from 'node-cron'
 import path from 'path'
 import fs from 'fs'
 
-import { initializeDatabase, getDatabase } from './database'
-import { VERSION, COMMIT_SHA } from './version'
-import apiRoutes from './routes/api'
-import { ServiceFactory } from './services/factory'
-import { AIService, ServiceStatus } from './types'
-import { parseDbTimestamp } from './utils/dates'
+import { initializeDatabase, getDatabase } from './database/index.js'
+import { VERSION, COMMIT_SHA } from './version.js'
+import apiRoutes from './routes/api.js'
+import { ServiceFactory } from './services/factory.js'
+import { AIService, ServiceStatus } from './types/index.js'
+import { parseDbTimestamp } from './utils/dates.js'
 
 dotenv.config()
 
