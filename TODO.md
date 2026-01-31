@@ -28,10 +28,10 @@
 ### Complex Functions (>50 lines or high complexity)
 
 **Backend:**
-- `backend/src/routes/api.ts`: POST /quotas/refresh handler (91 lines), GET /usage/analytics handler (145 lines)
+- ~~`backend/src/routes/api.ts`: POST /quotas/refresh handler (91 lines), GET /usage/analytics handler (145 lines)~~ → File split into 5 focused modules (`services.ts`, `quotas.ts`, `status.ts`, `usage.ts`, `mappers.ts`). Handlers now 44-135 lines each.
 - ~~`backend/src/services/opencode.ts`: `parseHydrationData()` (166 lines, 5 parsing strategies), `fetchQuotas()` (166 lines)~~ → Extracted to `opencode/hydrationParser.ts` with strategy pattern (5 pure functions)
 
 **Frontend:**
 - ~~`frontend/src/components/AnalyticsView.tsx`: `chartData` useMemo (95 lines), `summaryStats` useMemo (45 lines)~~ → Extracted to `useAnalyticsData.ts` with `useChartData`, `useChartKeys`, `useSummaryStats` hooks
-- `frontend/src/components/ServiceCard.tsx`: `getQuotaTrend()` (71 lines), `CompactQuota` component (149 lines), `QuotaSparkline` component (101 lines)
+- ~~`frontend/src/components/ServiceCard.tsx`: `getQuotaTrend()` (71 lines), `CompactQuota` component (149 lines), `QuotaSparkline` component (101 lines)~~ → Extracted to `ServiceCard/` directory: `CompactQuota.tsx`, `QuotaSparkline.tsx`, `MiniSparkline.tsx`, `RadialProgress.tsx`, and `utils.ts` (getQuotaTrend, formatCountdown, getProviderColor)
 - ~~`frontend/src/components/UsageDock.tsx`: `trends` useMemo (86 lines)~~ → Extracted to `useDockTrends` hook with `TrendItem` interface and `getTrendColor` utility
