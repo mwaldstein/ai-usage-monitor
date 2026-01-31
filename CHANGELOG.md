@@ -11,6 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Migrated backend from TypeScript compilation to Node.js native `--experimental-strip-types` flag
 - Consolidated frontend tsconfig files into shared base configuration
 - Removed build step from Dockerfile - now runs TypeScript source directly
+- Upgraded backend dependencies: `dotenv`, `express`, `node-cron`
 
 ### Removed
 - Backend dependencies: `typescript`, `ts-node`, `nodemon` (kept `@types/*` for LSP)
