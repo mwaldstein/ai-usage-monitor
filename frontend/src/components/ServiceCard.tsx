@@ -1,5 +1,10 @@
 import { useState, useEffect, useMemo } from "react";
 import type { ServiceStatus, UsageQuota, UsageHistory } from "../types";
+import {
+  getEffectiveMetricAnnotation,
+  formatMetricValue,
+  getMetricDisplayName,
+} from "../types/metricDefinitions";
 import { RefreshCw, ExternalLink, ChevronDown, AlertCircle, CheckCircle2 } from "lucide-react";
 
 interface ServiceCardProps {
@@ -90,21 +95,30 @@ function CompactQuota({
   quota,
   history,
   viewMode = "compact",
+  provider,
 }: {
   quota: UsageQuota;
   history?: UsageHistory[];
   viewMode?: "compact" | "expanded";
+  provider: string;
 }) {
   const used = quota.used ?? 0;
   const remaining = quota.remaining ?? 0;
   const limit = quota.limit ?? 0;
 
+  // Get metric annotation (from metadata or local definitions)
+  const annotation = getEffectiveMetricAnnotation(provider, quota.metric, quota.metricMetadata);
+
   const quotaType = quota.type || "rate_limit";
   const isBurnDown = quotaType === "usage" || quotaType === "credits";
   const percentage = limit > 0 ? (isBurnDown ? remaining / limit : used / limit) * 100 : 0;
 
-  const isCritical = isBurnDown ? percentage < 10 : percentage > 90;
-  const isWarning = isBurnDown ? percentage < 25 : percentage > 70;
+  // Use thresholds from annotation (with sensible defaults)
+  const warnThreshold = annotation.warnThreshold ?? (isBurnDown ? 25 : 70);
+  const errorThreshold = annotation.errorThreshold ?? (isBurnDown ? 10 : 90);
+
+  const isCritical = isBurnDown ? percentage < errorThreshold : percentage > errorThreshold;
+  const isWarning = isBurnDown ? percentage < warnThreshold : percentage > warnThreshold;
 
   const [timeRemaining, setTimeRemaining] = useState<string>("");
 
@@ -153,7 +167,7 @@ function CompactQuota({
   // Calculate delta for sparkline
   const delta =
     sparklineData.length > 1 ? sparklineData[sparklineData.length - 1] - sparklineData[0] : 0;
-  const deltaText = `${delta >= 0 ? "+" : ""}${delta.toFixed(2)}`;
+  const deltaText = `${delta >= 0 ? "+" : ""}${formatMetricValue(delta, annotation)}`;
 
   // Build tooltip text showing 1-hour change in native units
   const getArrowTooltip = () => {
@@ -164,23 +178,14 @@ function CompactQuota({
           ? "Replenishing"
           : "Stable";
 
-    const metricLower = quota.metric.toLowerCase();
-    const isCurrency =
-      metricLower.includes("ubi") || metricLower.includes("credits") || metricLower.includes("$");
-    const isPercentage =
-      metricLower.includes("%") ||
-      metricLower.includes("percent") ||
-      metricLower.includes("rolling");
-
-    // Format values based on metric type
-    const formatValue = (val: number) => {
-      if (isCurrency) return `$${val.toFixed(2)}`;
-      if (isPercentage) return `${val.toFixed(1)}%`;
-      return val.toFixed(1);
-    };
-
-    return `${oneHourChange.minutesAgo}m: ${formatValue(oneHourChange.from)} → ${formatValue(oneHourChange.to)}`;
+    // Format values based on metric annotation
+    return `${oneHourChange.minutesAgo}m: ${formatMetricValue(oneHourChange.from, annotation)} → ${formatMetricValue(oneHourChange.to, annotation)}`;
   };
+
+  // Format the displayed values using the annotation
+  const displayRemaining = formatMetricValue(remaining, annotation);
+  const displayUsed = formatMetricValue(used, annotation);
+  const displayLimit = formatMetricValue(limit, annotation);
 
   return (
     <div className="flex items-center gap-3 p-3 rounded-lg bg-white/5 hover:bg-white/10 transition-colors">
@@ -192,7 +197,7 @@ function CompactQuota({
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-1.5">
             <span className="text-xs font-medium text-zinc-300 truncate">
-              {quota.metric.replace(/_/g, " ")}
+              {getMetricDisplayName(provider, quota.metric, quota.metricMetadata)}
             </span>
             {trend === "depleting" && (
               <span className="text-[10px] text-red-400 cursor-help" title={getArrowTooltip()}>
@@ -219,11 +224,11 @@ function CompactQuota({
         <div className="text-[10px] text-zinc-500">
           {isBurnDown ? (
             <span>
-              {remaining.toFixed(1)} / {limit.toFixed(1)} remaining
+              {displayRemaining} / {displayLimit} remaining
             </span>
           ) : (
             <span>
-              {used.toFixed(1)} / {limit.toFixed(1)} used
+              {displayUsed} / {displayLimit} used
             </span>
           )}
         </div>
@@ -493,22 +498,11 @@ export function ServiceCard({
   const providerColor = getProviderColor(service.provider);
   const [isExpanded, setIsExpanded] = useState(false);
 
-  const sortedQuotas = useMemo(() => {
-    if (service.provider === "zai") {
-      return [...quotas].sort((a, b) => {
-        const aPriority = a.metric === "tokens_consumption" ? 0 : 1;
-        const bPriority = b.metric === "tokens_consumption" ? 0 : 1;
-        return aPriority - bPriority || a.metric.localeCompare(b.metric);
-      });
-    }
-    return quotas;
-  }, [quotas, service.provider]);
-
   // Generate burn down sparkline data from first quota using actual history
   const sparklineData = useMemo(() => {
-    if (!sortedQuotas.length) return { values: [], isBurnDown: false };
+    if (!quotas.length) return { values: [], isBurnDown: false };
 
-    const firstQuota = sortedQuotas[0];
+    const firstQuota = quotas[0];
     const quotaType = firstQuota.type || "rate_limit";
     const isBurnDown = quotaType === "usage" || quotaType === "credits";
 
@@ -541,7 +535,7 @@ export function ServiceCard({
 
     // No (or insufficient) history available: don't render a sparkline.
     return { values: [], isBurnDown };
-  }, [sortedQuotas, history]);
+  }, [quotas, history]);
 
   const handleCardClick = (e: React.MouseEvent) => {
     // Don't expand if clicking refresh button
@@ -595,18 +589,24 @@ export function ServiceCard({
         </div>
 
         {/* Compact Quota Preview (first 2) */}
-        {!isExpanded && sortedQuotas.length > 0 && (
+        {!isExpanded && quotas.length > 0 && (
           <div className="space-y-2">
-            {sortedQuotas.slice(0, 2).map((quota) => (
-              <CompactQuota key={quota.id} quota={quota} history={history} viewMode={viewMode} />
+            {quotas.slice(0, 2).map((quota) => (
+              <CompactQuota
+                key={quota.id}
+                quota={quota}
+                history={history}
+                viewMode={viewMode}
+                provider={service.provider}
+              />
             ))}
-            {sortedQuotas.length > 2 && (
+            {quotas.length > 2 && (
               <button
                 className="w-full py-1 text-[10px] text-zinc-500 hover:text-zinc-300 flex items-center justify-center gap-1"
                 onClick={() => setIsExpanded(true)}
               >
                 <ChevronDown size={10} />
-                {sortedQuotas.length - 2} more
+                {quotas.length - 2} more
               </button>
             )}
           </div>
@@ -649,8 +649,14 @@ export function ServiceCard({
         {/* Expanded View - All Quotas */}
         {isExpanded && (
           <div className="mt-2 space-y-2 fade-in">
-            {sortedQuotas.map((quota) => (
-              <CompactQuota key={quota.id} quota={quota} history={history} viewMode={viewMode} />
+            {quotas.map((quota) => (
+              <CompactQuota
+                key={quota.id}
+                quota={quota}
+                history={history}
+                viewMode={viewMode}
+                provider={service.provider}
+              />
             ))}
             <button
               className="w-full py-1 text-[10px] text-zinc-500 hover:text-zinc-300 flex items-center justify-center gap-1"
@@ -665,10 +671,10 @@ export function ServiceCard({
         {/* Last Updated */}
         <div className="mt-2 flex items-center justify-between text-[10px] text-zinc-600">
           <span>{new Date(lastUpdated * 1000).toLocaleTimeString()}</span>
-          {sortedQuotas.some((q) => q.replenishmentRate && q.replenishmentRate.amount > 0) && (
+          {quotas.some((q) => q.replenishmentRate && q.replenishmentRate.amount > 0) && (
             <span className="text-emerald-500">
-              +{sortedQuotas[0].replenishmentRate?.amount.toFixed(2)}/
-              {sortedQuotas[0].replenishmentRate?.period}
+              +{quotas[0].replenishmentRate?.amount.toFixed(2)}/
+              {quotas[0].replenishmentRate?.period}
             </span>
           )}
         </div>

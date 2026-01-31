@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, useCallback } from "react";
 import type { ServiceStatus } from "../types";
+import { getMetricAnnotation } from "../types/metricDefinitions";
 
 import { getApiBaseUrl, getWebSocketUrl } from "../services/backendUrls";
 
@@ -48,40 +49,33 @@ function mergeStatuses(
   return mergedStatuses.sort((a, b) => a.service.displayOrder - b.service.displayOrder);
 }
 
-const METRIC_ORDER: Record<string, number> = {
-  // Codex
-  rolling_5hour: 10,
-  weekly: 20,
-  code_reviews: 30,
-  credits: 40,
+/**
+ * Get metric priority for sorting.
+ * Priority is determined by:
+ * 1. Backend-provided metadata (if available)
+ * 2. Frontend local metric definitions
+ * 3. Default value of 1000
+ */
+function getMetricOrder(
+  provider: string,
+  metric: string,
+  metadata?: { priority?: number },
+): number {
+  // First check if backend provided a priority in metadata
+  if (metadata?.priority !== undefined) {
+    return metadata.priority;
+  }
 
-  // OpenAI
-  monthly_spend_limit: 10,
-  monthly_spend_soft_limit: 20,
+  // Fall back to local definitions
+  const localDef = getMetricAnnotation(provider, metric);
+  if (localDef?.priority !== undefined) {
+    return localDef.priority;
+  }
 
-  // OpenCode
-  rolling_5hour_usage: 10,
-  weekly_usage: 20,
-  monthly_usage: 30,
-  account_balance: 40,
-  subscription_plan: 50,
-
-  // AMP
-  billing_balance: 20,
-
-  // Common rate limits
-  requests_per_minute: 10,
-  tokens_per_minute: 20,
-  requests_per_day: 30,
-};
-
-function getMetricOrder(metric: string): number {
-  const direct = METRIC_ORDER[metric];
-  if (direct !== undefined) return direct;
-
-  // AMP (and similar) often uses a primary "*_quota" metric.
+  // Handle dynamic patterns
   if (metric.endsWith("_quota")) return 10;
 
+  // Default: last
   return 1000;
 }
 
@@ -89,12 +83,13 @@ function normalizeStatus(status: ServiceStatus): ServiceStatus {
   // Filter legacy/derived metrics that were previously stored as standalone quotas.
   // We now represent these via `replenishmentRate` + `resetAt` on the main quota.
   const hiddenMetrics = new Set(["hourly_replenishment", "window_hours"]);
+  const provider = status.service.provider;
 
   const quotas = [...(status.quotas || [])]
     .filter((q) => !hiddenMetrics.has(q.metric))
     .sort((a, b) => {
-      const ao = getMetricOrder(a.metric);
-      const bo = getMetricOrder(b.metric);
+      const ao = getMetricOrder(provider, a.metric, a.metricMetadata);
+      const bo = getMetricOrder(provider, b.metric, b.metricMetadata);
       if (ao !== bo) return ao - bo;
       return a.metric.localeCompare(b.metric);
     });

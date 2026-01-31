@@ -1,5 +1,6 @@
 import { BaseAIService } from "./base.ts";
 import type { UsageQuota } from "../types/index.ts";
+import { getMetricAnnotation } from "../types/metricDefinitions.ts";
 import { randomUUID } from "crypto";
 import { nowTs, dateToTs } from "../utils/dates.ts";
 import { logger } from "../utils/logger.ts";
@@ -87,45 +88,37 @@ export class ZAIService extends BaseAIService {
             metricName = "tokens_consumption";
           }
 
+          const metadata = getMetricAnnotation("zai", metricName);
+          const quota: UsageQuota = {
+            id: quotaId,
+            serviceId: this.service.id,
+            metric: metricName,
+            limit: limit.usage,
+            used: limit.currentValue,
+            remaining: limit.remaining,
+            resetAt: limit.nextResetTime
+              ? Math.floor(limit.nextResetTime / 1000)
+              : now + 24 * 60 * 60,
+            createdAt: nowTs(),
+            updatedAt: nowTs(),
+            type: "usage",
+            metricMetadata: metadata,
+          };
+
           if (metricName === "tokens_consumption") {
-            quotas.unshift({
-              id: quotaId,
-              serviceId: this.service.id,
-              metric: metricName,
-              limit: limit.usage,
-              used: limit.currentValue,
-              remaining: limit.remaining,
-              resetAt: limit.nextResetTime
-                ? Math.floor(limit.nextResetTime / 1000)
-                : now + 24 * 60 * 60,
-              createdAt: nowTs(),
-              updatedAt: nowTs(),
-              type: "usage",
-            });
+            quotas.unshift(quota);
           } else {
-            quotas.push({
-              id: quotaId,
-              serviceId: this.service.id,
-              metric: metricName,
-              limit: limit.usage,
-              used: limit.currentValue,
-              remaining: limit.remaining,
-              resetAt: limit.nextResetTime
-                ? Math.floor(limit.nextResetTime / 1000)
-                : now + 24 * 60 * 60,
-              createdAt: nowTs(),
-              updatedAt: nowTs(),
-              type: "usage",
-            });
+            quotas.push(quota);
           }
 
           // Add usage details for each model if available
           if (limit.usageDetails && limit.usageDetails.length > 0) {
             for (const detail of limit.usageDetails) {
+              const modelMetric = `${detail.modelCode}_usage`;
               quotas.push({
                 id: randomUUID(),
                 serviceId: this.service.id,
-                metric: `${detail.modelCode}_usage`,
+                metric: modelMetric,
                 limit: 0, // No specific limit per model
                 used: detail.usage,
                 remaining: 0,
@@ -135,6 +128,7 @@ export class ZAIService extends BaseAIService {
                 createdAt: nowTs(),
                 updatedAt: nowTs(),
                 type: "usage",
+                metricMetadata: getMetricAnnotation("zai", modelMetric),
               });
             }
           }

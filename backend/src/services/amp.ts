@@ -1,5 +1,6 @@
 import { BaseAIService } from "./base.ts";
 import type { UsageQuota } from "../types/index.ts";
+import { getMetricAnnotation } from "../types/metricDefinitions.ts";
 import { randomUUID } from "crypto";
 import { nowTs } from "../utils/dates.ts";
 import { logger } from "../utils/logger.ts";
@@ -172,10 +173,11 @@ export class AMPService extends BaseAIService {
 
       // Add the main quota (in dollars)
       // Note: The AMP free tier continuously replenishes at a rate rather than resetting
+      const quotaMetric = `${quotaData.bucket}_quota`;
       quotas.push({
         id: randomUUID(),
         serviceId: this.service.id,
-        metric: `${quotaData.bucket}_quota`,
+        metric: quotaMetric,
         limit: quotaDollars,
         used: usedDollars,
         remaining: remainingDollars > 0 ? remainingDollars : 0,
@@ -187,6 +189,7 @@ export class AMPService extends BaseAIService {
           period: "hour",
         },
         type: "usage", // Burn down style - focus on remaining
+        metricMetadata: getMetricAnnotation("amp", quotaMetric),
       });
 
       // Add billing balance if found from HTML
@@ -202,6 +205,7 @@ export class AMPService extends BaseAIService {
           createdAt: nowTs(),
           updatedAt: nowTs(),
           type: "credits", // Credit balance style - focus on remaining
+          metricMetadata: getMetricAnnotation("amp", "billing_balance"),
         });
       }
 

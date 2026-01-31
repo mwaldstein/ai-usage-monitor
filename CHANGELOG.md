@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- Comprehensive metric annotation system: provider-specific display configuration with format (currency/percentage/integer/decimal/scientific), custom thresholds, and priority-based sorting
+- Metric definitions module supporting AMP, z.ai, opencode, and Codex providers with specialized formatting rules
+
 ### Changed
 - Optimized `usage_history` database schema: composite primary key `(service_id, metric, ts)`, integer timestamps, `WITHOUT ROWID` for ~50% storage reduction and faster queries
 - Standardized all API/WebSocket timestamps to unix seconds (`ts`) for consistency and reduced parsing overhead
@@ -15,6 +19,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Replaced unstructured `console.log`/`console.error` with structured Pino logging throughout backend
 - Added OpenTelemetry instrumentation with automatic trace context injection into logs (trace_id, span_id)
 - Added `LOG_LEVEL` environment variable support for runtime log level configuration
+- ServiceCard now uses metric annotations for value formatting, display names, and dynamic threshold configuration instead of hardcoded heuristics
+- WebSocket quota sorting now driven by annotation priorities instead of hardcoded METRIC_ORDER map
 
 ### Fixed
 - Removed inline "Loading..." text in analytics view that caused layout shift; loading state now indicated by spinning refresh icon only

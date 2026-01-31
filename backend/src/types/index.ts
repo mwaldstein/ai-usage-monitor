@@ -25,7 +25,8 @@ export interface UsageQuota {
     amount: number;
     period: "hour" | "day" | "minute";
   };
-  type?: "usage" | "credits" | "rate_limit"; // usage = burn down (shows remaining), credits = balance (shows remaining), rate_limit = shows used/limit
+  type?: "usage" | "credits" | "rate_limit";
+  metricMetadata?: MetricAnnotation; // Display configuration for this metric
 }
 
 export interface UsageHistory {
@@ -54,6 +55,25 @@ export type AIProvider =
   | "amp"
   | "zai"
   | "codex";
+
+export type MetricFormat =
+  | "currency" // Monetary values (with currencySymbol)
+  | "percentage" // Percentage values (0-100)
+  | "integer" // Whole numbers (no decimals)
+  | "decimal" // Decimal numbers (with precision)
+  | "scientific"; // Scientific notation for very large numbers
+
+export interface MetricAnnotation {
+  format: MetricFormat;
+  displayName: string;
+  currencySymbol?: string; // For "currency" format (default: "$")
+  precision?: number; // Decimal places for "decimal" format (default: 1)
+  priority: number; // Sort order (lower = first, default: 1000)
+  warnWhenLow: boolean; // Whether to show warnings when low (default: false)
+  warnThreshold?: number; // Warning threshold % (default: 25% for burn-down, 70% for rate-limit)
+  errorThreshold?: number; // Error/critical threshold % (default: 10% for burn-down, 90% for rate-limit)
+  notation?: "standard" | "scientific" | "compact"; // For large numbers (default: "standard")
+}
 
 export interface ProviderConfig {
   name: string;
