@@ -37,3 +37,9 @@ jobs:
         run: |
           npm ci
           npm run typecheck
+
+      - name: Backend type check
+        working-directory: backend
+        run: |
+          npm ci
+          npm run typecheck
