@@ -9,6 +9,7 @@
   "dependencies": {},
   "devDependencies": {
     "oxfmt": "^0.27.0",
-    "oxlint": "^1.42.0"
+    "oxlint": "^1.42.0",
+    "typescript": "~5.9.3"
   }
 }
