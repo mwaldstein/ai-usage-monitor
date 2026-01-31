@@ -21,7 +21,7 @@ import {
   AlertCircle,
   BarChart3,
 } from 'lucide-react'
-import { AIService } from './types'
+import type { AIService } from './types'
 
 function App() {
   const {

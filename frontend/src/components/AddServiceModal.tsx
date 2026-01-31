@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { AIService } from '../types'
+import type { AIService } from '../types'
 import { X, ChevronDown, ChevronUp, ExternalLink, Sparkles } from 'lucide-react'
 
 interface AddServiceModalProps {

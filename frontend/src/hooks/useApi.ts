@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
-import { AIService, UsageHistory, UsageAnalytics, ProviderAnalytics } from '../types'
+import type { AIService, UsageHistory, UsageAnalytics, ProviderAnalytics } from '../types'
 
 import { getApiBaseUrl, getVersionUrl } from '../services/backendUrls'
 

@@ -1,5 +1,5 @@
 import { useEffect, useMemo } from 'react'
-import { ServiceStatus, UsageHistory, UsageQuota } from '../types'
+import type { ServiceStatus, UsageHistory, UsageQuota } from '../types'
 import { useUsageHistory } from '../hooks/useApi'
 
 type TrendRow = {

@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react'
-import { ServiceStatus, UsageQuota, UsageHistory } from '../types'
+import type { ServiceStatus, UsageQuota, UsageHistory } from '../types'
 import { RefreshCw, ExternalLink, ChevronDown, AlertCircle, CheckCircle2 } from 'lucide-react'
 
 interface ServiceCardProps {

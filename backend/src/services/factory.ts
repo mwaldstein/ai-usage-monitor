@@ -1,15 +1,15 @@
-import { AIService, AIProvider, ServiceStatus } from '../types/index.js'
-import { BaseAIService } from './base.js'
+import type { AIService, AIProvider, ServiceStatus } from '../types/index.ts'
+import { BaseAIService } from './base.ts'
 import {
   OpenAIService,
   GoogleAIService,
   AnthropicService,
   GenericAIService,
-} from './implementations.js'
-import { OpenCodeService } from './opencode.js'
-import { AMPService } from './amp.js'
-import { ZAIService } from './zai.js'
-import { CodexService } from './codex.js'
+} from './implementations.ts'
+import { OpenCodeService } from './opencode.ts'
+import { AMPService } from './amp.ts'
+import { ZAIService } from './zai.ts'
+import { CodexService } from './codex.ts'
 
 export class ServiceFactory {
   static createService(service: AIService): BaseAIService {

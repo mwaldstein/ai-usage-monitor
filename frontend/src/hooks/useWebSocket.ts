@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, useCallback } from 'react'
-import { ServiceStatus } from '../types'
+import type { ServiceStatus } from '../types'
 
 import { getApiBaseUrl, getWebSocketUrl } from '../services/backendUrls'
 

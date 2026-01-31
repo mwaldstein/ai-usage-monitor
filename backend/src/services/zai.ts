@@ -1,5 +1,5 @@
-import { BaseAIService } from './base.js'
-import { UsageQuota, AIService } from '../types/index.js'
+import { BaseAIService } from './base.ts'
+import type { UsageQuota, AIService } from '../types/index.ts'
 import { randomUUID } from 'crypto'
 
 interface ZAISubscription {

@@ -9,8 +9,8 @@ RUN npm ci
 COPY frontend/ ./
 RUN npm run build
 
-# Build stage for backend
-FROM node:24-alpine AS backend-builder
+# Backend preparation stage (generates version file)
+FROM node:24-alpine AS backend-prep
 
 # Accept git commit SHA as build argument
 ARG GIT_COMMIT_SHA=unknown
@@ -22,7 +22,7 @@ COPY backend/package*.json ./
 RUN npm ci
 
 COPY backend/ ./
-RUN npm run build
+RUN node --experimental-strip-types scripts/generate-version.ts
 
 # Production stage
 FROM node:24-alpine
@@ -33,8 +33,9 @@ WORKDIR /app
 COPY backend/package*.json ./
 RUN npm ci --production
 
-# Copy backend compiled code
-COPY --from=backend-builder /app/backend/dist ./dist
+# Copy backend source code (with generated version.ts)
+COPY --from=backend-prep /app/backend/src ./src
+COPY --from=backend-prep /app/backend/scripts ./scripts
 
 # Copy frontend build to serve static files
 COPY --from=frontend-builder /app/frontend/dist ./frontend-dist
@@ -48,4 +49,4 @@ ENV PORT=3001
 
 EXPOSE 3001
 
-CMD ["node", "dist/index.js"]
+CMD ["node", "--experimental-strip-types", "src/index.ts"]

@@ -1,4 +1,4 @@
-import { ServiceStatus } from '../types'
+import type { ServiceStatus } from '../types'
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from 'recharts'
 
 interface OverviewChartProps {

@@ -1,7 +1,7 @@
 import axios from 'axios'
 import type { AxiosInstance } from 'axios'
-import { AIService, UsageQuota, ServiceStatus, AIProvider } from '../types/index.js'
-import { providerConfigs } from './providers.js'
+import type { AIService, UsageQuota, ServiceStatus, AIProvider } from '../types/index.ts'
+import { providerConfigs } from './providers.ts'
 
 export abstract class BaseAIService {
   protected client: AxiosInstance

@@ -7,13 +7,17 @@ import { createServer } from 'http'
 import cron from 'node-cron'
 import path from 'path'
 import fs from 'fs'
+import { fileURLToPath } from 'url'
 
-import { initializeDatabase, getDatabase } from './database/index.js'
-import { VERSION, COMMIT_SHA } from './version.js'
-import apiRoutes from './routes/api.js'
-import { ServiceFactory } from './services/factory.js'
-import { AIService, ServiceStatus } from './types/index.js'
-import { parseDbTimestamp } from './utils/dates.js'
+import { initializeDatabase, getDatabase } from './database/index.ts'
+import { VERSION, COMMIT_SHA } from './version.ts'
+import apiRoutes from './routes/api.ts'
+import { ServiceFactory } from './services/factory.ts'
+import type { AIService, ServiceStatus } from './types/index.ts'
+import { parseDbTimestamp } from './utils/dates.ts'
+
+const __filename = fileURLToPath(import.meta.url)
+const __dirname = path.dirname(__filename)
 
 dotenv.config()
 

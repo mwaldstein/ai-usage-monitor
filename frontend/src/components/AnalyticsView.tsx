@@ -1,6 +1,6 @@
 import { useState, useMemo, useCallback } from 'react'
 import { useUsageAnalytics, useProviderAnalytics } from '../hooks/useApi'
-import { AIService, ServiceStatus } from '../types'
+import type { AIService, ServiceStatus } from '../types'
 import {
   LineChart,
   Line,
