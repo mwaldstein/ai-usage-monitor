@@ -13,3 +13,28 @@
   - Consolidate to shared location if backend truly needs display config, or
   - Move entirely to frontend if only relevant to display (backend would just provide raw data)
   - Consider whether backend `getMetricAnnotation()` calls are actually necessary or if metadata could be frontend-only
+
+### Large Files (>200 lines)
+
+| File | Lines | Issue |
+|------|-------|-------|
+| `backend/src/routes/api.ts` | 726 | Mixes 10+ route handlers; violates SRP |
+| `frontend/src/components/AnalyticsView.tsx` | 690 | Chart data processing mixed with UI |
+| `frontend/src/components/ServiceCard.tsx` | 685 | Multiple sub-components + trend analysis |
+| `backend/src/services/opencode.ts` | 518 | Complex HTML parsing with 5+ fallback strategies |
+| `frontend/src/components/AddServiceModal.tsx` | 432 | Large form with provider-specific conditional rendering |
+| `frontend/src/components/UsageDock.tsx` | 349 | Chart logic mixed with component |
+| `frontend/src/types/metricDefinitions.ts` | 323 | Definitions mixed with formatting functions |
+| `backend/src/database/index.ts` | 262 | Schema + migrations + maintenance in one file |
+| `frontend/src/hooks/useApi.ts` | 271 | 5+ different hooks in single file |
+
+### Complex Functions (>50 lines or high complexity)
+
+**Backend:**
+- `backend/src/routes/api.ts`: POST /quotas/refresh handler (91 lines), GET /usage/analytics handler (145 lines)
+- `backend/src/services/opencode.ts`: `parseHydrationData()` (166 lines, 5 parsing strategies), `fetchQuotas()` (166 lines)
+
+**Frontend:**
+- `frontend/src/components/AnalyticsView.tsx`: `chartData` useMemo (95 lines), `summaryStats` useMemo (45 lines)
+- `frontend/src/components/ServiceCard.tsx`: `getQuotaTrend()` (71 lines), `CompactQuota` component (149 lines), `QuotaSparkline` component (101 lines)
+- `frontend/src/components/UsageDock.tsx`: `trends` useMemo (86 lines)

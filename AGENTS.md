@@ -91,3 +91,31 @@ Production serves frontend static files from `/`, API at `/api/*`, health check 
 - Version/commit SHA generated into `backend/src/version.ts` at build time (gitignored, do not edit)
 - Update CHANGELOG.md for user-facing changes using [Keep a Changelog](https://keepachangelog.com/) format
 - Backend `package.json` version should match CHANGELOG.md
+
+## Commits
+
+Use [Conventional Commits](https://www.conventionalcommits.org/):
+
+```
+<type>[optional scope]: <description>
+
+[optional body]
+
+[optional footer(s)]
+```
+
+Types:
+- `feat`: new feature
+- `fix`: bug fix
+- `docs`: documentation only
+- `style`: formatting, semicolons, etc (no code change)
+- `refactor`: code restructuring (no behavior change)
+- `perf`: performance improvement
+- `test`: tests
+- `chore`: build/deps/tooling changes
+- `ci`: CI/CD configuration
+
+Examples:
+- `feat: add OpenAI provider support`
+- `fix(api): handle 429 rate limit responses`
+- `chore: bump sqlite3 to v5.1.7`
