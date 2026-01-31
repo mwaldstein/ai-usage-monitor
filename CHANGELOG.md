@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.1] - 2026-01-31
+
+### Fixed
+- GitHub Actions deadlock: removed concurrency config from reusable workflow (`lint-format.yml`) that conflicted with calling workflow
+- Missing runtime dependencies: moved `pino`, `pino-pretty`, and `@opentelemetry/*` packages from root to backend `package.json`
+- Package.json syntax error: added missing comma between `dependencies` and `devDependencies` in root package.json
+
+### Changed
+- Frontend build: separated type checking (`typecheck` script) from build step; CI now runs type checks separately
+- Backend: added `typecheck` script using `tsc` with `noEmit: true` for type validation in CI
+- Improved `.gitignore` to ignore entire `backend/data/` directory
+
 ## [0.3.0] - 2026-01-31
 
 ### Added
@@ -102,7 +114,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 - Added missing dependencies (uuid, sqlite) for Docker builds
 
-[Unreleased]: https://github.com/mwaldstein/ai-usage-monitor/compare/v0.3.0...HEAD
+[Unreleased]: https://github.com/mwaldstein/ai-usage-monitor/compare/v0.3.1...HEAD
+[0.3.1]: https://github.com/mwaldstein/ai-usage-monitor/compare/v0.3.0...v0.3.1
 [0.3.0]: https://github.com/mwaldstein/ai-usage-monitor/compare/v0.2.0...v0.3.0
 [0.2.0]: https://github.com/mwaldstein/ai-usage-monitor/compare/v0.1.2...v0.2.0
 [0.1.2]: https://github.com/mwaldstein/ai-usage-monitor/compare/v0.1.1...v0.1.2
