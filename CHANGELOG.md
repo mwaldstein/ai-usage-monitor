@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-01-30
+
 ### Changed
 - Migrated backend from TypeScript compilation to Node.js native `--experimental-strip-types` flag
 - Consolidated frontend tsconfig files into shared base configuration
@@ -68,7 +70,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 - Added missing dependencies (uuid, sqlite) for Docker builds
 
-[Unreleased]: https://github.com/mwaldstein/ai-usage-monitor/compare/v0.1.2...HEAD
+[Unreleased]: https://github.com/mwaldstein/ai-usage-monitor/compare/v0.2.0...HEAD
+[0.2.0]: https://github.com/mwaldstein/ai-usage-monitor/compare/v0.1.2...v0.2.0
 [0.1.2]: https://github.com/mwaldstein/ai-usage-monitor/compare/v0.1.1...v0.1.2
 [0.1.1]: https://github.com/mwaldstein/ai-usage-monitor/compare/v0.1.0...v0.1.1
 [0.1.0]: https://github.com/mwaldstein/ai-usage-monitor/releases/tag/v0.1.0
