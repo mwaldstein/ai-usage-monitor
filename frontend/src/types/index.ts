@@ -7,8 +7,8 @@ export interface AIService {
   baseUrl?: string;
   enabled: boolean;
   displayOrder: number;
-  createdAt: string;
-  updatedAt: string;
+  createdAt: number; // unix seconds
+  updatedAt: number; // unix seconds
 }
 
 export interface UsageQuota {
@@ -18,9 +18,9 @@ export interface UsageQuota {
   limit: number;
   used: number;
   remaining: number;
-  resetAt: string;
-  createdAt: string;
-  updatedAt: string;
+  resetAt: number; // unix seconds
+  createdAt: number; // unix seconds
+  updatedAt: number; // unix seconds
   replenishmentRate?: {
     amount: number;
     period: "hour" | "day" | "minute";
@@ -31,18 +31,17 @@ export interface UsageQuota {
 export interface ServiceStatus {
   service: AIService;
   quotas: UsageQuota[];
-  lastUpdated: string;
+  lastUpdated: number; // unix seconds
   isHealthy: boolean;
   error?: string;
   authError?: boolean;
 }
 
 export interface UsageHistory {
-  id: string;
   serviceId: string;
   metric: string;
   value: number;
-  timestamp: string;
+  ts: number;
   service_name: string;
 }
 
@@ -51,7 +50,7 @@ export interface TimeSeriesData {
   provider: string;
   serviceId: string;
   metric: string;
-  timestamp: string;
+  ts: number;
   avg_value: number;
   min_value: number;
   max_value: number;
@@ -67,8 +66,8 @@ export interface AnalyticsSummary {
   max_value: number;
   avg_value: number;
   total_consumed: number;
-  first_record: string;
-  last_record: string;
+  first_record_ts: number;
+  last_record_ts: number;
   active_days: number;
 }
 
@@ -87,7 +86,7 @@ export interface UsageAnalytics {
   quotas: QuotaWithService[];
   summary: AnalyticsSummary[];
   days: number;
-  generatedAt: string;
+  generatedAt: number; // unix seconds
 }
 
 export interface ProviderComparison {
@@ -103,5 +102,5 @@ export interface ProviderComparison {
 export interface ProviderAnalytics {
   providers: ProviderComparison[];
   days: number;
-  generatedAt: string;
+  generatedAt: number; // unix seconds
 }

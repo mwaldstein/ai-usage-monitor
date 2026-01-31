@@ -3,7 +3,7 @@ import { randomUUID } from "crypto";
 import { getDatabase } from "../database/index.ts";
 import { ServiceFactory } from "../services/factory.ts";
 import type { AIService, ServiceStatus, UsageQuota } from "../types/index.ts";
-import { parseDbTimestamp } from "../utils/dates.ts";
+import { parseDbTimestampToTs, nowTs } from "../utils/dates.ts";
 
 const router = Router();
 
@@ -17,8 +17,8 @@ function mapServiceRow(row: any): AIService {
     baseUrl: row.base_url,
     enabled: row.enabled === 1,
     displayOrder: row.display_order ?? 0,
-    createdAt: parseDbTimestamp(row.created_at),
-    updatedAt: parseDbTimestamp(row.updated_at),
+    createdAt: parseDbTimestampToTs(row.created_at),
+    updatedAt: parseDbTimestampToTs(row.updated_at),
   };
 }
 
@@ -30,9 +30,9 @@ function mapQuotaRow(row: any): UsageQuota {
     limit: row.limit_value,
     used: row.used_value,
     remaining: row.remaining_value,
-    resetAt: row.reset_at ? parseDbTimestamp(row.reset_at) : new Date(0),
-    createdAt: parseDbTimestamp(row.created_at),
-    updatedAt: parseDbTimestamp(row.updated_at),
+    resetAt: parseDbTimestampToTs(row.reset_at),
+    createdAt: parseDbTimestampToTs(row.created_at),
+    updatedAt: parseDbTimestampToTs(row.updated_at),
     type: row.type,
     replenishmentRate: row.replenishment_amount
       ? {
@@ -262,15 +262,15 @@ router.get("/status/cached", async (req, res) => {
 
     const statuses: ServiceStatus[] = services.map((service) => {
       const quotas = quotasByService.get(service.id) || [];
-      const lastUpdated = quotas.reduce<Date>(
+      const lastUpdated = quotas.reduce<number>(
         (max, q) => (q.updatedAt > max ? q.updatedAt : max),
-        new Date(0),
+        0,
       );
 
       return {
         service,
         quotas,
-        lastUpdated: lastUpdated.getTime() > 0 ? lastUpdated : new Date(service.updatedAt),
+        lastUpdated: lastUpdated > 0 ? lastUpdated : service.updatedAt,
         isHealthy: quotas.length > 0,
         authError: false,
         error: quotas.length > 0 ? undefined : "No cached quota data yet",
@@ -310,8 +310,9 @@ router.post("/quotas/refresh", async (req, res) => {
         if (status.quotas && status.quotas.length > 0) {
           try {
             // Update quotas in database
+            const now = nowTs();
+            const nowIso = new Date().toISOString();
             for (const quota of status.quotas) {
-              const now = new Date().toISOString();
               await db.run(
                 `INSERT INTO quotas (id, service_id, metric, limit_value, used_value, remaining_value, type, replenishment_amount, replenishment_period, reset_at, created_at, updated_at) 
                  VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
@@ -334,17 +335,17 @@ router.post("/quotas/refresh", async (req, res) => {
                   quota.type || null,
                   quota.replenishmentRate?.amount ?? null,
                   quota.replenishmentRate?.period ?? null,
-                  quota.resetAt.toISOString(),
-                  now,
-                  now,
-                  now,
+                  new Date(quota.resetAt * 1000).toISOString(),
+                  nowIso,
+                  nowIso,
+                  nowIso,
                 ],
               );
 
               // Log usage history for sparkline/trend UI.
               await db.run(
                 "INSERT OR REPLACE INTO usage_history (service_id, metric, ts, value) VALUES (?, ?, ?, ?)",
-                [quota.serviceId, quota.metric, Math.floor(Date.now() / 1000), quota.used],
+                [quota.serviceId, quota.metric, now, quota.used],
               );
             }
           } catch (dbError) {
@@ -360,7 +361,7 @@ router.post("/quotas/refresh", async (req, res) => {
         results.push({
           service,
           quotas: [],
-          lastUpdated: new Date(),
+          lastUpdated: nowTs(),
           isHealthy: false,
           authError: false,
           error: error instanceof Error ? error.message : "Unknown error",
@@ -397,8 +398,9 @@ router.post("/quotas/refresh/:serviceId", async (req, res) => {
 
     if (status.quotas && status.quotas.length > 0) {
       try {
+        const now = nowTs();
+        const nowIso = new Date().toISOString();
         for (const quota of status.quotas) {
-          const now = new Date().toISOString();
           await db.run(
             `INSERT INTO quotas (id, service_id, metric, limit_value, used_value, remaining_value, type, replenishment_amount, replenishment_period, reset_at, created_at, updated_at)
              VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
@@ -421,10 +423,10 @@ router.post("/quotas/refresh/:serviceId", async (req, res) => {
               quota.type || null,
               quota.replenishmentRate?.amount ?? null,
               quota.replenishmentRate?.period ?? null,
-              quota.resetAt.toISOString(),
-              now,
-              now,
-              now,
+              new Date(quota.resetAt * 1000).toISOString(),
+              nowIso,
+              nowIso,
+              nowIso,
             ],
           );
         }
@@ -432,7 +434,7 @@ router.post("/quotas/refresh/:serviceId", async (req, res) => {
         for (const quota of status.quotas) {
           await db.run(
             "INSERT OR REPLACE INTO usage_history (service_id, metric, ts, value) VALUES (?, ?, ?, ?)",
-            [quota.serviceId, quota.metric, Math.floor(Date.now() / 1000), quota.used],
+            [quota.serviceId, quota.metric, now, quota.used],
           );
         }
       } catch (dbError) {
@@ -503,7 +505,7 @@ router.get("/usage/history", async (req, res) => {
         uh.service_id as serviceId,
         uh.metric as metric,
         uh.value as value,
-        datetime(uh.ts, 'unixepoch') as timestamp,
+        uh.ts as ts,
         s.name as service_name
       FROM usage_history uh
       JOIN services s ON uh.service_id = s.id
@@ -554,7 +556,7 @@ router.get("/usage/analytics", async (req, res) => {
 
     // Create time bucket expression using integer ts (much faster than strftime on TEXT)
     const intervalSeconds = intervalMinutes * 60;
-    const timeBucket = `datetime((uh.ts / ${intervalSeconds}) * ${intervalSeconds}, 'unixepoch')`;
+    const timeBucket = `(uh.ts / ${intervalSeconds}) * ${intervalSeconds}`;
 
     // Build query based on groupBy parameter
     const groupByColumn = String(groupBy);
@@ -593,7 +595,7 @@ router.get("/usage/analytics", async (req, res) => {
     let timeSeriesQuery = `
       SELECT 
         ${selectColumns},
-        ${timeBucket} as timestamp,
+        ${timeBucket} as ts,
         AVG(uh.value) as avg_value,
         MIN(uh.value) as min_value,
         MAX(uh.value) as max_value,
@@ -612,7 +614,7 @@ router.get("/usage/analytics", async (req, res) => {
 
     timeSeriesQuery += `
       GROUP BY ${groupByClause}
-      ORDER BY timestamp ASC, metric
+      ORDER BY ts ASC, metric
     `;
 
     const timeSeries = await db.all(timeSeriesQuery, params);
@@ -647,9 +649,9 @@ router.get("/usage/analytics", async (req, res) => {
         MAX(uh.value) as max_value,
         AVG(uh.value) as avg_value,
         (MAX(uh.value) - MIN(uh.value)) as total_consumed,
-        datetime(MIN(uh.ts), 'unixepoch') as first_record,
-        datetime(MAX(uh.ts), 'unixepoch') as last_record,
-        COUNT(DISTINCT date(uh.ts, 'unixepoch')) as active_days
+        MIN(uh.ts) as first_record_ts,
+        MAX(uh.ts) as last_record_ts,
+        COUNT(DISTINCT uh.ts / 86400) as active_days
       FROM usage_history uh
       JOIN services s ON uh.service_id = s.id
       WHERE uh.ts >= ?
@@ -674,7 +676,7 @@ router.get("/usage/analytics", async (req, res) => {
       quotas,
       summary,
       days: daysNum,
-      generatedAt: new Date().toISOString(),
+      generatedAt: nowTs(),
     });
   } catch (error) {
     console.error("Error fetching usage analytics:", error);
@@ -712,7 +714,7 @@ router.get("/usage/providers", async (req, res) => {
     res.json({
       providers,
       days: daysNum,
-      generatedAt: new Date().toISOString(),
+      generatedAt: nowTs(),
     });
   } catch (error) {
     console.error("Error fetching provider comparison:", error);

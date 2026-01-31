@@ -1,6 +1,7 @@
 import { BaseAIService } from "./base.ts";
 import type { UsageQuota } from "../types/index.ts";
 import { randomUUID } from "crypto";
+import { nowTs, dateToTs } from "../utils/dates.ts";
 
 /**
  * OpenAIService - Fetches billing and usage data from OpenAI API
@@ -43,9 +44,9 @@ export class OpenAIService extends BaseAIService {
             limit: sub.hard_limit_usd,
             used: usageResponse?.data?.total_usage / 100 || 0,
             remaining: sub.hard_limit_usd - (usageResponse?.data?.total_usage / 100 || 0),
-            resetAt: new Date(now.getFullYear(), now.getMonth() + 1, 1),
-            createdAt: new Date(),
-            updatedAt: new Date(),
+            resetAt: dateToTs(new Date(now.getFullYear(), now.getMonth() + 1, 1)),
+            createdAt: nowTs(),
+            updatedAt: nowTs(),
           });
         }
 
@@ -58,9 +59,9 @@ export class OpenAIService extends BaseAIService {
             limit: sub.soft_limit_usd,
             used: usageResponse?.data?.total_usage / 100 || 0,
             remaining: sub.soft_limit_usd - (usageResponse?.data?.total_usage / 100 || 0),
-            resetAt: new Date(now.getFullYear(), now.getMonth() + 1, 1),
-            createdAt: new Date(),
-            updatedAt: new Date(),
+            resetAt: dateToTs(new Date(now.getFullYear(), now.getMonth() + 1, 1)),
+            createdAt: nowTs(),
+            updatedAt: nowTs(),
           });
         }
       }
@@ -98,9 +99,9 @@ export class GoogleAIService extends BaseAIService {
           limit: q.limit,
           used: 0,
           remaining: q.limit,
-          resetAt: new Date(Date.now() + 60000), // Reset in 1 minute
-          createdAt: new Date(),
-          updatedAt: new Date(),
+          resetAt: nowTs() + 60, // Reset in 1 minute
+          createdAt: nowTs(),
+          updatedAt: nowTs(),
         });
       }
 
@@ -143,9 +144,9 @@ export class AnthropicService extends BaseAIService {
           limit: rateLimits.requests.limit,
           used: rateLimits.requests.limit - rateLimits.requests.remaining,
           remaining: rateLimits.requests.remaining,
-          resetAt: new Date(rateLimits.requests.reset * 1000),
-          createdAt: new Date(),
-          updatedAt: new Date(),
+          resetAt: rateLimits.requests.reset,
+          createdAt: nowTs(),
+          updatedAt: nowTs(),
         });
       }
 
@@ -157,9 +158,9 @@ export class AnthropicService extends BaseAIService {
           limit: rateLimits.tokens.limit,
           used: rateLimits.tokens.limit - rateLimits.tokens.remaining,
           remaining: rateLimits.tokens.remaining,
-          resetAt: new Date(rateLimits.tokens.reset * 1000),
-          createdAt: new Date(),
-          updatedAt: new Date(),
+          resetAt: rateLimits.tokens.reset,
+          createdAt: nowTs(),
+          updatedAt: nowTs(),
         });
       }
 
@@ -194,9 +195,9 @@ export class GenericAIService extends BaseAIService {
               limit: quota.limit || quota.total || 0,
               used: quota.used || quota.consumed || 0,
               remaining: quota.remaining || quota.limit - quota.used || 0,
-              resetAt: quota.reset_at ? new Date(quota.reset_at) : new Date(Date.now() + 86400000),
-              createdAt: new Date(),
-              updatedAt: new Date(),
+              resetAt: quota.reset_at ? dateToTs(new Date(quota.reset_at)) : nowTs() + 86400,
+              createdAt: nowTs(),
+              updatedAt: nowTs(),
             });
           }
         }

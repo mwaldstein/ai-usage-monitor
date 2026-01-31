@@ -1,6 +1,7 @@
 import { BaseAIService } from "./base.ts";
 import type { UsageQuota, AIService } from "../types/index.ts";
 import { randomUUID } from "crypto";
+import { nowTs, dateToTs } from "../utils/dates.ts";
 
 interface OpenCodeBillingData {
   customerID: string;
@@ -406,7 +407,7 @@ export class OpenCodeService extends BaseAIService {
       }
 
       const quotas: UsageQuota[] = [];
-      const now = new Date();
+      const now = nowTs();
 
       // Add rolling usage (5-hour window) - from subscription or directly parsed
       // Burn down approach: invert the percentage so bar shows remaining capacity
@@ -422,9 +423,9 @@ export class OpenCodeService extends BaseAIService {
           limit: 100,
           used: pagePercent, // Original usage from page (for reference)
           remaining: burnDownPercent, // Burn down: remaining capacity
-          resetAt: new Date(now.getTime() + rollingUsage.resetInSec * 1000),
-          createdAt: new Date(),
-          updatedAt: new Date(),
+          resetAt: now + rollingUsage.resetInSec,
+          createdAt: nowTs(),
+          updatedAt: nowTs(),
           type: "usage", // Burn down display - bar empties as you use it
         });
       }
@@ -443,15 +444,16 @@ export class OpenCodeService extends BaseAIService {
           limit: 100,
           used: pagePercent, // Original usage from page (for reference)
           remaining: burnDownPercent, // Burn down: remaining capacity
-          resetAt: new Date(now.getTime() + weeklyUsage.resetInSec * 1000),
-          createdAt: new Date(),
-          updatedAt: new Date(),
+          resetAt: now + weeklyUsage.resetInSec,
+          createdAt: nowTs(),
+          updatedAt: nowTs(),
           type: "usage", // Burn down display - bar empties as you use it
         });
       }
 
       // Add monthly usage if available
       if (data.billing?.monthlyUsage !== undefined && data.billing?.monthlyLimit !== null) {
+        const nowDate = new Date();
         quotas.push({
           id: randomUUID(),
           serviceId: this.service.id,
@@ -459,9 +461,9 @@ export class OpenCodeService extends BaseAIService {
           limit: data.billing.monthlyLimit,
           used: data.billing.monthlyUsage,
           remaining: data.billing.monthlyLimit - data.billing.monthlyUsage,
-          resetAt: new Date(now.getFullYear(), now.getMonth() + 1, 1),
-          createdAt: new Date(),
-          updatedAt: new Date(),
+          resetAt: dateToTs(new Date(nowDate.getFullYear(), nowDate.getMonth() + 1, 1)),
+          createdAt: nowTs(),
+          updatedAt: nowTs(),
         });
       }
 
@@ -476,15 +478,16 @@ export class OpenCodeService extends BaseAIService {
           limit: balanceDollars,
           used: 0,
           remaining: balanceDollars,
-          resetAt: new Date(now.getTime() + 86400000 * 365), // 1 year
-          createdAt: new Date(),
-          updatedAt: new Date(),
+          resetAt: now + 86400 * 365, // 1 year
+          createdAt: nowTs(),
+          updatedAt: nowTs(),
           type: "credits", // Credit balance style - focus on remaining
         });
       }
 
       // Add subscription plan
       if (data.billing?.subscription?.plan) {
+        const nowDate = new Date();
         quotas.push({
           id: randomUUID(),
           serviceId: this.service.id,
@@ -492,9 +495,9 @@ export class OpenCodeService extends BaseAIService {
           limit: parseInt(data.billing.subscription.plan) || 0,
           used: 0,
           remaining: parseInt(data.billing.subscription.plan) || 0,
-          resetAt: new Date(now.getFullYear(), now.getMonth() + 1, 1),
-          createdAt: new Date(),
-          updatedAt: new Date(),
+          resetAt: dateToTs(new Date(nowDate.getFullYear(), nowDate.getMonth() + 1, 1)),
+          createdAt: nowTs(),
+          updatedAt: nowTs(),
         });
       }
 

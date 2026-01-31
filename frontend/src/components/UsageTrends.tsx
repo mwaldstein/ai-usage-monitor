@@ -99,8 +99,8 @@ function pickDisplaySeries(
 function groupHistory(history: UsageHistory[], sinceMs: number) {
   const byKey = new Map<string, UsageHistory[]>();
   for (const row of history) {
-    const ts = Date.parse(row.timestamp);
-    if (!Number.isFinite(ts) || ts < sinceMs) continue;
+    const tsMs = row.ts * 1000;
+    if (!Number.isFinite(tsMs) || tsMs < sinceMs) continue;
     const key = `${row.serviceId}:${row.metric}`;
     const list = byKey.get(key) || [];
     list.push(row);
@@ -108,7 +108,7 @@ function groupHistory(history: UsageHistory[], sinceMs: number) {
   }
 
   for (const list of byKey.values()) {
-    list.sort((a, b) => Date.parse(a.timestamp) - Date.parse(b.timestamp));
+    list.sort((a, b) => a.ts - b.ts);
   }
 
   return byKey;

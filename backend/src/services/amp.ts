@@ -1,6 +1,7 @@
 import { BaseAIService } from "./base.ts";
 import type { UsageQuota } from "../types/index.ts";
 import { randomUUID } from "crypto";
+import { nowTs } from "../utils/dates.ts";
 
 interface AMPQuotaData {
   bucket: string;
@@ -125,7 +126,7 @@ export class AMPService extends BaseAIService {
       }
 
       const quotas: UsageQuota[] = [];
-      const now = new Date();
+      const now = nowTs();
 
       // First, fetch the settings page HTML to get the billing balance
       let billingBalance: number | null = null;
@@ -177,9 +178,9 @@ export class AMPService extends BaseAIService {
         limit: quotaDollars,
         used: usedDollars,
         remaining: remainingDollars > 0 ? remainingDollars : 0,
-        resetAt: new Date(now.getTime() + quotaData.windowHours * 60 * 60 * 1000), // Window for full replenishment
-        createdAt: new Date(),
-        updatedAt: new Date(),
+        resetAt: now + quotaData.windowHours * 60 * 60, // Window for full replenishment
+        createdAt: nowTs(),
+        updatedAt: nowTs(),
         replenishmentRate: {
           amount: hourlyReplenishmentDollars,
           period: "hour",
@@ -196,9 +197,9 @@ export class AMPService extends BaseAIService {
           limit: billingBalance,
           used: 0,
           remaining: billingBalance,
-          resetAt: new Date(now.getTime() + 365 * 24 * 60 * 60 * 1000), // 1 year
-          createdAt: new Date(),
-          updatedAt: new Date(),
+          resetAt: now + 365 * 24 * 60 * 60, // 1 year
+          createdAt: nowTs(),
+          updatedAt: nowTs(),
           type: "credits", // Credit balance style - focus on remaining
         });
       }

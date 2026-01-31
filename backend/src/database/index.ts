@@ -14,6 +14,12 @@ export async function initializeDatabase(): Promise<Database<sqlite3.Database>> 
     driver: sqlite3.Database,
   });
 
+  // Enable WAL mode for better concurrency and configure auto_vacuum
+  await db.exec(`
+    PRAGMA journal_mode = WAL;
+    PRAGMA auto_vacuum = INCREMENTAL;
+  `);
+
   // Run schema migrations BEFORE creating tables (for existing databases)
   await migrateUsageHistorySchema(db);
 
@@ -141,4 +147,20 @@ export function getDatabase(): Database<sqlite3.Database> {
     throw new Error("Database not initialized. Call initializeDatabase() first.");
   }
   return db;
+}
+
+export async function runMaintenance(): Promise<void> {
+  if (!db) return;
+
+  try {
+    // Checkpoint WAL to merge it into the main database file
+    await db.exec(`PRAGMA wal_checkpoint(TRUNCATE);`);
+
+    // Run incremental vacuum to reclaim space from deleted rows
+    await db.exec(`PRAGMA incremental_vacuum;`);
+
+    console.log("[Database] Maintenance complete: WAL checkpoint and incremental vacuum");
+  } catch (error) {
+    console.error("[Database] Maintenance failed:", error);
+  }
 }

@@ -8,12 +8,12 @@ import path from "path";
 import fs from "fs";
 import { fileURLToPath } from "url";
 
-import { initializeDatabase, getDatabase } from "./database/index.ts";
+import { initializeDatabase, getDatabase, runMaintenance } from "./database/index.ts";
 import { VERSION, COMMIT_SHA } from "./version.ts";
 import apiRoutes from "./routes/api.ts";
 import { ServiceFactory } from "./services/factory.ts";
 import type { AIService, ServiceStatus } from "./types/index.ts";
-import { parseDbTimestamp } from "./utils/dates.ts";
+import { parseDbTimestampToTs, nowTs } from "./utils/dates.ts";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -36,6 +36,7 @@ const REFRESH_INTERVAL = /^\d+$/.test(REFRESH_INTERVAL_RAW)
 
 // Store scheduled tasks for cleanup
 let scheduledTask: cron.ScheduledTask | null = null;
+let maintenanceTask: cron.ScheduledTask | null = null;
 
 // Middleware
 app.use(cors());
@@ -46,7 +47,7 @@ app.use("/api", apiRoutes);
 
 // Health check
 app.get("/health", (req, res) => {
-  res.json({ status: "ok", timestamp: new Date().toISOString() });
+  res.json({ status: "ok", ts: nowTs() });
 });
 
 // Version endpoint - uses compile-time injected values
@@ -124,8 +125,8 @@ async function sendStatusToClient(ws: WebSocket) {
       baseUrl: row.base_url,
       enabled: row.enabled === 1,
       displayOrder: row.display_order ?? 0,
-      createdAt: parseDbTimestamp(row.created_at),
-      updatedAt: parseDbTimestamp(row.updated_at),
+      createdAt: parseDbTimestampToTs(row.created_at),
+      updatedAt: parseDbTimestampToTs(row.updated_at),
     }));
 
     const quotaRows = await db.all(`
@@ -155,9 +156,9 @@ async function sendStatusToClient(ws: WebSocket) {
         limit: row.limit_value,
         used: row.used_value,
         remaining: row.remaining_value,
-        resetAt: row.reset_at ? parseDbTimestamp(row.reset_at) : new Date(0),
-        createdAt: parseDbTimestamp(row.created_at),
-        updatedAt: parseDbTimestamp(row.updated_at),
+        resetAt: parseDbTimestampToTs(row.reset_at),
+        createdAt: parseDbTimestampToTs(row.created_at),
+        updatedAt: parseDbTimestampToTs(row.updated_at),
         type: row.type,
         replenishmentRate: row.replenishment_amount
           ? { amount: row.replenishment_amount, period: row.replenishment_period }
@@ -168,15 +169,15 @@ async function sendStatusToClient(ws: WebSocket) {
 
     const statuses: ServiceStatus[] = services.map((service) => {
       const quotas = quotasByService.get(service.id) || [];
-      const lastUpdated = quotas.reduce<Date>(
+      const lastUpdated = quotas.reduce<number>(
         (max, q) => (q.updatedAt > max ? q.updatedAt : max),
-        new Date(0),
+        0,
       );
 
       return {
         service,
         quotas,
-        lastUpdated: lastUpdated.getTime() > 0 ? lastUpdated : new Date(service.updatedAt),
+        lastUpdated: lastUpdated > 0 ? lastUpdated : service.updatedAt,
         isHealthy: quotas.length > 0,
         authError: false,
         error: quotas.length > 0 ? undefined : "No cached quota data yet",
@@ -187,7 +188,7 @@ async function sendStatusToClient(ws: WebSocket) {
       JSON.stringify({
         type: "status",
         data: statuses,
-        timestamp: new Date().toISOString(),
+        ts: nowTs(),
       }),
     );
   } catch (error) {
@@ -237,8 +238,8 @@ async function refreshQuotas() {
       baseUrl: row.base_url,
       enabled: row.enabled === 1,
       displayOrder: row.display_order ?? 0,
-      createdAt: parseDbTimestamp(row.created_at),
-      updatedAt: parseDbTimestamp(row.updated_at),
+      createdAt: parseDbTimestampToTs(row.created_at),
+      updatedAt: parseDbTimestampToTs(row.updated_at),
     }));
 
     const results: ServiceStatus[] = [];
@@ -269,8 +270,9 @@ async function refreshQuotas() {
         if (status.quotas && status.quotas.length > 0) {
           try {
             // Update quotas in database
+            const now = nowTs();
+            const nowIso = new Date().toISOString();
             for (const quota of status.quotas) {
-              const now = new Date().toISOString();
               await db.run(
                 `INSERT INTO quotas (id, service_id, metric, limit_value, used_value, remaining_value, type, replenishment_amount, replenishment_period, reset_at, created_at, updated_at) 
                  VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
@@ -293,10 +295,10 @@ async function refreshQuotas() {
                   quota.type || null,
                   quota.replenishmentRate?.amount ?? null,
                   quota.replenishmentRate?.period ?? null,
-                  quota.resetAt.toISOString(),
-                  now,
-                  now,
-                  now,
+                  new Date(quota.resetAt * 1000).toISOString(),
+                  nowIso,
+                  nowIso,
+                  nowIso,
                 ],
               );
             }
@@ -305,7 +307,7 @@ async function refreshQuotas() {
             for (const quota of status.quotas) {
               await db.run(
                 "INSERT OR REPLACE INTO usage_history (service_id, metric, ts, value) VALUES (?, ?, ?, ?)",
-                [quota.serviceId, quota.metric, Math.floor(Date.now() / 1000), quota.used],
+                [quota.serviceId, quota.metric, now, quota.used],
               );
             }
           } catch (dbError) {
@@ -318,7 +320,7 @@ async function refreshQuotas() {
         results.push({
           service,
           quotas: [],
-          lastUpdated: new Date(),
+          lastUpdated: nowTs(),
           isHealthy: false,
           authError: false,
           error: error instanceof Error ? error.message : "Unknown error",
@@ -330,7 +332,7 @@ async function refreshQuotas() {
     broadcast({
       type: "status",
       data: results,
-      timestamp: new Date().toISOString(),
+      ts: nowTs(),
     });
 
     console.log("Quotas refreshed successfully");
@@ -356,6 +358,10 @@ async function startServer() {
 
     // Schedule periodic refresh
     scheduledTask = cron.schedule(REFRESH_INTERVAL, refreshQuotas);
+
+    // Schedule daily database maintenance (WAL checkpoint + incremental vacuum) at 3:01 AM
+    // Offset by 1 minute to avoid stacking with quota refresh (runs on :00, :05, etc.)
+    maintenanceTask = cron.schedule("1 3 * * *", runMaintenance);
 
     // Initial quota refresh (run async so server starts immediately)
     console.log("Starting initial quota refresh (async)...");
@@ -409,9 +415,10 @@ async function gracefulShutdown(signal: string) {
   });
 
   // Stop cron jobs
-  if (scheduledTask) {
+  if (scheduledTask || maintenanceTask) {
     console.log("Stopping cron jobs...");
-    scheduledTask.stop();
+    scheduledTask?.stop();
+    maintenanceTask?.stop();
   }
 
   // Give connections time to close, then exit

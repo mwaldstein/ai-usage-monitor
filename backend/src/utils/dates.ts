@@ -61,3 +61,18 @@ export function parseDbTimestamp(value: unknown, fallback: Date = new Date(0)): 
   const d = new Date(iso);
   return Number.isFinite(d.getTime()) ? d : fallback;
 }
+
+export function parseDbTimestampToTs(value: unknown, fallback: number = 0): number {
+  const iso = normalizeDbTimestamp(value);
+  if (!iso) return fallback;
+  const d = new Date(iso);
+  return Number.isFinite(d.getTime()) ? Math.floor(d.getTime() / 1000) : fallback;
+}
+
+export function nowTs(): number {
+  return Math.floor(Date.now() / 1000);
+}
+
+export function dateToTs(d: Date): number {
+  return Math.floor(d.getTime() / 1000);
+}

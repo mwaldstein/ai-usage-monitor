@@ -56,11 +56,9 @@ const COLORS = [
   "#14B8A6",
 ];
 
-function formatTimestamp(timestampStr: string, interval: Interval): string {
-  // Backend returns UTC timestamps without timezone suffix (e.g., "2026-01-31 14:00:00")
-  // Append 'Z' to ensure they're parsed as UTC, then toLocale* methods convert to user's local time
-  const normalized = timestampStr.endsWith("Z") ? timestampStr : timestampStr + "Z";
-  const date = new Date(normalized);
+function formatTimestamp(ts: number, interval: Interval): string {
+  // Backend returns ts as unix seconds - convert to Date
+  const date = new Date(ts * 1000);
 
   switch (interval) {
     case "5m":
@@ -176,18 +174,18 @@ export function AnalyticsView({ services, isConnected }: AnalyticsViewProps) {
     );
 
     // Group by timestamp and organize by the groupBy key
-    const byTimestamp = new Map<string, any>();
+    const byTimestamp = new Map<number, Record<string, unknown>>();
 
     analytics.timeSeries.forEach((point) => {
-      const timestamp = point.timestamp;
-      if (!byTimestamp.has(timestamp)) {
-        byTimestamp.set(timestamp, {
-          timestamp,
-          displayTime: formatTimestamp(timestamp, interval),
+      const ts = point.ts;
+      if (!byTimestamp.has(ts)) {
+        byTimestamp.set(ts, {
+          ts,
+          displayTime: formatTimestamp(ts, interval),
         });
       }
 
-      const entry = byTimestamp.get(timestamp);
+      const entry = byTimestamp.get(ts)!;
 
       // Use the appropriate key based on what the backend grouped by
       // IMPORTANT: Must match the key format used when building quotaLimits map
@@ -231,9 +229,7 @@ export function AnalyticsView({ services, isConnected }: AnalyticsViewProps) {
       entry[key] = value;
     });
 
-    return Array.from(byTimestamp.values()).sort(
-      (a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime(),
-    );
+    return Array.from(byTimestamp.values()).sort((a, b) => (a.ts as number) - (b.ts as number));
   }, [analytics?.timeSeries, analytics?.quotas, groupBy, chartMetric, interval]);
 
   // Get unique keys for chart lines/bars
@@ -243,7 +239,7 @@ export function AnalyticsView({ services, isConnected }: AnalyticsViewProps) {
     const allKeys = new Set<string>();
     chartData.forEach((point) => {
       Object.keys(point).forEach((key) => {
-        if (key !== "timestamp" && key !== "displayTime") {
+        if (key !== "ts" && key !== "displayTime") {
           allKeys.add(key);
         }
       });

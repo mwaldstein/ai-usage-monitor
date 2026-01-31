@@ -2,6 +2,7 @@ import { BaseAIService } from "./base.ts";
 import type { UsageQuota } from "../types/index.ts";
 import { randomUUID } from "crypto";
 import axios from "axios";
+import { nowTs } from "../utils/dates.ts";
 
 // Interfaces for Codex usage data from the API response
 interface CodexWindow {
@@ -58,7 +59,7 @@ export class CodexService extends BaseAIService {
 
   async fetchQuotas(): Promise<UsageQuota[]> {
     const quotas: UsageQuota[] = [];
-    const now = new Date();
+    const now = nowTs();
     const serviceName = this.service.name;
 
     try {
@@ -124,9 +125,9 @@ export class CodexService extends BaseAIService {
           limit: 100,
           used: usedPercent,
           remaining: burnDownPercent,
-          resetAt: new Date(window.reset_at * 1000),
-          createdAt: new Date(),
-          updatedAt: new Date(),
+          resetAt: window.reset_at,
+          createdAt: nowTs(),
+          updatedAt: nowTs(),
           type: "usage",
         });
       }
@@ -144,9 +145,9 @@ export class CodexService extends BaseAIService {
           limit: 100,
           used: usedPercent,
           remaining: burnDownPercent,
-          resetAt: new Date(window.reset_at * 1000),
-          createdAt: new Date(),
-          updatedAt: new Date(),
+          resetAt: window.reset_at,
+          createdAt: nowTs(),
+          updatedAt: nowTs(),
           type: "usage",
         });
       }
@@ -164,9 +165,9 @@ export class CodexService extends BaseAIService {
           limit: 100,
           used: usedPercent,
           remaining: burnDownPercent,
-          resetAt: new Date(window.reset_at * 1000),
-          createdAt: new Date(),
-          updatedAt: new Date(),
+          resetAt: window.reset_at,
+          createdAt: nowTs(),
+          updatedAt: nowTs(),
           type: "usage",
         });
       }
@@ -180,9 +181,9 @@ export class CodexService extends BaseAIService {
           limit: data.credits.balance,
           used: 0,
           remaining: data.credits.balance,
-          resetAt: new Date(now.getTime() + 86400000 * 365),
-          createdAt: new Date(),
-          updatedAt: new Date(),
+          resetAt: now + 86400 * 365,
+          createdAt: nowTs(),
+          updatedAt: nowTs(),
           type: "credits",
         });
       }

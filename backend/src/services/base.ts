@@ -2,6 +2,7 @@ import axios from "axios";
 import type { AxiosInstance } from "axios";
 import type { AIService, UsageQuota, ServiceStatus, AIProvider } from "../types/index.ts";
 import { providerConfigs } from "./providers.ts";
+import { nowTs } from "../utils/dates.ts";
 
 export abstract class BaseAIService {
   protected client: AxiosInstance;
@@ -41,7 +42,7 @@ export abstract class BaseAIService {
       return {
         service: this.service,
         quotas,
-        lastUpdated: new Date(),
+        lastUpdated: nowTs(),
         isHealthy: true,
         authError: false,
       };
@@ -49,7 +50,7 @@ export abstract class BaseAIService {
       return {
         service: this.service,
         quotas: [],
-        lastUpdated: new Date(),
+        lastUpdated: nowTs(),
         isHealthy: false,
         authError: this.isAuthError(error),
         error: error instanceof Error ? error.message : "Unknown error",

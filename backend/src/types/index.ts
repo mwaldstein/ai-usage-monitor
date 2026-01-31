@@ -7,8 +7,8 @@ export interface AIService {
   baseUrl?: string;
   enabled: boolean;
   displayOrder: number;
-  createdAt: Date;
-  updatedAt: Date;
+  createdAt: number; // unix seconds
+  updatedAt: number; // unix seconds
 }
 
 export interface UsageQuota {
@@ -18,9 +18,9 @@ export interface UsageQuota {
   limit: number;
   used: number;
   remaining: number;
-  resetAt: Date;
-  createdAt: Date;
-  updatedAt: Date;
+  resetAt: number; // unix seconds
+  createdAt: number; // unix seconds
+  updatedAt: number; // unix seconds
   replenishmentRate?: {
     amount: number;
     period: "hour" | "day" | "minute";
@@ -33,13 +33,13 @@ export interface UsageHistory {
   serviceId: string;
   metric: string;
   value: number;
-  timestamp: Date;
+  ts: number; // unix seconds
 }
 
 export interface ServiceStatus {
   service: AIService;
   quotas: UsageQuota[];
-  lastUpdated: Date;
+  lastUpdated: number; // unix seconds
   isHealthy: boolean;
   error?: string;
   authError?: boolean;

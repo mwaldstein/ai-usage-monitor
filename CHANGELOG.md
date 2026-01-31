@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+- Optimized `usage_history` database schema: composite primary key `(service_id, metric, ts)`, integer timestamps, `WITHOUT ROWID` for ~50% storage reduction and faster queries
+- Added database maintenance: WAL mode, incremental auto_vacuum, daily checkpoint at 3:01 AM
+
 ### Fixed
 - Removed inline "Loading..." text in analytics view that caused layout shift; loading state now indicated by spinning refresh icon only
 - Analytics chart time axis now displays in user's local timezone instead of UTC

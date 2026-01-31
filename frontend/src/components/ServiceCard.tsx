@@ -110,9 +110,8 @@ function CompactQuota({
 
   useEffect(() => {
     const calculateTime = () => {
-      const reset = new Date(quota.resetAt);
-      const now = new Date();
-      const diffMs = reset.getTime() - now.getTime();
+      const resetMs = quota.resetAt * 1000;
+      const diffMs = resetMs - Date.now();
       setTimeRemaining(formatCountdown(diffMs));
     };
 
@@ -132,11 +131,11 @@ function CompactQuota({
   const sparklineData = useMemo(() => {
     if (viewMode !== "expanded" || !history || history.length === 0) return [];
 
-    const twoHoursAgo = Date.now() - 2 * 60 * 60 * 1000;
+    const twoHoursAgoSec = Math.floor((Date.now() - 2 * 60 * 60 * 1000) / 1000);
     const matchingHistory = history
       .filter((h) => h.serviceId === quota.serviceId && h.metric === quota.metric)
-      .filter((h) => new Date(h.timestamp).getTime() >= twoHoursAgo)
-      .sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
+      .filter((h) => h.ts >= twoHoursAgoSec)
+      .sort((a, b) => a.ts - b.ts);
 
     if (matchingHistory.length < 2) return [];
 
@@ -263,22 +262,21 @@ function getQuotaTrend(
   // We pick the record closest to ~60 minutes ago, but fall back to the
   // oldest available point in that window.
   if (history && history.length > 0) {
-    const nowMs = Date.now();
-    const targetMs = nowMs - 60 * 60 * 1000;
-    const twoHoursAgo = nowMs - 2 * 60 * 60 * 1000;
-    const fiveMinutesAgo = nowMs - 5 * 60 * 1000;
+    const nowSec = Math.floor(Date.now() / 1000);
+    const targetSec = nowSec - 60 * 60;
+    const twoHoursAgoSec = nowSec - 2 * 60 * 60;
+    const fiveMinutesAgoSec = nowSec - 5 * 60;
 
     const matchingEntries = history
       .filter((h) => h.serviceId === quota.serviceId && h.metric === quota.metric)
-      .map((h) => ({ h, ts: Date.parse(h.timestamp) }))
-      .filter(({ ts }) => Number.isFinite(ts) && ts >= twoHoursAgo && ts <= fiveMinutesAgo)
+      .filter((h) => Number.isFinite(h.ts) && h.ts >= twoHoursAgoSec && h.ts <= fiveMinutesAgoSec)
       .sort((a, b) => a.ts - b.ts); // oldest -> newest
 
     if (matchingEntries.length > 0) {
       let chosen = matchingEntries[0];
-      let bestDist = Math.abs(chosen.ts - targetMs);
+      let bestDist = Math.abs(chosen.ts - targetSec);
       for (const e of matchingEntries) {
-        const d = Math.abs(e.ts - targetMs);
+        const d = Math.abs(e.ts - targetSec);
         if (d < bestDist) {
           bestDist = d;
           chosen = e;
@@ -286,7 +284,7 @@ function getQuotaTrend(
       }
 
       // usage_history.value is stored as the quota's "used" value.
-      const historicalUsed = chosen.h.value;
+      const historicalUsed = chosen.value;
       const historicalValue = isBurnDown && limit > 0 ? limit - historicalUsed : historicalUsed;
       const valueChange = currentValue - historicalValue;
 
@@ -304,7 +302,7 @@ function getQuotaTrend(
         trend = valueChange > 0 ? "depleting" : "replenishing";
       }
 
-      const minutesAgo = Math.max(1, Math.round((nowMs - chosen.ts) / 60000));
+      const minutesAgo = Math.max(1, Math.round((nowSec - chosen.ts) / 60));
       oneHourChange = { from: historicalValue, to: currentValue, minutesAgo };
       return { trend, oneHourChange };
     }
@@ -516,14 +514,14 @@ export function ServiceCard({
 
     // Try to use actual historical data
     if (history && history.length > 0) {
-      // Calculate 2 hours ago
-      const twoHoursAgo = Date.now() - 2 * 60 * 60 * 1000;
+      // Calculate 2 hours ago in seconds
+      const twoHoursAgoSec = Math.floor((Date.now() - 2 * 60 * 60 * 1000) / 1000);
 
       // Filter history entries for this quota's serviceId and metric from last 2 hours
       const matchingHistory = history
         .filter((h) => h.serviceId === firstQuota.serviceId && h.metric === firstQuota.metric)
-        .filter((h) => new Date(h.timestamp).getTime() >= twoHoursAgo)
-        .sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()); // Oldest to newest
+        .filter((h) => h.ts >= twoHoursAgoSec)
+        .sort((a, b) => a.ts - b.ts); // Oldest to newest
 
       if (matchingHistory.length >= 3) {
         const rawValues = matchingHistory.map((h) => h.value).filter((v) => Number.isFinite(v));
@@ -666,7 +664,7 @@ export function ServiceCard({
 
         {/* Last Updated */}
         <div className="mt-2 flex items-center justify-between text-[10px] text-zinc-600">
-          <span>{new Date(lastUpdated).toLocaleTimeString()}</span>
+          <span>{new Date(lastUpdated * 1000).toLocaleTimeString()}</span>
           {sortedQuotas.some((q) => q.replenishmentRate && q.replenishmentRate.amount > 0) && (
             <span className="text-emerald-500">
               +{sortedQuotas[0].replenishmentRate?.amount.toFixed(2)}/

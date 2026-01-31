@@ -1,6 +1,7 @@
 import { BaseAIService } from "./base.ts";
 import type { UsageQuota } from "../types/index.ts";
 import { randomUUID } from "crypto";
+import { nowTs, dateToTs } from "../utils/dates.ts";
 
 interface ZAISubscription {
   id: string;
@@ -60,7 +61,7 @@ export class ZAIService extends BaseAIService {
       }
 
       const quotas: UsageQuota[] = [];
-      const now = new Date();
+      const now = nowTs();
 
       // Fetch quota limits
       const quotaResponse = await this.client.get<ZAIQuotaResponse>(
@@ -94,10 +95,10 @@ export class ZAIService extends BaseAIService {
               used: limit.currentValue,
               remaining: limit.remaining,
               resetAt: limit.nextResetTime
-                ? new Date(limit.nextResetTime)
-                : new Date(now.getTime() + 24 * 60 * 60 * 1000),
-              createdAt: new Date(),
-              updatedAt: new Date(),
+                ? Math.floor(limit.nextResetTime / 1000)
+                : now + 24 * 60 * 60,
+              createdAt: nowTs(),
+              updatedAt: nowTs(),
               type: "usage",
             });
           } else {
@@ -109,10 +110,10 @@ export class ZAIService extends BaseAIService {
               used: limit.currentValue,
               remaining: limit.remaining,
               resetAt: limit.nextResetTime
-                ? new Date(limit.nextResetTime)
-                : new Date(now.getTime() + 24 * 60 * 60 * 1000),
-              createdAt: new Date(),
-              updatedAt: new Date(),
+                ? Math.floor(limit.nextResetTime / 1000)
+                : now + 24 * 60 * 60,
+              createdAt: nowTs(),
+              updatedAt: nowTs(),
               type: "usage",
             });
           }
@@ -128,10 +129,10 @@ export class ZAIService extends BaseAIService {
                 used: detail.usage,
                 remaining: 0,
                 resetAt: limit.nextResetTime
-                  ? new Date(limit.nextResetTime)
-                  : new Date(now.getTime() + 24 * 60 * 60 * 1000),
-                createdAt: new Date(),
-                updatedAt: new Date(),
+                  ? Math.floor(limit.nextResetTime / 1000)
+                  : now + 24 * 60 * 60,
+                createdAt: nowTs(),
+                updatedAt: nowTs(),
                 type: "usage",
               });
             }
@@ -160,9 +161,9 @@ export class ZAIService extends BaseAIService {
               limit: 1,
               used: sub.status === "VALID" ? 0 : 1,
               remaining: sub.status === "VALID" ? 1 : 0,
-              resetAt: new Date(sub.valid.split("-")[1].trim()),
-              createdAt: new Date(),
-              updatedAt: new Date(),
+              resetAt: dateToTs(new Date(sub.valid.split("-")[1].trim())),
+              createdAt: nowTs(),
+              updatedAt: nowTs(),
             });
           }
         }

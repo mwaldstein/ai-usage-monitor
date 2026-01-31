@@ -137,7 +137,7 @@ export function useWebSocket() {
           setStatuses((prevStatuses) =>
             mergeStatuses(prevStatuses, normalizeStatuses(data.data as ServiceStatus[]), "full"),
           );
-          setLastUpdate(new Date(data.timestamp));
+          setLastUpdate(new Date(data.ts * 1000));
 
           // Check for authentication errors and trigger UI alert
           const authErrors = (data.data as ServiceStatus[]).filter((status) => status.authError);
