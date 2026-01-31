@@ -2,7 +2,7 @@ import { Router } from "express";
 import { randomUUID } from "crypto";
 import { getDatabase } from "../database/index.ts";
 import { ServiceFactory } from "../services/factory.ts";
-import type { AIService, AIProvider, ServiceStatus, UsageQuota } from "../types/index.ts";
+import type { AIService, ServiceStatus, UsageQuota } from "../types/index.ts";
 import { normalizeDbTimestamp, parseDbTimestamp } from "../utils/dates.ts";
 
 const router = Router();

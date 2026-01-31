@@ -543,7 +543,7 @@ export function ServiceCard({
 
     // No (or insufficient) history available: don't render a sparkline.
     return { values: [], isBurnDown };
-  }, [quotas, history]);
+  }, [sortedQuotas, history]);
 
   const handleCardClick = (e: React.MouseEvent) => {
     // Don't expand if clicking refresh button

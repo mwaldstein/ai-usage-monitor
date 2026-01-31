@@ -61,7 +61,7 @@ export class OpenCodeService extends BaseAIService {
       }
 
       // Extract base domain
-      const urlMatch = service.baseUrl.match(/^(https?:\/\/[^\/]+)/);
+      const urlMatch = service.baseUrl.match(/^(https?:\/\/[^/]+)/);
       if (urlMatch) {
         baseDomain = urlMatch[1];
       }
@@ -130,7 +130,6 @@ export class OpenCodeService extends BaseAIService {
                 const parsed = this.parseObject(dataStr);
                 if (parsed) {
                   result.billing = parsed;
-                  console.log("Found billing data:", parsed);
                 }
               }
 
@@ -143,7 +142,6 @@ export class OpenCodeService extends BaseAIService {
                 const parsed = this.parseObject(dataStr);
                 if (parsed && parsed.plan) {
                   result.subscription = parsed;
-                  console.log("Found subscription data:", parsed);
                 }
               }
             }
@@ -160,7 +158,6 @@ export class OpenCodeService extends BaseAIService {
             const parsed = this.parseObject(obj);
             if (parsed && parsed.customerID) {
               result.billing = parsed;
-              console.log("Found billing via direct pattern:", parsed);
               break;
             }
           }
@@ -175,7 +172,6 @@ export class OpenCodeService extends BaseAIService {
             const parsed = this.parseObject(obj);
             if (parsed && parsed.plan) {
               result.subscription = parsed;
-              console.log("Found subscription via direct pattern:", parsed);
               break;
             }
           }
@@ -202,7 +198,6 @@ export class OpenCodeService extends BaseAIService {
               resetInSec: parseInt(parsed.resetInSec),
               usagePercent: parseInt(parsed.usagePercent),
             };
-            console.log("Found rolling usage (from subscription):", result.rollingUsage);
           }
         }
 
@@ -220,7 +215,6 @@ export class OpenCodeService extends BaseAIService {
               resetInSec: parseInt(parsed.resetInSec),
               usagePercent: parseInt(parsed.usagePercent),
             };
-            console.log("Found weekly usage (from subscription):", result.weeklyUsage);
           }
         }
       }
@@ -243,10 +237,8 @@ export class OpenCodeService extends BaseAIService {
             };
             if (type === "rollingUsage" && !result.rollingUsage) {
               result.rollingUsage = usageData;
-              console.log("Found rolling usage (from property):", usageData);
             } else if (type === "weeklyUsage" && !result.weeklyUsage) {
               result.weeklyUsage = usageData;
-              console.log("Found weekly usage (from property):", usageData);
             }
           }
         }
@@ -339,7 +331,7 @@ export class OpenCodeService extends BaseAIService {
     }
   }
 
-  private parseObject(objStr: string, html?: string): any {
+  private parseObject(objStr: string): any {
     try {
       // Remove the $R[index]= prefix
       let dataStr = objStr.replace(/^\$R\[\d+\]=/, "");
@@ -387,27 +379,11 @@ export class OpenCodeService extends BaseAIService {
         throw new Error("Invalid response: empty HTML");
       }
 
-      // Log the first part of HTML for debugging
-      console.log(`HTML response preview (first 300 chars): ${html.substring(0, 300)}`);
-
-      // Save full HTML to file for debugging if parsing fails
-      const fs = require("fs");
-      const path = require("path");
-      const debugDir = path.join(process.cwd(), "debug");
-      if (!fs.existsSync(debugDir)) {
-        fs.mkdirSync(debugDir, { recursive: true });
-      }
-      const debugFile = path.join(debugDir, `opencode-${this.service.name}-${Date.now()}.html`);
-      fs.writeFileSync(debugFile, html, "utf8");
-      console.log(`Saved full HTML to: ${debugFile}`);
-
       // First, try to parse the data
       const data = this.parseHydrationData(html);
 
       // Check if we found billing/subscription/usage data - if yes, we're good
-      if (data.billing || data.subscription || data.rollingUsage || data.weeklyUsage) {
-        console.log(`Successfully found quota data for ${this.service.name}`);
-      } else {
+      if (!data.billing && !data.subscription && !data.rollingUsage && !data.weeklyUsage) {
         // No data found - check if we're on a login/auth page
         const isAuthPage =
           html.includes("<title>OpenAuth</title>") ||
@@ -417,7 +393,6 @@ export class OpenCodeService extends BaseAIService {
 
         if (isAuthPage) {
           console.error(`Authentication required for ${this.service.name} - received login page`);
-          console.error(`Full HTML (first 1000 chars): ${html.substring(0, 1000)}`);
           const error = new Error(
             "Authentication failed: Session cookie expired or invalid. Please get a new session cookie from your browser.",
           );
@@ -426,8 +401,7 @@ export class OpenCodeService extends BaseAIService {
         } else {
           // Not an auth page, but no data found - page structure might have changed
           console.error(`No billing or subscription data found in HTML for ${this.service.name}`);
-          console.error(`Check saved HTML file for full content: ${debugFile}`);
-          throw new Error("No quota data found in response. Check debug/opencode-*.html files.");
+          throw new Error("No quota data found in response.");
         }
       }
 
@@ -453,9 +427,6 @@ export class OpenCodeService extends BaseAIService {
           updatedAt: new Date(),
           type: "usage", // Burn down display - bar empties as you use it
         });
-        console.log(
-          `Added rolling usage quota: ${pagePercent}% page value → ${burnDownPercent}% burn down remaining`,
-        );
       }
 
       // Add weekly usage - from subscription or directly parsed
@@ -477,9 +448,6 @@ export class OpenCodeService extends BaseAIService {
           updatedAt: new Date(),
           type: "usage", // Burn down display - bar empties as you use it
         });
-        console.log(
-          `Added weekly usage quota: ${pagePercent}% page value → ${burnDownPercent}% burn down remaining`,
-        );
       }
 
       // Add monthly usage if available

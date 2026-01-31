@@ -1,5 +1,5 @@
 import { BaseAIService } from "./base.ts";
-import type { UsageQuota, AIService } from "../types/index.ts";
+import type { UsageQuota } from "../types/index.ts";
 import { randomUUID } from "crypto";
 
 interface AMPQuotaData {
@@ -15,15 +15,7 @@ interface AMPPaidBalanceData {
   credits: number; // Paid credits balance in USD cents (e.g., 1000 = $10.00)
 }
 
-interface AMPBillingBalance {
-  balance: number; // Current balance in USD (e.g., 1.10 = $1.10)
-}
-
 export class AMPService extends BaseAIService {
-  constructor(service: AIService) {
-    super(service);
-  }
-
   private parseQuotaResponse(data: any): AMPQuotaData | null {
     try {
       // AMP uses SvelteKit remote commands with positional encoding
@@ -31,9 +23,6 @@ export class AMPService extends BaseAIService {
 
       if (data?.type === "result" && data?.result) {
         const resultArray = JSON.parse(data.result);
-
-        // First element is the schema mapping
-        const schema = resultArray[0];
 
         // Extract values by position based on schema
         return {
@@ -103,7 +92,6 @@ export class AMPService extends BaseAIService {
       if (balanceMatch) {
         const balance = parseFloat(balanceMatch[1]);
         if (!isNaN(balance)) {
-          console.log(`Found AMP billing balance: ${balance} USD`);
           return balance;
         }
       }
@@ -115,7 +103,6 @@ export class AMPService extends BaseAIService {
       if (altMatch) {
         const balance = parseFloat(altMatch[1]);
         if (!isNaN(balance)) {
-          console.log(`Found AMP billing balance (alt): ${balance} USD`);
           return balance;
         }
       }
@@ -154,9 +141,7 @@ export class AMPService extends BaseAIService {
         if (htmlResponse.data && typeof htmlResponse.data === "string") {
           billingBalance = this.parseBillingBalance(htmlResponse.data);
         }
-      } catch (htmlError) {
-        console.log("Could not fetch AMP settings page for billing balance:", htmlError);
-      }
+      } catch {}
 
       // AMP uses SvelteKit remote commands
       // Endpoint: /_app/remote/{id}/getFreeTierUsage
@@ -216,7 +201,6 @@ export class AMPService extends BaseAIService {
           updatedAt: new Date(),
           type: "credits", // Credit balance style - focus on remaining
         });
-        console.log(`Added AMP billing balance: $${billingBalance} USD`);
       }
 
       return quotas;

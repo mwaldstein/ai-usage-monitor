@@ -1,5 +1,5 @@
 import { BaseAIService } from "./base.ts";
-import type { UsageQuota, AIService } from "../types/index.ts";
+import type { UsageQuota } from "../types/index.ts";
 import { randomUUID } from "crypto";
 
 interface ZAISubscription {
@@ -49,10 +49,6 @@ interface ZAISubscriptionResponse {
 }
 
 export class ZAIService extends BaseAIService {
-  constructor(service: AIService) {
-    super(service);
-  }
-
   async fetchQuotas(): Promise<UsageQuota[]> {
     try {
       // Check if API key (Bearer token) is provided

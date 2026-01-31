@@ -61,37 +61,27 @@ export async function initializeDatabase(): Promise<Database<sqlite3.Database>> 
   try {
     await db.exec(`ALTER TABLE services ADD COLUMN bearer_token TEXT;`);
     console.log("[Database] Migration: Added bearer_token column to services table");
-  } catch (error) {
-    // Column likely already exists, ignore error
-  }
+  } catch {}
 
   // Migrations: Add quota metadata columns (if they don't exist)
   try {
     await db.exec(`ALTER TABLE quotas ADD COLUMN type TEXT;`);
     console.log("[Database] Migration: Added type column to quotas table");
-  } catch (error) {
-    // ignore
-  }
+  } catch {}
   try {
     await db.exec(`ALTER TABLE quotas ADD COLUMN replenishment_amount REAL;`);
     console.log("[Database] Migration: Added replenishment_amount column to quotas table");
-  } catch (error) {
-    // ignore
-  }
+  } catch {}
   try {
     await db.exec(`ALTER TABLE quotas ADD COLUMN replenishment_period TEXT;`);
     console.log("[Database] Migration: Added replenishment_period column to quotas table");
-  } catch (error) {
-    // ignore
-  }
+  } catch {}
 
   // Migration: Add display_order column to existing databases (if it doesn't exist)
   try {
     await db.exec(`ALTER TABLE services ADD COLUMN display_order INTEGER DEFAULT 0;`);
     console.log("[Database] Migration: Added display_order column to services table");
-  } catch (error) {
-    // Column likely already exists, ignore error
-  }
+  } catch {}
 
   return db;
 }

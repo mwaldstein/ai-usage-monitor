@@ -1,5 +1,5 @@
 import { BaseAIService } from "./base.ts";
-import type { UsageQuota, AIService } from "../types/index.ts";
+import type { UsageQuota } from "../types/index.ts";
 import { randomUUID } from "crypto";
 
 /**
@@ -12,10 +12,6 @@ import { randomUUID } from "crypto";
  * Note: For OpenAI Codex CLI usage limits, use CodexService instead.
  */
 export class OpenAIService extends BaseAIService {
-  constructor(service: AIService) {
-    super(service);
-  }
-
   async fetchQuotas(): Promise<UsageQuota[]> {
     try {
       const now = new Date();
@@ -78,14 +74,10 @@ export class OpenAIService extends BaseAIService {
 }
 
 export class GoogleAIService extends BaseAIService {
-  constructor(service: AIService) {
-    super(service);
-  }
-
   async fetchQuotas(): Promise<UsageQuota[]> {
     try {
       // Google AI Studio / Gemini API
-      const response = await this.client.get("/models").catch(() => null);
+      await this.client.get("/models").catch(() => null);
 
       // Google AI quotas are typically managed through Google Cloud Console
       // For now, return a placeholder that can be updated manually
@@ -121,10 +113,6 @@ export class GoogleAIService extends BaseAIService {
 }
 
 export class AnthropicService extends BaseAIService {
-  constructor(service: AIService) {
-    super(service);
-  }
-
   async fetchQuotas(): Promise<UsageQuota[]> {
     try {
       // Anthropic API - check rate limits from headers
@@ -184,10 +172,6 @@ export class AnthropicService extends BaseAIService {
 }
 
 export class GenericAIService extends BaseAIService {
-  constructor(service: AIService) {
-    super(service);
-  }
-
   async fetchQuotas(): Promise<UsageQuota[]> {
     try {
       // Generic implementation for opencode, amp, z.ai

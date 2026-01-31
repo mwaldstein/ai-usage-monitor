@@ -1,5 +1,5 @@
 import { BaseAIService } from "./base.ts";
-import type { UsageQuota, AIService } from "../types/index.ts";
+import type { UsageQuota } from "../types/index.ts";
 import { randomUUID } from "crypto";
 import axios from "axios";
 
@@ -49,10 +49,6 @@ interface CodexUsageResponse {
  * This service fetches from: https://chatgpt.com/backend-api/wham/usage
  */
 export class CodexService extends BaseAIService {
-  constructor(service: AIService) {
-    super(service);
-  }
-
   private extractChatGPTAccountId(cookieString: string): string {
     // ChatGPT seems to key multi-account/org context off the `chatgpt-account-id` header.
     // In captured cookies this may appear as `_account=<uuid>` (and sometimes `account_id=<uuid>`).
@@ -72,20 +68,6 @@ export class CodexService extends BaseAIService {
           `[Codex:${serviceName}] ERROR: No authentication provided. Please provide either a Bearer token or session cookie.`,
         );
         return quotas;
-      }
-
-      console.log(`[Codex:${serviceName}] Starting fetch...`);
-
-      if (this.service.bearerToken) {
-        console.log(
-          `[Codex:${serviceName}] Using Bearer token auth (${this.service.bearerToken.length} chars)`,
-        );
-      }
-
-      if (this.service.apiKey) {
-        console.log(
-          `[Codex:${serviceName}] Using Cookie auth (${this.service.apiKey.length} chars)`,
-        );
       }
 
       // Create a client for chatgpt.com (different from api.openai.com)
@@ -116,13 +98,6 @@ export class CodexService extends BaseAIService {
 
         // Extract account ID from the cookie if possible
         accountId = this.extractChatGPTAccountId(this.service.apiKey);
-        if (accountId) {
-          console.log(`[Codex:${serviceName}] Found account in cookie: ${accountId}`);
-        } else {
-          console.log(
-            `[Codex:${serviceName}] WARNING: No account identifier found in cookie (_account/account_id)`,
-          );
-        }
       }
 
       if (accountId) {
@@ -130,42 +105,17 @@ export class CodexService extends BaseAIService {
       }
 
       // Fetch Codex usage from the ChatGPT backend API
-      console.log(`[Codex:${serviceName}] Sending request to /backend-api/wham/usage...`);
-      console.log(
-        `[Codex:${serviceName}] Request auth: bearer=${!!this.service.bearerToken} cookie=${!!this.service.apiKey}`,
-      );
       const response = await chatgptClient.get("/backend-api/wham/usage", {
         headers: requestHeaders,
       });
 
-      console.log(`[Codex:${serviceName}] Response status: ${response.status}`);
-      console.log(
-        `[Codex:${serviceName}] Response data keys: ${Object.keys(response.data).join(", ")}`,
-      );
-
       const data: CodexUsageResponse = response.data;
-
-      // Log the full response structure for debugging
-      console.log(`[Codex:${serviceName}] Plan type: ${data.plan_type || "NOT FOUND"}`);
-
-      if (data.rate_limit) {
-        console.log(`[Codex:${serviceName}] Rate limit allowed: ${data.rate_limit.allowed}`);
-        console.log(`[Codex:${serviceName}] Rate limit reached: ${data.rate_limit.limit_reached}`);
-      } else {
-        console.log(`[Codex:${serviceName}] WARNING: No rate_limit data in response`);
-      }
 
       // Add rolling 5-hour quota (primary_window - 18000 seconds)
       if (data.rate_limit?.primary_window) {
         const window = data.rate_limit.primary_window;
         const usedPercent = window.used_percent;
         const burnDownPercent = 100 - usedPercent;
-
-        console.log(`[Codex:${serviceName}] Primary window (5-hour):`);
-        console.log(`  - used_percent: ${usedPercent}%`);
-        console.log(`  - limit_window_seconds: ${window.limit_window_seconds}`);
-        console.log(`  - reset_after_seconds: ${window.reset_after_seconds}`);
-        console.log(`  - reset_at: ${new Date(window.reset_at * 1000).toISOString()}`);
 
         quotas.push({
           id: randomUUID(),
@@ -179,11 +129,6 @@ export class CodexService extends BaseAIService {
           updatedAt: new Date(),
           type: "usage",
         });
-        console.log(
-          `[Codex:${serviceName}] ✓ Added rolling_5hour quota: ${burnDownPercent.toFixed(1)}% remaining`,
-        );
-      } else {
-        console.log(`[Codex:${serviceName}] ✗ No primary_window (5-hour) data found`);
       }
 
       // Add weekly quota (secondary_window - 604800 seconds / 7 days)
@@ -191,12 +136,6 @@ export class CodexService extends BaseAIService {
         const window = data.rate_limit.secondary_window;
         const usedPercent = window.used_percent;
         const burnDownPercent = 100 - usedPercent;
-
-        console.log(`[Codex:${serviceName}] Secondary window (weekly):`);
-        console.log(`  - used_percent: ${usedPercent}%`);
-        console.log(`  - limit_window_seconds: ${window.limit_window_seconds}`);
-        console.log(`  - reset_after_seconds: ${window.reset_after_seconds}`);
-        console.log(`  - reset_at: ${new Date(window.reset_at * 1000).toISOString()}`);
 
         quotas.push({
           id: randomUUID(),
@@ -210,11 +149,6 @@ export class CodexService extends BaseAIService {
           updatedAt: new Date(),
           type: "usage",
         });
-        console.log(
-          `[Codex:${serviceName}] ✓ Added weekly quota: ${burnDownPercent.toFixed(1)}% remaining`,
-        );
-      } else {
-        console.log(`[Codex:${serviceName}] ✗ No secondary_window (weekly) data found`);
       }
 
       // Add code review quota if available (weekly window)
@@ -222,10 +156,6 @@ export class CodexService extends BaseAIService {
         const window = data.code_review_rate_limit.primary_window;
         const usedPercent = window.used_percent;
         const burnDownPercent = 100 - usedPercent;
-
-        console.log(`[Codex:${serviceName}] Code review window:`);
-        console.log(`  - used_percent: ${usedPercent}%`);
-        console.log(`  - allowed: ${data.code_review_rate_limit.allowed}`);
 
         quotas.push({
           id: randomUUID(),
@@ -239,19 +169,10 @@ export class CodexService extends BaseAIService {
           updatedAt: new Date(),
           type: "usage",
         });
-        console.log(
-          `[Codex:${serviceName}] ✓ Added code_reviews quota: ${burnDownPercent.toFixed(1)}% remaining`,
-        );
-      } else {
-        console.log(`[Codex:${serviceName}] ✗ No code_review_rate_limit data found`);
       }
 
       // Add credits info if available
       if (data.credits?.balance !== null && data.credits?.balance !== undefined) {
-        console.log(
-          `[Codex:${serviceName}] Credits: ${data.credits.balance} (has_credits: ${data.credits.has_credits}, unlimited: ${data.credits.unlimited})`,
-        );
-
         quotas.push({
           id: randomUUID(),
           serviceId: this.service.id,
@@ -264,12 +185,7 @@ export class CodexService extends BaseAIService {
           updatedAt: new Date(),
           type: "credits",
         });
-        console.log(`[Codex:${serviceName}] ✓ Added credits quota: ${data.credits.balance}`);
-      } else {
-        console.log(`[Codex:${serviceName}] ✗ No credits data found`);
       }
-
-      console.log(`[Codex:${serviceName}] Fetch complete. Total quotas: ${quotas.length}`);
     } catch (error: any) {
       console.error(`[Codex:${serviceName}] ERROR during fetch:`);
       console.error(`  - Message: ${error.message || "Unknown error"}`);
