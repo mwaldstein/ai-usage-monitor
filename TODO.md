@@ -17,7 +17,7 @@
 | File | Lines | Issue |
 |------|-------|-------|
 | `frontend/src/components/AnalyticsView.tsx` | ~350 | Chart data processing extracted to `useAnalyticsData` hook |
-| `frontend/src/components/ServiceCard.tsx` | 685 | Multiple sub-components + trend analysis |
+| `frontend/src/components/ServiceCard.tsx` | ~200 | ~~Multiple sub-components + trend analysis~~ → Extracted to ServiceCard/ directory (71% reduction) |
 | `backend/src/services/opencode.ts` | 518 | Complex HTML parsing with 5+ fallback strategies |
 | `frontend/src/components/AddServiceModal.tsx` | 432 | Large form with provider-specific conditional rendering |
 | `frontend/src/components/UsageDock.tsx` | 349 | Chart logic mixed with component |

@@ -1,11 +1,7 @@
-import { useState, useEffect, useMemo } from "react";
-import type { ServiceStatus, UsageQuota, UsageHistory } from "../types";
-import {
-  getEffectiveMetricAnnotation,
-  formatMetricValue,
-  getMetricDisplayName,
-} from "../types/metricDefinitions";
+import { useState, useMemo } from "react";
+import type { ServiceStatus, UsageHistory } from "../types";
 import { RefreshCw, ExternalLink, ChevronDown, AlertCircle, CheckCircle2 } from "lucide-react";
+import { CompactQuota, MiniSparkline, getProviderColor } from "./ServiceCard/index";
 
 interface ServiceCardProps {
   status: ServiceStatus;
@@ -15,474 +11,6 @@ interface ServiceCardProps {
   history?: UsageHistory[];
   viewMode?: "compact" | "expanded";
   isConnected?: boolean;
-}
-
-function formatCountdown(milliseconds: number): string {
-  if (milliseconds <= 0) return "now";
-
-  const seconds = Math.floor((milliseconds / 1000) % 60);
-  const minutes = Math.floor((milliseconds / (1000 * 60)) % 60);
-  const hours = Math.floor((milliseconds / (1000 * 60 * 60)) % 24);
-  const days = Math.floor(milliseconds / (1000 * 60 * 60 * 24));
-
-  if (days > 0) return `${days}d ${hours}h`;
-  if (hours > 0) return `${hours}h ${minutes}m`;
-  if (minutes > 0) return `${minutes}m`;
-  return `${seconds}s`;
-}
-
-function getProviderColor(provider: string): string {
-  const colors: Record<string, string> = {
-    opencode: "#8b5cf6",
-    amp: "#06b6d4",
-    zai: "#10b981",
-    codex: "#f59e0b",
-  };
-  return colors[provider.toLowerCase()] || "#71717a";
-}
-
-// Radial Progress Component
-function RadialProgress({
-  percentage,
-  size = 36,
-  strokeWidth = 3,
-  color,
-  children,
-}: {
-  percentage: number;
-  size?: number;
-  strokeWidth?: number;
-  color: string;
-  children?: React.ReactNode;
-}) {
-  const radius = (size - strokeWidth) / 2;
-  const circumference = radius * 2 * Math.PI;
-  const offset = circumference - (percentage / 100) * circumference;
-
-  return (
-    <div className="relative" style={{ width: size, height: size }}>
-      <svg width={size} height={size} className="radial-progress">
-        {/* Background circle */}
-        <circle
-          cx={size / 2}
-          cy={size / 2}
-          r={radius}
-          fill="none"
-          stroke="rgba(255,255,255,0.1)"
-          strokeWidth={strokeWidth}
-        />
-        {/* Progress circle */}
-        <circle
-          cx={size / 2}
-          cy={size / 2}
-          r={radius}
-          fill="none"
-          stroke={color}
-          strokeWidth={strokeWidth}
-          strokeLinecap="round"
-          strokeDasharray={circumference}
-          strokeDashoffset={offset}
-          className="radial-progress-circle"
-        />
-      </svg>
-      <div className="absolute inset-0 flex items-center justify-center">{children}</div>
-    </div>
-  );
-}
-
-// Compact Quota Display
-function CompactQuota({
-  quota,
-  history,
-  viewMode = "compact",
-  provider,
-}: {
-  quota: UsageQuota;
-  history?: UsageHistory[];
-  viewMode?: "compact" | "expanded";
-  provider: string;
-}) {
-  const used = quota.used ?? 0;
-  const remaining = quota.remaining ?? 0;
-  const limit = quota.limit ?? 0;
-
-  // Get metric annotation (from metadata or local definitions)
-  const annotation = getEffectiveMetricAnnotation(provider, quota.metric, quota.metricMetadata);
-
-  const quotaType = quota.type || "rate_limit";
-  const isBurnDown = quotaType === "usage" || quotaType === "credits";
-  const percentage = limit > 0 ? (isBurnDown ? remaining / limit : used / limit) * 100 : 0;
-
-  // Use thresholds from annotation (with sensible defaults)
-  const warnThreshold = annotation.warnThreshold ?? (isBurnDown ? 25 : 70);
-  const errorThreshold = annotation.errorThreshold ?? (isBurnDown ? 10 : 90);
-
-  const isCritical = isBurnDown ? percentage < errorThreshold : percentage > errorThreshold;
-  const isWarning = isBurnDown ? percentage < warnThreshold : percentage > warnThreshold;
-
-  const [timeRemaining, setTimeRemaining] = useState<string>("");
-
-  useEffect(() => {
-    const calculateTime = () => {
-      const resetMs = quota.resetAt * 1000;
-      const diffMs = resetMs - Date.now();
-      setTimeRemaining(formatCountdown(diffMs));
-    };
-
-    calculateTime();
-    const interval = setInterval(calculateTime, 1000);
-    return () => clearInterval(interval);
-  }, [quota.resetAt]);
-
-  let color = "#10b981"; // green
-  if (isCritical)
-    color = "#ef4444"; // red
-  else if (isWarning) color = "#f59e0b"; // amber
-
-  const { trend, oneHourChange } = getQuotaTrend(quota, isBurnDown, history);
-
-  // Generate sparkline data for this quota in expanded view mode only
-  const sparklineData = useMemo(() => {
-    if (viewMode !== "expanded" || !history || history.length === 0) return [];
-
-    const twoHoursAgoSec = Math.floor((Date.now() - 2 * 60 * 60 * 1000) / 1000);
-    const matchingHistory = history
-      .filter((h) => h.serviceId === quota.serviceId && h.metric === quota.metric)
-      .filter((h) => h.ts >= twoHoursAgoSec)
-      .sort((a, b) => a.ts - b.ts);
-
-    if (matchingHistory.length < 2) return [];
-
-    const usedSeries = matchingHistory.map((h) => h.value).filter((v) => Number.isFinite(v));
-
-    if (usedSeries.length < 2) return [];
-
-    // For burn-down quotas, show remaining values
-    if (isBurnDown && quota.limit > 0) {
-      return usedSeries.map((v) => quota.limit - v);
-    }
-    return usedSeries;
-  }, [history, quota, isBurnDown, viewMode]);
-
-  // Calculate delta for sparkline
-  const delta =
-    sparklineData.length > 1 ? sparklineData[sparklineData.length - 1] - sparklineData[0] : 0;
-  const deltaText = `${delta >= 0 ? "+" : ""}${formatMetricValue(delta, annotation)}`;
-
-  // Build tooltip text showing 1-hour change in native units
-  const getArrowTooltip = () => {
-    if (!oneHourChange)
-      return trend === "depleting"
-        ? "Depleting"
-        : trend === "replenishing"
-          ? "Replenishing"
-          : "Stable";
-
-    // Format values based on metric annotation
-    return `${oneHourChange.minutesAgo}m: ${formatMetricValue(oneHourChange.from, annotation)} → ${formatMetricValue(oneHourChange.to, annotation)}`;
-  };
-
-  // Format the displayed values using the annotation
-  const displayRemaining = formatMetricValue(remaining, annotation);
-  const displayUsed = formatMetricValue(used, annotation);
-  const displayLimit = formatMetricValue(limit, annotation);
-
-  return (
-    <div className="flex items-center gap-3 p-3 rounded-lg bg-white/5 hover:bg-white/10 transition-colors">
-      <RadialProgress percentage={percentage} size={44} strokeWidth={3.5} color={color}>
-        <span className="text-sm font-bold text-white">{Math.round(percentage)}%</span>
-      </RadialProgress>
-
-      <div className="flex-1 min-w-0">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-1.5">
-            <span className="text-xs font-medium text-zinc-300 truncate">
-              {getMetricDisplayName(provider, quota.metric, quota.metricMetadata)}
-            </span>
-            {trend === "depleting" && (
-              <span className="text-[10px] text-red-400 cursor-help" title={getArrowTooltip()}>
-                ▼
-              </span>
-            )}
-            {trend === "replenishing" && (
-              <span className="text-[10px] text-emerald-400 cursor-help" title={getArrowTooltip()}>
-                ▲
-              </span>
-            )}
-          </div>
-          <div className="flex items-center gap-2">
-            {viewMode === "expanded" && sparklineData.length > 1 && (
-              <span
-                className={`text-xs font-semibold ${delta < 0 ? "text-red-400" : delta > 0 ? "text-emerald-400" : "text-zinc-400"}`}
-              >
-                {deltaText}
-              </span>
-            )}
-            <span className="text-xs text-zinc-300 font-mono">{timeRemaining}</span>
-          </div>
-        </div>
-        <div className="text-[10px] text-zinc-500">
-          {isBurnDown ? (
-            <span>
-              {displayRemaining} / {displayLimit} remaining
-            </span>
-          ) : (
-            <span>
-              {displayUsed} / {displayLimit} used
-            </span>
-          )}
-        </div>
-      </div>
-
-      {/* Expanded view mode: Show detailed sparkline */}
-      {viewMode === "expanded" && sparklineData.length > 1 && (
-        <QuotaSparkline values={sparklineData} color={color} isBurnDown={isBurnDown} />
-      )}
-    </div>
-  );
-}
-
-// Calculate trend for a quota based on its type and usage pattern
-// Returns trend type and 1-hour change in native units for tooltips
-function getQuotaTrend(
-  quota: UsageQuota,
-  isBurnDown: boolean,
-  history?: UsageHistory[],
-): {
-  trend: "depleting" | "replenishing" | "stable";
-  oneHourChange: { from: number; to: number; minutesAgo: number } | null;
-} {
-  const used = quota.used ?? 0;
-  const remaining = quota.remaining ?? 0;
-  const limit = quota.limit ?? 0;
-
-  // Determine what value to track based on quota type.
-  // We display remaining for burn-down quotas and used for rate limits.
-  const currentValue = isBurnDown ? remaining : used;
-
-  let trend: "depleting" | "replenishing" | "stable" = "stable";
-  let oneHourChange: { from: number; to: number; minutesAgo: number } | null = null;
-
-  // Try to find real historical data from the last 2 hours.
-  // We pick the record closest to ~60 minutes ago, but fall back to the
-  // oldest available point in that window.
-  if (history && history.length > 0) {
-    const nowSec = Math.floor(Date.now() / 1000);
-    const targetSec = nowSec - 60 * 60;
-    const twoHoursAgoSec = nowSec - 2 * 60 * 60;
-    const fiveMinutesAgoSec = nowSec - 5 * 60;
-
-    const matchingEntries = history
-      .filter((h) => h.serviceId === quota.serviceId && h.metric === quota.metric)
-      .filter((h) => Number.isFinite(h.ts) && h.ts >= twoHoursAgoSec && h.ts <= fiveMinutesAgoSec)
-      .sort((a, b) => a.ts - b.ts); // oldest -> newest
-
-    if (matchingEntries.length > 0) {
-      let chosen = matchingEntries[0];
-      let bestDist = Math.abs(chosen.ts - targetSec);
-      for (const e of matchingEntries) {
-        const d = Math.abs(e.ts - targetSec);
-        if (d < bestDist) {
-          bestDist = d;
-          chosen = e;
-        }
-      }
-
-      // usage_history.value is stored as the quota's "used" value.
-      const historicalUsed = chosen.value;
-      const historicalValue = isBurnDown && limit > 0 ? limit - historicalUsed : historicalUsed;
-      const valueChange = currentValue - historicalValue;
-
-      // Only show arrows when there is a real change.
-      const epsilon = 0.01;
-      if (Math.abs(valueChange) <= epsilon) {
-        return { trend: "stable", oneHourChange: null };
-      }
-
-      if (isBurnDown) {
-        // For burn-down: decreasing remaining = depleting
-        trend = valueChange < 0 ? "depleting" : "replenishing";
-      } else {
-        // For rate limits: increasing used = depleting
-        trend = valueChange > 0 ? "depleting" : "replenishing";
-      }
-
-      const minutesAgo = Math.max(1, Math.round((nowSec - chosen.ts) / 60));
-      oneHourChange = { from: historicalValue, to: currentValue, minutesAgo };
-      return { trend, oneHourChange };
-    }
-  }
-
-  // No historical data found - don't show any trend arrow
-  return { trend: "stable", oneHourChange: null };
-}
-
-// Detailed Sparkline for quota rows in expanded view
-function QuotaSparkline({
-  values,
-  color,
-  isBurnDown = false,
-}: {
-  values: number[];
-  color: string;
-  isBurnDown?: boolean;
-}) {
-  if (!values.length) return null;
-
-  const width = 120;
-  const height = 36;
-
-  const min = Math.min(...values);
-  const max = Math.max(...values);
-  const range = max - min;
-
-  if (range < 0.01) {
-    return (
-      <div className="flex flex-col items-center justify-center" style={{ width, height }}>
-        <span className="text-xs text-zinc-600 font-mono">—</span>
-        <span className="text-[10px] text-zinc-700">no change</span>
-      </div>
-    );
-  }
-
-  const plotWidth = width - 4;
-  const points = values
-    .map((v, i) => {
-      const x = (i / (values.length - 1 || 1)) * plotWidth;
-      const normalizedY = (v - min) / range;
-      const y = 3 + (1 - normalizedY) * (height - 6);
-      return `${x.toFixed(1)},${y.toFixed(1)}`;
-    })
-    .join(" ");
-
-  const endValue = values[values.length - 1];
-  const startValue = values[0];
-  const isDepleting = endValue < startValue;
-  const isReplenishing = endValue > startValue;
-
-  return (
-    <div className="flex flex-col items-center gap-1">
-      <svg width={width} height={height} className="opacity-90">
-        <defs>
-          <linearGradient
-            id={`quota-gradient-${color.replace("#", "")}`}
-            x1="0%"
-            y1="0%"
-            x2="0%"
-            y2="100%"
-          >
-            <stop offset="0%" stopColor={color} stopOpacity="0.4" />
-            <stop offset="100%" stopColor={color} stopOpacity="0.05" />
-          </linearGradient>
-        </defs>
-
-        <line
-          x1="0"
-          y1={height - 3}
-          x2={width}
-          y2={height - 3}
-          stroke="rgba(255,255,255,0.1)"
-          strokeWidth="1"
-          strokeDasharray="2,2"
-        />
-
-        <polygon
-          points={`0,${height - 3} ${points} ${width},${height - 3}`}
-          fill={`url(#quota-gradient-${color.replace("#", "")})`}
-        />
-
-        <polyline
-          points={points}
-          fill="none"
-          stroke={color}
-          strokeWidth="2"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        />
-
-        <circle
-          cx={width - 4}
-          cy={3 + (1 - (endValue - min) / range) * (height - 6)}
-          r="3"
-          fill={color}
-        />
-      </svg>
-
-      {isBurnDown && (
-        <span
-          className={`text-[10px] font-medium ${
-            isDepleting ? "text-red-400" : isReplenishing ? "text-emerald-400" : "text-zinc-500"
-          }`}
-        >
-          {isDepleting ? "↓ burning" : isReplenishing ? "↑ refilling" : "→ steady"}
-        </span>
-      )}
-    </div>
-  );
-}
-
-// Mini Sparkline for card header - shows burn down trend
-function MiniSparkline({ values, color }: { values: number[]; color: string }) {
-  if (!values.length) return null;
-
-  // Keep the rendering stable: filter any non-finite points.
-  values = values.filter((v) => Number.isFinite(v));
-  if (!values.length) return null;
-
-  const min = Math.min(...values);
-  const max = Math.max(...values);
-  const range = max - min;
-
-  // If no meaningful change, show flat line indicator instead of sparkline
-  if (range < 0.01) {
-    return <span className="text-[10px] text-zinc-600 font-mono px-1">—</span>;
-  }
-
-  // For burn down, we want to show the depletion visually
-  // Higher values at the top, lower at bottom (like a fuel gauge emptying)
-  const points = values
-    .map((v, i) => {
-      const x = (i / (values.length - 1 || 1)) * 56;
-      // Normalize to SVG height (2px padding top/bottom)
-      const normalizedY = (v - min) / range;
-      const y = 2 + (1 - normalizedY) * 16; // Invert so high values are at top
-      return `${x},${y}`;
-    })
-    .join(" ");
-
-  return (
-    <svg width="56" height="20" className="opacity-70">
-      {/* Gradient fill under the line */}
-      <defs>
-        <linearGradient
-          id={`spark-fill-${color.replace("#", "")}`}
-          x1="0%"
-          y1="0%"
-          x2="0%"
-          y2="100%"
-        >
-          <stop offset="0%" stopColor={color} stopOpacity="0.3" />
-          <stop offset="100%" stopColor={color} stopOpacity="0" />
-        </linearGradient>
-      </defs>
-
-      {/* Area fill */}
-      <polygon
-        points={`0,18 ${points} 56,18`}
-        fill={`url(#spark-fill-${color.replace("#", "")})`}
-      />
-
-      {/* Line */}
-      <polyline
-        points={points}
-        fill="none"
-        stroke={color}
-        strokeWidth="2"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </svg>
-  );
 }
 
 export function ServiceCard({
@@ -498,31 +26,25 @@ export function ServiceCard({
   const providerColor = getProviderColor(service.provider);
   const [isExpanded, setIsExpanded] = useState(false);
 
-  // Generate burn down sparkline data from first quota using actual history
   const sparklineData = useMemo(() => {
-    if (!quotas.length) return { values: [], isBurnDown: false };
+    if (!quotas.length) return { values: [] as number[], isBurnDown: false };
 
     const firstQuota = quotas[0];
     const quotaType = firstQuota.type || "rate_limit";
     const isBurnDown = quotaType === "usage" || quotaType === "credits";
 
-    // Try to use actual historical data
     if (history && history.length > 0) {
-      // Calculate 2 hours ago in seconds
       const twoHoursAgoSec = Math.floor((Date.now() - 2 * 60 * 60 * 1000) / 1000);
 
-      // Filter history entries for this quota's serviceId and metric from last 2 hours
       const matchingHistory = history
         .filter((h) => h.serviceId === firstQuota.serviceId && h.metric === firstQuota.metric)
         .filter((h) => h.ts >= twoHoursAgoSec)
-        .sort((a, b) => a.ts - b.ts); // Oldest to newest
+        .sort((a, b) => a.ts - b.ts);
 
       if (matchingHistory.length >= 3) {
         const rawValues = matchingHistory.map((h) => h.value).filter((v) => Number.isFinite(v));
 
         if (rawValues.length >= 3) {
-          // usage_history.value is stored as the quota's "used" value.
-          // For burn-down quotas, display remaining by inverting around the limit.
           const series =
             isBurnDown && firstQuota.limit > 0
               ? rawValues.map((v) => firstQuota.limit - v)
@@ -533,12 +55,10 @@ export function ServiceCard({
       }
     }
 
-    // No (or insufficient) history available: don't render a sparkline.
-    return { values: [], isBurnDown };
+    return { values: [] as number[], isBurnDown: false };
   }, [quotas, history]);
 
   const handleCardClick = (e: React.MouseEvent) => {
-    // Don't expand if clicking refresh button
     if ((e.target as HTMLElement).closest("button")) return;
     onSelect();
     setIsExpanded(!isExpanded);
@@ -551,11 +71,9 @@ export function ServiceCard({
       }`}
       onClick={handleCardClick}
     >
-      {/* Card Header */}
       <div className="p-4">
         <div className="flex items-start justify-between mb-2">
           <div className="flex items-center gap-2">
-            {/* Provider Color Indicator */}
             <div className="w-1 h-8 rounded-full" style={{ backgroundColor: providerColor }} />
 
             <div>
@@ -588,7 +106,6 @@ export function ServiceCard({
           </div>
         </div>
 
-        {/* Compact Quota Preview (first 2) */}
         {!isExpanded && quotas.length > 0 && (
           <div className="space-y-2">
             {quotas.slice(0, 2).map((quota) => (
@@ -612,7 +129,6 @@ export function ServiceCard({
           </div>
         )}
 
-        {/* Auth Error Alert */}
         {authError && (
           <div className="mt-2 p-2 rounded-lg bg-orange-500/10 border border-orange-500/20">
             <p className="text-[10px] text-orange-400 flex items-center gap-1">
@@ -639,14 +155,12 @@ export function ServiceCard({
           </div>
         )}
 
-        {/* Regular Error */}
         {!authError && error && (
           <div className="mt-2 p-2 rounded-lg bg-red-500/10 border border-red-500/20">
             <p className="text-[10px] text-red-400">{error}</p>
           </div>
         )}
 
-        {/* Expanded View - All Quotas */}
         {isExpanded && (
           <div className="mt-2 space-y-2 fade-in">
             {quotas.map((quota) => (
@@ -668,7 +182,6 @@ export function ServiceCard({
           </div>
         )}
 
-        {/* Last Updated */}
         <div className="mt-2 flex items-center justify-between text-[10px] text-zinc-600">
           <span>{new Date(lastUpdated * 1000).toLocaleTimeString()}</span>
           {quotas.some((q) => q.replenishmentRate && q.replenishmentRate.amount > 0) && (
