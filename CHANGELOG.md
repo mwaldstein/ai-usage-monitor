@@ -29,6 +29,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Added `LOG_LEVEL` environment variable support for runtime log level configuration
 - ServiceCard now uses metric annotations for value formatting, display names, and dynamic threshold configuration instead of hardcoded heuristics
 - WebSocket quota sorting now driven by annotation priorities instead of hardcoded METRIC_ORDER map
+- Refactored `frontend/src/components/UsageDock.tsx`: extracted 86-line `trends` useMemo logic into dedicated `useDockTrends` hook, moved `BurnDownSparkline` component and `formatMetric` utility to separate files within new `UsageDock/` directory. Main component reduced from 349 to 120 lines (66% reduction), separating data transformation concerns from UI rendering per SRP
 
 ### Fixed
 - Removed inline "Loading..." text in analytics view that caused layout shift; loading state now indicated by spinning refresh icon only
