@@ -1,0 +1,185 @@
+export interface ProviderConfig {
+  value: string;
+  label: string;
+  color: string;
+}
+
+export interface ProviderInstructions {
+  apiKeyLabel: string;
+  apiKeyPlaceholder: string;
+  apiKeyHelp: string;
+  bearerTokenLabel?: string;
+  bearerTokenPlaceholder?: string;
+  bearerTokenHelp?: string;
+  baseUrlHelp?: string;
+  baseUrlPlaceholder?: string;
+  showBaseUrl: boolean;
+  instructions: {
+    title: string;
+    steps: string[];
+    link?: { text: string; url: string };
+  };
+}
+
+export const PROVIDERS: ProviderConfig[] = [
+  { value: "openai", label: "OpenAI", color: "#10a37f" },
+  { value: "codex", label: "OpenAI Codex", color: "#10a37f" },
+  { value: "anthropic", label: "Anthropic", color: "#d97757" },
+  { value: "google", label: "Google AI", color: "#4285f4" },
+  { value: "aws", label: "AWS Bedrock", color: "#ff9900" },
+  { value: "opencode", label: "opencode zen", color: "#8b5cf6" },
+  { value: "amp", label: "AMP", color: "#06b6d4" },
+  { value: "zai", label: "z.ai", color: "#10b981" },
+];
+
+export const PROVIDER_INSTRUCTIONS: Record<string, ProviderInstructions> = {
+  openai: {
+    apiKeyLabel: "API Key",
+    apiKeyPlaceholder: "sk-...",
+    apiKeyHelp: "Your OpenAI API key from platform.openai.com",
+    showBaseUrl: true,
+    instructions: {
+      title: "How to get your OpenAI API Key",
+      steps: [
+        "Go to https://platform.openai.com/api-keys",
+        "Log in to your OpenAI account",
+        'Click "Create new secret key"',
+        'Copy the key (it starts with "sk-")',
+        "Paste it here",
+      ],
+      link: { text: "Open OpenAI API Keys", url: "https://platform.openai.com/api-keys" },
+    },
+  },
+  anthropic: {
+    apiKeyLabel: "API Key",
+    apiKeyPlaceholder: "sk-ant-...",
+    apiKeyHelp: "Your Anthropic API key from console.anthropic.com",
+    showBaseUrl: true,
+    instructions: {
+      title: "How to get your Anthropic API Key",
+      steps: [
+        "Go to https://console.anthropic.com/settings/keys",
+        "Log in to your Anthropic account",
+        'Click "Create Key"',
+        'Copy the key (it starts with "sk-ant-")',
+        "Paste it here",
+      ],
+      link: { text: "Open Anthropic Console", url: "https://console.anthropic.com/settings/keys" },
+    },
+  },
+  google: {
+    apiKeyLabel: "API Key",
+    apiKeyPlaceholder: "AIza...",
+    apiKeyHelp: "Your Google AI API key from Google Cloud Console",
+    showBaseUrl: true,
+    instructions: {
+      title: "How to get your Google AI API Key",
+      steps: [
+        "Go to https://makersuite.google.com/app/apikey",
+        "Log in to your Google account",
+        'Click "Create API Key"',
+        'Copy the key (it starts with "AIza")',
+        "Paste it here",
+      ],
+      link: { text: "Open Google AI Studio", url: "https://makersuite.google.com/app/apikey" },
+    },
+  },
+  aws: {
+    apiKeyLabel: "AWS Credentials",
+    apiKeyPlaceholder: "Not implemented - requires AWS Signature V4",
+    apiKeyHelp: "AWS access key and secret (not yet supported)",
+    showBaseUrl: true,
+    instructions: {
+      title: "AWS Bedrock Support",
+      steps: [
+        "AWS Bedrock requires AWS Signature V4 authentication",
+        "This is not yet fully implemented",
+        "Please use another provider for now",
+      ],
+    },
+  },
+  opencode: {
+    apiKeyLabel: "Auth Cookie",
+    apiKeyPlaceholder: "auth=Fe26.2**...",
+    apiKeyHelp: "Required: Copy full cookie string from browser",
+    baseUrlHelp: "Required: Full workspace billing URL",
+    baseUrlPlaceholder: "https://opencode.ai/workspace/wrk_...",
+    showBaseUrl: true,
+    instructions: {
+      title: "How to get your OpenCode Auth Cookie",
+      steps: [
+        "Open https://opencode.ai in your browser",
+        "Log in to your account",
+        "Navigate to your workspace billing page",
+        "Open DevTools (F12) → Application → Cookies",
+        'Find the cookie named "auth"',
+        'Copy the ENTIRE cookie string (including "auth=")',
+        "Paste it in the field above",
+        "For Base URL: Copy your workspace billing page URL",
+      ],
+      link: { text: "Open OpenCode", url: "https://opencode.ai" },
+    },
+  },
+  amp: {
+    apiKeyLabel: "Session Cookie",
+    apiKeyPlaceholder: "session=...",
+    apiKeyHelp: "Required: Copy full cookie string from browser",
+    baseUrlHelp: "Optional: defaults to https://ampcode.com",
+    baseUrlPlaceholder: "https://ampcode.com",
+    showBaseUrl: true,
+    instructions: {
+      title: "How to get your AMP Session Cookie",
+      steps: [
+        "Open https://ampcode.com in your browser",
+        "Log in to your account",
+        "Open DevTools (F12) → Application → Cookies",
+        "Find the session cookie (or auth cookie)",
+        'Copy the ENTIRE cookie string (including the name, e.g., "session=")',
+        "Paste it in the field above",
+      ],
+      link: { text: "Open AMP", url: "https://ampcode.com" },
+    },
+  },
+  codex: {
+    apiKeyLabel: "Session Cookie (Optional)",
+    apiKeyPlaceholder: "hs_c=...",
+    apiKeyHelp: "Legacy: Session cookie from chatgpt.com",
+    bearerTokenLabel: "Bearer Token (Recommended)",
+    bearerTokenPlaceholder: "eyJhbGciOiJSUzI1NiIs...",
+    bearerTokenHelp: "JWT token from browser - preferred auth method",
+    showBaseUrl: false,
+    instructions: {
+      title: "How to get your ChatGPT Bearer Token",
+      steps: [
+        "Open https://chatgpt.com in your browser",
+        "Log in to your account",
+        "Open DevTools (F12) → Network tab",
+        "Navigate to https://chatgpt.com/codex/settings/usage",
+        "Look for the request to /backend-api/wham/usage",
+        "Click on it → Headers → Request Headers",
+        'Find the "Authorization: Bearer" header',
+        'Copy the token (the long string after "Bearer ")',
+        "Paste it in the Bearer Token field above",
+      ],
+      link: { text: "Open ChatGPT", url: "https://chatgpt.com" },
+    },
+  },
+  zai: {
+    apiKeyLabel: "Bearer Token",
+    apiKeyPlaceholder: "eyJ...",
+    apiKeyHelp: "Required: Copy from browser localStorage",
+    showBaseUrl: false,
+    instructions: {
+      title: "How to get your z.ai Bearer Token",
+      steps: [
+        "Open https://z.ai in your browser",
+        "Log in to your account",
+        "Open DevTools (F12) → Application → Local Storage",
+        "Look for key: z-ai-open-platform-token-production or z-ai-website-token",
+        "Copy the token value",
+        "Paste it in the field above",
+      ],
+      link: { text: "Open z.ai", url: "https://z.ai" },
+    },
+  },
+};

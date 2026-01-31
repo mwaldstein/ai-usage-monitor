@@ -19,7 +19,7 @@
 | `frontend/src/components/AnalyticsView.tsx` | ~350 | Chart data processing extracted to `useAnalyticsData` hook |
 | `frontend/src/components/ServiceCard.tsx` | ~200 | ~~Multiple sub-components + trend analysis~~ → Extracted to ServiceCard/ directory (71% reduction) |
 | `backend/src/services/opencode/` | ~~518~~ 195 | ~~Complex HTML parsing with 5+ fallback strategies~~ → Split into `hydrationParser.ts` (5 strategies as pure functions) and `index.ts` (service orchestration)
-| `frontend/src/components/AddServiceModal.tsx` | 432 | Large form with provider-specific conditional rendering |
+| `frontend/src/components/AddServiceModal/` | ~~432~~ 130 | ~~Large form with provider-specific conditional rendering~~ → Split into directory: `providerConfigs.ts` (182 lines of static data), `ProviderSelector.tsx`, `InstructionsPanel.tsx`, `ServiceFormFields.tsx`, and `index.tsx` (main orchestration, 54% reduction) |
 | `frontend/src/components/UsageDock.tsx` | 349 | Chart logic mixed with component |
 | `frontend/src/types/metricDefinitions.ts` | 323 | Definitions mixed with formatting functions (backend copy removed - consolidated to frontend-only) |
 | `backend/src/database/index.ts` | ~~262~~ 2 | ~~Schema + migrations + maintenance in one file~~ → Split into 4 modules (connection.ts, schema.ts, migrations.ts, maintenance.ts), reducing index.ts to just re-exports |
