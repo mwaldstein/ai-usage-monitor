@@ -371,7 +371,8 @@ async function startServer() {
 
     // Schedule daily database maintenance (WAL checkpoint + incremental vacuum) at 3:01 AM
     // Offset by 1 minute to avoid stacking with quota refresh (runs on :00, :05, etc.)
-    maintenanceTask = cron.schedule("1 3 * * *", runMaintenance);
+    const db = getDatabase();
+    maintenanceTask = cron.schedule("1 3 * * *", () => runMaintenance(db));
 
     // Initial quota refresh (run async so server starts immediately)
     logger.info("Starting initial quota refresh (async)...");

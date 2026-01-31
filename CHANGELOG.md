@@ -12,6 +12,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Metric definitions module supporting AMP, z.ai, opencode, and Codex providers with specialized formatting rules
 
 ### Changed
+- Refactored `backend/src/database/index.ts`: split 262-line monolithic module into 4 focused modules (`connection.ts`, `schema.ts`, `migrations.ts`, `maintenance.ts`) with index.ts reduced to just re-exports (2 lines), separating connection management, schema definitions, migration logic, and maintenance operations per SRP
 - Refactored `frontend/src/components/ServiceCard.tsx`: extracted sub-components (RadialProgress, MiniSparkline, QuotaSparkline, CompactQuota) and utilities (getQuotaTrend, formatCountdown, getProviderColor) into dedicated `ServiceCard/` directory, reducing main component from 685 to 197 lines (71% reduction)
 - Refactored `backend/src/routes/api.ts`: split 726-line monolithic router into 5 focused modules (`services.ts`, `quotas.ts`, `status.ts`, `usage.ts`, `mappers.ts`) improving maintainability and SRP compliance
 - Refactored `frontend/src/components/AnalyticsView.tsx`: extracted chart data processing logic (95-line `chartData` useMemo, 45-line `summaryStats` useMemo, provider data transformation) into dedicated `useAnalyticsData` hook module, reducing component from 690 to 494 lines and separating data transformation concerns from UI rendering
