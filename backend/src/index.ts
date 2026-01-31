@@ -1,3 +1,4 @@
+import crypto from 'crypto'
 import express from 'express'
 import cors from 'cors'
 import dotenv from 'dotenv'
@@ -302,7 +303,7 @@ async function refreshQuotas() {
               await db.run(
                 'INSERT INTO usage_history (id, service_id, metric, value, timestamp) VALUES (?, ?, ?, ?, ?)',
                 [
-                  require('uuid').v4(),
+                  crypto.randomUUID(),
                   quota.serviceId,
                   quota.metric,
                   quota.used,

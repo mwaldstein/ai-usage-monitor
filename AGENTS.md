@@ -168,3 +168,10 @@ Special authentication patterns:
 - Some providers use session cookies (opencode, AMP)
 - Some use Bearer tokens (z.ai, Codex)
 - Handle 401/403 as auth errors, trigger UI alerts
+
+## Changelog
+
+Update @CHANGELOG.md with significant changes. Follow [Keep a Changelog](https://keepachangelog.com/) format:
+- Use `[Unreleased]` section for pending changes
+- Categorize under ### Added, ### Changed, ### Deprecated, ### Removed, ### Fixed, ### Security
+- Include user-facing changes only
