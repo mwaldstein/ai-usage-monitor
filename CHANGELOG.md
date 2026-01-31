@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+- Migrated to npm workspaces: consolidated root, backend, and frontend into single workspace configuration with root-level lockfile
+- Updated Docker build: multi-stage now installs from root package.json with workspace-aware commands
+- Simplified GitHub Actions: removed redundant npm ci in subdirectories, now uses single root install
+
+### Added
+- Workspace convenience scripts: `dev:backend`, `dev:frontend`, `typecheck` (both workspaces)
+
 ## [0.3.1] - 2026-01-31
 
 ### Fixed
