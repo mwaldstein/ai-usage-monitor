@@ -41,3 +41,6 @@ test-*.ts
 
 # Debug files
 debug/
+
+# Auto-generated version file
+src/version.ts

@@ -175,3 +175,25 @@ Update @CHANGELOG.md with significant changes. Follow [Keep a Changelog](https:/
 - Use `[Unreleased]` section for pending changes
 - Categorize under ### Added, ### Changed, ### Deprecated, ### Removed, ### Fixed, ### Security
 - Include user-facing changes only
+
+## Version Information
+
+Version and git commit SHA are embedded at compile time (not runtime) to ensure availability in Docker containers:
+
+### How it works
+- `backend/scripts/generate-version.ts` runs during `npm run build` (prebuild step)
+- Generates `backend/src/version.ts` with embedded VERSION and COMMIT_SHA constants
+- Backend imports these constants from `src/version.ts` instead of reading package.json or executing git commands
+
+### Docker builds
+When building Docker images, pass the commit SHA as a build argument:
+```bash
+docker build --build-arg GIT_COMMIT_SHA=$(git rev-parse --short HEAD) -t ai-usage-monitor .
+```
+
+The Dockerfile `backend-builder` stage accepts `GIT_COMMIT_SHA` and sets it as an environment variable so the version generator can pick it up.
+
+### Important notes
+- `src/version.ts` is auto-generated and gitignored - do not edit manually
+- Backend `package.json` version should match `CHANGELOG.md` version
+- If `GIT_COMMIT_SHA` env var is set, it takes precedence over git command (useful for CI/CD)

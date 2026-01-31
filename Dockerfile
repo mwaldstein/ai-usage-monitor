@@ -12,6 +12,10 @@ RUN npm run build
 # Build stage for backend
 FROM node:22-alpine AS backend-builder
 
+# Accept git commit SHA as build argument
+ARG GIT_COMMIT_SHA=unknown
+ENV GIT_COMMIT_SHA=${GIT_COMMIT_SHA}
+
 WORKDIR /app/backend
 
 COPY backend/package*.json ./
