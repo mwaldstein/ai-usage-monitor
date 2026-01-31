@@ -31,3 +31,9 @@ jobs:
 
       - name: Format check
         run: npm run fmt:check
+
+      - name: Frontend type check
+        working-directory: frontend
+        run: |
+          npm ci
+          npm run typecheck
