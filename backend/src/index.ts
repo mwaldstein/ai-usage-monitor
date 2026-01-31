@@ -1,4 +1,3 @@
-import crypto from "crypto";
 import express from "express";
 import cors from "cors";
 import dotenv from "dotenv";
@@ -305,14 +304,8 @@ async function refreshQuotas() {
             // Log usage history
             for (const quota of status.quotas) {
               await db.run(
-                "INSERT INTO usage_history (id, service_id, metric, value, timestamp) VALUES (?, ?, ?, ?, ?)",
-                [
-                  crypto.randomUUID(),
-                  quota.serviceId,
-                  quota.metric,
-                  quota.used,
-                  new Date().toISOString(),
-                ],
+                "INSERT OR REPLACE INTO usage_history (service_id, metric, ts, value) VALUES (?, ?, ?, ?)",
+                [quota.serviceId, quota.metric, Math.floor(Date.now() / 1000), quota.used],
               );
             }
           } catch (dbError) {

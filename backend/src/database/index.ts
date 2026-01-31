@@ -14,6 +14,9 @@ export async function initializeDatabase(): Promise<Database<sqlite3.Database>> 
     driver: sqlite3.Database,
   });
 
+  // Run schema migrations BEFORE creating tables (for existing databases)
+  await migrateUsageHistorySchema(db);
+
   await db.exec(`
     CREATE TABLE IF NOT EXISTS services (
       id TEXT PRIMARY KEY,
@@ -44,17 +47,16 @@ export async function initializeDatabase(): Promise<Database<sqlite3.Database>> 
     );
 
     CREATE TABLE IF NOT EXISTS usage_history (
-      id TEXT PRIMARY KEY,
       service_id TEXT NOT NULL,
       metric TEXT NOT NULL,
+      ts INTEGER NOT NULL,
       value REAL NOT NULL,
-      timestamp TEXT NOT NULL,
+      PRIMARY KEY (service_id, metric, ts),
       FOREIGN KEY (service_id) REFERENCES services(id) ON DELETE CASCADE
-    );
+    ) WITHOUT ROWID;
 
     CREATE INDEX IF NOT EXISTS idx_quotas_service ON quotas(service_id);
-    CREATE INDEX IF NOT EXISTS idx_usage_history_service ON usage_history(service_id);
-    CREATE INDEX IF NOT EXISTS idx_usage_history_timestamp ON usage_history(timestamp);
+    CREATE INDEX IF NOT EXISTS idx_usage_history_ts ON usage_history(ts);
   `);
 
   // Migration: Add bearer_token column to existing databases (if it doesn't exist)
@@ -84,6 +86,54 @@ export async function initializeDatabase(): Promise<Database<sqlite3.Database>> 
   } catch {}
 
   return db;
+}
+
+async function migrateUsageHistorySchema(db: Database<sqlite3.Database>): Promise<void> {
+  // Check if old schema exists (has 'id' column and 'timestamp' column)
+  const tableInfo = await db.all(`PRAGMA table_info(usage_history)`);
+  const hasIdColumn = tableInfo.some((col: { name: string }) => col.name === "id");
+  const hasTimestampColumn = tableInfo.some((col: { name: string }) => col.name === "timestamp");
+
+  if (!hasIdColumn || !hasTimestampColumn) {
+    // Already on new schema or fresh install
+    return;
+  }
+
+  console.log(
+    "[Database] Migration: Converting usage_history to new schema (composite PK, INTEGER ts)...",
+  );
+
+  try {
+    await db.exec(`
+      -- Create new table with optimized schema
+      CREATE TABLE IF NOT EXISTS usage_history_new (
+        service_id TEXT NOT NULL,
+        metric TEXT NOT NULL,
+        ts INTEGER NOT NULL,
+        value REAL NOT NULL,
+        PRIMARY KEY (service_id, metric, ts),
+        FOREIGN KEY (service_id) REFERENCES services(id) ON DELETE CASCADE
+      ) WITHOUT ROWID;
+
+      -- Migrate data, converting ISO timestamp to unix epoch
+      -- Use INSERT OR REPLACE to handle potential duplicates (same service+metric+second)
+      INSERT OR REPLACE INTO usage_history_new (service_id, metric, ts, value)
+      SELECT service_id, metric, CAST(strftime('%s', timestamp) AS INTEGER), value
+      FROM usage_history;
+
+      -- Drop old table and rename new one
+      DROP TABLE usage_history;
+      ALTER TABLE usage_history_new RENAME TO usage_history;
+
+      -- Recreate index on ts
+      CREATE INDEX IF NOT EXISTS idx_usage_history_ts ON usage_history(ts);
+    `);
+
+    console.log("[Database] Migration: usage_history schema migration complete");
+  } catch (error) {
+    console.error("[Database] Migration failed:", error);
+    throw error;
+  }
 }
 
 export function getDatabase(): Database<sqlite3.Database> {

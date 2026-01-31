@@ -3,7 +3,7 @@ import { randomUUID } from "crypto";
 import { getDatabase } from "../database/index.ts";
 import { ServiceFactory } from "../services/factory.ts";
 import type { AIService, ServiceStatus, UsageQuota } from "../types/index.ts";
-import { normalizeDbTimestamp, parseDbTimestamp } from "../utils/dates.ts";
+import { parseDbTimestamp } from "../utils/dates.ts";
 
 const router = Router();
 
@@ -343,8 +343,8 @@ router.post("/quotas/refresh", async (req, res) => {
 
               // Log usage history for sparkline/trend UI.
               await db.run(
-                "INSERT INTO usage_history (id, service_id, metric, value, timestamp) VALUES (?, ?, ?, ?, ?)",
-                [randomUUID(), quota.serviceId, quota.metric, quota.used, now],
+                "INSERT OR REPLACE INTO usage_history (service_id, metric, ts, value) VALUES (?, ?, ?, ?)",
+                [quota.serviceId, quota.metric, Math.floor(Date.now() / 1000), quota.used],
               );
             }
           } catch (dbError) {
@@ -431,8 +431,8 @@ router.post("/quotas/refresh/:serviceId", async (req, res) => {
 
         for (const quota of status.quotas) {
           await db.run(
-            "INSERT INTO usage_history (id, service_id, metric, value, timestamp) VALUES (?, ?, ?, ?, ?)",
-            [randomUUID(), quota.serviceId, quota.metric, quota.used, new Date().toISOString()],
+            "INSERT OR REPLACE INTO usage_history (service_id, metric, ts, value) VALUES (?, ?, ?, ?)",
+            [quota.serviceId, quota.metric, Math.floor(Date.now() / 1000), quota.used],
           );
         }
       } catch (dbError) {
@@ -496,41 +496,36 @@ router.get("/usage/history", async (req, res) => {
     const db = getDatabase();
 
     const hoursNum = Math.max(1, Math.min(168, parseInt(String(hours), 10) || 24));
-    const sinceIso = new Date(Date.now() - hoursNum * 60 * 60 * 1000).toISOString();
+    const sinceTs = Math.floor((Date.now() - hoursNum * 60 * 60 * 1000) / 1000);
 
     let query = `
       SELECT
-        uh.id as id,
         uh.service_id as serviceId,
         uh.metric as metric,
         uh.value as value,
-        uh.timestamp as timestamp,
+        datetime(uh.ts, 'unixepoch') as timestamp,
         s.name as service_name
       FROM usage_history uh
       JOIN services s ON uh.service_id = s.id
-      WHERE uh.timestamp >= ?
+      WHERE uh.ts >= ?
     `;
-    const params: any[] = [];
-    params.push(sinceIso);
+    const params: (string | number)[] = [];
+    params.push(sinceTs);
 
     if (serviceId) {
       query += " AND uh.service_id = ?";
-      params.push(serviceId);
+      params.push(String(serviceId));
     }
 
     if (metric) {
       query += " AND uh.metric = ?";
-      params.push(metric);
+      params.push(String(metric));
     }
 
-    query += " ORDER BY uh.timestamp DESC";
+    query += " ORDER BY uh.ts DESC";
 
     const history = await db.all(query, params);
-    const normalized = (history || []).map((row: any) => ({
-      ...row,
-      timestamp: normalizeDbTimestamp(row.timestamp) || row.timestamp,
-    }));
-    res.json(normalized);
+    res.json(history);
   } catch (error) {
     console.error("Error fetching usage history:", error);
     res.status(500).json({ error: "Failed to fetch usage history" });
@@ -544,10 +539,10 @@ router.get("/usage/analytics", async (req, res) => {
     const db = getDatabase();
 
     const daysNum = Math.max(1, Math.min(365, parseInt(String(days), 10) || 30));
-    const sinceIso = new Date(Date.now() - daysNum * 24 * 60 * 60 * 1000).toISOString();
+    const sinceTs = Math.floor((Date.now() - daysNum * 24 * 60 * 60 * 1000) / 1000);
 
     console.log(
-      `[API /usage/analytics] days=${daysNum}, interval=${interval}, groupBy=${groupBy}, since=${sinceIso}`,
+      `[API /usage/analytics] days=${daysNum}, interval=${interval}, groupBy=${groupBy}, sinceTs=${sinceTs}`,
     );
 
     // Parse interval parameter (e.g., '5m', '15m', '1h', '1d')
@@ -557,24 +552,9 @@ router.get("/usage/analytics", async (req, res) => {
         (intervalMatch[2] === "d" ? 1440 : intervalMatch[2] === "h" ? 60 : 1)
       : 60; // default to 1 hour
 
-    // Create time bucket expression based on interval
-    // SQLite strftime format and unixepoch calculations
-    let timeBucket: string;
-    if (intervalMinutes >= 1440) {
-      // Daily or longer
-      timeBucket = `date(uh.timestamp)`;
-    } else if (intervalMinutes >= 60) {
-      // Hourly
-      const hours = intervalMinutes / 60;
-      timeBucket =
-        hours === 1
-          ? `datetime((strftime('%s', uh.timestamp) / 3600) * 3600, 'unixepoch')`
-          : `datetime((strftime('%s', uh.timestamp) / ${hours * 3600}) * ${hours * 3600}, 'unixepoch')`;
-    } else {
-      // Sub-hourly (minutes)
-      const seconds = intervalMinutes * 60;
-      timeBucket = `datetime((strftime('%s', uh.timestamp) / ${seconds}) * ${seconds}, 'unixepoch')`;
-    }
+    // Create time bucket expression using integer ts (much faster than strftime on TEXT)
+    const intervalSeconds = intervalMinutes * 60;
+    const timeBucket = `datetime((uh.ts / ${intervalSeconds}) * ${intervalSeconds}, 'unixepoch')`;
 
     // Build query based on groupBy parameter
     const groupByColumn = String(groupBy);
@@ -620,14 +600,14 @@ router.get("/usage/analytics", async (req, res) => {
         COUNT(*) as data_points
       FROM usage_history uh
       JOIN services s ON uh.service_id = s.id
-      WHERE uh.timestamp >= ?
+      WHERE uh.ts >= ?
     `;
 
-    const params: any[] = [sinceIso];
+    const params: (string | number)[] = [sinceTs];
 
     if (serviceId) {
       timeSeriesQuery += " AND uh.service_id = ?";
-      params.push(serviceId);
+      params.push(String(serviceId));
     }
 
     timeSeriesQuery += `
@@ -667,19 +647,19 @@ router.get("/usage/analytics", async (req, res) => {
         MAX(uh.value) as max_value,
         AVG(uh.value) as avg_value,
         (MAX(uh.value) - MIN(uh.value)) as total_consumed,
-        MIN(uh.timestamp) as first_record,
-        MAX(uh.timestamp) as last_record,
-        COUNT(DISTINCT date(uh.timestamp)) as active_days
+        datetime(MIN(uh.ts), 'unixepoch') as first_record,
+        datetime(MAX(uh.ts), 'unixepoch') as last_record,
+        COUNT(DISTINCT date(uh.ts, 'unixepoch')) as active_days
       FROM usage_history uh
       JOIN services s ON uh.service_id = s.id
-      WHERE uh.timestamp >= ?
+      WHERE uh.ts >= ?
     `;
 
-    const summaryParams: any[] = [sinceIso];
+    const summaryParams: (string | number)[] = [sinceTs];
 
     if (serviceId) {
       summaryQuery += " AND uh.service_id = ?";
-      summaryParams.push(serviceId);
+      summaryParams.push(String(serviceId));
     }
 
     summaryQuery += `
@@ -709,7 +689,7 @@ router.get("/usage/providers", async (req, res) => {
     const db = getDatabase();
 
     const daysNum = Math.max(1, Math.min(365, parseInt(String(days), 10) || 30));
-    const sinceIso = new Date(Date.now() - daysNum * 24 * 60 * 60 * 1000).toISOString();
+    const sinceTs = Math.floor((Date.now() - daysNum * 24 * 60 * 60 * 1000) / 1000);
 
     const query = `
       SELECT 
@@ -722,12 +702,12 @@ router.get("/usage/providers", async (req, res) => {
         COUNT(*) as data_points
       FROM usage_history uh
       JOIN services s ON uh.service_id = s.id
-      WHERE uh.timestamp >= ?
+      WHERE uh.ts >= ?
       GROUP BY s.provider
       ORDER BY total_usage DESC
     `;
 
-    const providers = await db.all(query, [sinceIso]);
+    const providers = await db.all(query, [sinceTs]);
 
     res.json({
       providers,
