@@ -23,7 +23,7 @@
 | `frontend/src/components/UsageDock.tsx` | 349 | Chart logic mixed with component |
 | `frontend/src/types/metricDefinitions.ts` | 323 | Definitions mixed with formatting functions (backend copy removed - consolidated to frontend-only) |
 | `backend/src/database/index.ts` | ~~262~~ 2 | ~~Schema + migrations + maintenance in one file~~ → Split into 4 modules (connection.ts, schema.ts, migrations.ts, maintenance.ts), reducing index.ts to just re-exports |
-| `frontend/src/hooks/useApi.ts` | 271 | 5+ different hooks in single file |
+| `frontend/src/hooks/useApi.ts` | ~~271~~ 3 | ~~5+ different hooks in single file~~ → Split into `useServices.ts` (CRUD operations), `useUsage.ts` (history, analytics, provider analytics), and `useVersion.ts`. useApi.ts reduced to re-exports only (99% reduction) |
 
 ### Complex Functions (>50 lines or high complexity)
 
