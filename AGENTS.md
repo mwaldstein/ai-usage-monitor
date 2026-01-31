@@ -28,10 +28,11 @@ ai-usage-quota/
 ```bash
 cd backend
 npm install          # Install dependencies
-npm run dev          # Development with hot reload (nodemon)
-npm run build        # Compile TypeScript (tsc)
-npm start            # Production start (node dist/index.js)
+npm run dev          # Development with file watch (native Node.js --watch)
+npm run start        # Production start (uses --experimental-strip-types)
 ```
+
+**Note:** Backend uses Node.js native `--experimental-strip-types` flag to run TypeScript source directly without compilation. No build step required.
 
 ### Frontend
 ```bash
@@ -73,11 +74,14 @@ docker-compose up -d
 ## Code Style Guidelines
 
 ### TypeScript
-- **Strict mode**: Enabled in both projects
-- **Backend target**: ES2020, CommonJS modules
+- **Strict mode**: Enabled in both projects - never disable or bypass
+- **Backend target**: ES2022, ES modules (native Node.js)
 - **Frontend target**: ES2022, ESNext modules (bundler)
 - Always use explicit types for function parameters and returns
 - Prefer `interface` over `type` for object shapes
+- Use `import type` for type-only imports (required by `verbatimModuleSyntax`)
+- Never use `any`, type assertions (`as Type`), or non-null assertions (`!`)
+- Always handle all cases in discriminated unions - exhaustiveness checking is your friend
 
 ### Imports & Formatting
 - Use ES6 import syntax with single quotes
@@ -181,7 +185,7 @@ Update @CHANGELOG.md with significant changes. Follow [Keep a Changelog](https:/
 Version and git commit SHA are embedded at compile time (not runtime) to ensure availability in Docker containers:
 
 ### How it works
-- `backend/scripts/generate-version.ts` runs during `npm run build` (prebuild step)
+- `backend/scripts/generate-version.ts` runs via `--experimental-strip-types` during `npm run prestart`
 - Generates `backend/src/version.ts` with embedded VERSION and COMMIT_SHA constants
 - Backend imports these constants from `src/version.ts` instead of reading package.json or executing git commands
 
@@ -191,7 +195,7 @@ When building Docker images, pass the commit SHA as a build argument:
 docker build --build-arg GIT_COMMIT_SHA=$(git rev-parse --short HEAD) -t ai-usage-monitor .
 ```
 
-The Dockerfile `backend-builder` stage accepts `GIT_COMMIT_SHA` and sets it as an environment variable so the version generator can pick it up.
+The Dockerfile `backend-prep` stage accepts `GIT_COMMIT_SHA` and sets it as an environment variable so the version generator can pick it up.
 
 ### Important notes
 - `src/version.ts` is auto-generated and gitignored - do not edit manually
