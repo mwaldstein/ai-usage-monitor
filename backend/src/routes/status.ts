@@ -5,10 +5,26 @@ import { mapServiceRow, mapQuotaRow } from "./mappers.ts";
 import type { AIService, ServiceStatus, UsageQuota } from "../types/index.ts";
 import { nowTs } from "../utils/dates.ts";
 import { logger } from "../utils/logger.ts";
+import { getJWTExpiration } from "../utils/jwt.ts";
 
 const router = Router();
 
 const SERVICE_TIMEOUT = 15000;
+
+/**
+ * Extract JWT expiration from service bearer token or API key
+ */
+function extractTokenExpiration(service: AIService): number | undefined {
+  if (service.bearerToken) {
+    const exp = getJWTExpiration(service.bearerToken);
+    if (exp) return exp;
+  }
+  if (service.apiKey) {
+    const exp = getJWTExpiration(service.apiKey);
+    if (exp) return exp;
+  }
+  return undefined;
+}
 
 router.get("/cached", async (req, res) => {
   try {
@@ -52,6 +68,7 @@ router.get("/cached", async (req, res) => {
         isHealthy: quotas.length > 0,
         authError: false,
         error: quotas.length > 0 ? undefined : "No cached quota data yet",
+        tokenExpiration: extractTokenExpiration(service),
       };
     });
 
@@ -87,6 +104,7 @@ router.get("/", async (req, res) => {
           isHealthy: false,
           authError: false,
           error: error instanceof Error ? error.message : "Unknown error",
+          tokenExpiration: extractTokenExpiration(service),
         });
       }
     }

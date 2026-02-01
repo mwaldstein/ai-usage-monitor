@@ -1,6 +1,13 @@
 import { useState, useMemo } from "react";
 import type { ServiceStatus, UsageHistory } from "../types";
-import { RefreshCw, ExternalLink, ChevronDown, AlertCircle, CheckCircle2 } from "lucide-react";
+import {
+  RefreshCw,
+  ExternalLink,
+  ChevronDown,
+  AlertCircle,
+  CheckCircle2,
+  Clock,
+} from "lucide-react";
 import { CompactQuota, MiniSparkline, getProviderColor } from "./ServiceCard/index";
 
 interface ServiceCardProps {
@@ -22,9 +29,34 @@ export function ServiceCard({
   viewMode = "compact",
   isConnected = true,
 }: ServiceCardProps) {
-  const { service, quotas, lastUpdated, isHealthy, error, authError } = status;
+  const { service, quotas, lastUpdated, isHealthy, error, authError, tokenExpiration } = status;
   const providerColor = getProviderColor(service.provider);
   const [isExpanded, setIsExpanded] = useState(false);
+
+  // Check token expiration status
+  const tokenStatus = useMemo(() => {
+    if (!tokenExpiration) return null;
+
+    const now = Date.now() / 1000;
+    const timeUntilExp = tokenExpiration - now;
+    const hoursUntilExp = timeUntilExp / 3600;
+
+    if (timeUntilExp <= 0) {
+      return { state: "expired", message: "Token expired", hours: 0 };
+    }
+    if (hoursUntilExp <= 24) {
+      return {
+        state: "warning",
+        message: `Expires in ${Math.ceil(hoursUntilExp)}h`,
+        hours: hoursUntilExp,
+      };
+    }
+    return {
+      state: "ok",
+      message: `Expires ${new Date(tokenExpiration * 1000).toLocaleDateString()}`,
+      hours: hoursUntilExp,
+    };
+  }, [tokenExpiration]);
 
   const sparklineData = useMemo(() => {
     if (!quotas.length) return { values: [] as number[], isBurnDown: false };
@@ -85,9 +117,32 @@ export function ServiceCard({
                   <AlertCircle size={12} className="text-red-500" />
                 )}
               </div>
-              <span className="text-[10px] text-zinc-500 uppercase tracking-wide">
-                {service.provider}
-              </span>
+              <div className="flex items-center gap-1.5">
+                <span className="text-[10px] text-zinc-500 uppercase tracking-wide">
+                  {service.provider}
+                </span>
+                {tokenStatus && (
+                  <span
+                    className={`text-[10px] flex items-center gap-0.5 ${
+                      tokenStatus.state === "expired"
+                        ? "text-red-500"
+                        : tokenStatus.state === "warning"
+                          ? "text-amber-500"
+                          : "text-zinc-500"
+                    }`}
+                    title={
+                      tokenStatus.state === "expired"
+                        ? "Token has expired - refresh required"
+                        : tokenStatus.state === "warning"
+                          ? "Token expires soon - refresh recommended"
+                          : "Token expiration date"
+                    }
+                  >
+                    <Clock size={9} />
+                    {tokenStatus.message}
+                  </span>
+                )}
+              </div>
             </div>
           </div>
 

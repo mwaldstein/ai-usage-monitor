@@ -43,6 +43,7 @@ export interface ServiceStatus {
   isHealthy: boolean;
   error?: string;
   authError?: boolean;
+  tokenExpiration?: number; // unix seconds - JWT exp claim if available
 }
 
 export type AIProvider =

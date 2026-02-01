@@ -3,6 +3,7 @@ import type { AxiosInstance } from "axios";
 import type { AIService, UsageQuota, ServiceStatus, AIProvider } from "../types/index.ts";
 import { providerConfigs } from "./providers.ts";
 import { nowTs } from "../utils/dates.ts";
+import { getJWTExpiration } from "../utils/jwt.ts";
 
 export abstract class BaseAIService {
   protected client: AxiosInstance;
@@ -36,7 +37,30 @@ export abstract class BaseAIService {
 
   abstract fetchQuotas(): Promise<UsageQuota[]>;
 
+  /**
+   * Extract JWT expiration from service bearer token or API key
+   * Returns expiration timestamp (unix seconds) if found, undefined otherwise
+   */
+  protected extractTokenExpiration(): number | undefined {
+    // Check bearerToken first (most likely to be JWT)
+    if (this.service.bearerToken) {
+      const exp = getJWTExpiration(this.service.bearerToken);
+      if (exp) return exp;
+    }
+
+    // Also check apiKey (some providers use JWT as API key)
+    if (this.service.apiKey) {
+      const exp = getJWTExpiration(this.service.apiKey);
+      if (exp) return exp;
+    }
+
+    return undefined;
+  }
+
   async getStatus(): Promise<ServiceStatus> {
+    // Extract JWT expiration before fetching quotas
+    const tokenExpiration = this.extractTokenExpiration();
+
     try {
       const quotas = await this.fetchQuotas();
       return {
@@ -45,6 +69,7 @@ export abstract class BaseAIService {
         lastUpdated: nowTs(),
         isHealthy: true,
         authError: false,
+        tokenExpiration,
       };
     } catch (error) {
       return {
@@ -54,6 +79,7 @@ export abstract class BaseAIService {
         isHealthy: false,
         authError: this.isAuthError(error),
         error: error instanceof Error ? error.message : "Unknown error",
+        tokenExpiration,
       };
     }
   }
