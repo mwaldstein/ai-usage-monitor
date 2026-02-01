@@ -89,7 +89,8 @@ Production serves frontend static files from `/`, API at `/api/*`, health check 
 ## Versioning & Changelog
 
 - Version/commit SHA generated into `backend/src/version.ts` at build time (gitignored, do not edit)
-- Update CHANGELOG.md for user-facing changes using [Keep a Changelog](https://keepachangelog.com/) format
+- Update CHANGELOG.md for all changes using [Keep a Changelog](https://keepachangelog.com/) format
+- Keep entries human readable and concise (good: "refactored large files in backend", bad: "refactored backend/src/index.ts, backend/src/api.ts, backend/src/db.ts")
 - Backend `package.json` version should match CHANGELOG.md
 
 ## Commits
