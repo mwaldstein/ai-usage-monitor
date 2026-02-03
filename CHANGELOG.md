@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+- Refactored `backend/src/routes/usage.ts`: split 223-line monolithic router into `history.ts` (47 lines) and `analytics.ts` (166 lines), with `usage.ts` reduced to 10 lines of re-exports. Separates history retrieval from analytics aggregation per SRP
+
 ### Added
 - JWT expiration warnings: Parse JWT tokens from bearer tokens and API keys to display expiration time in ServiceCard. Shows "Token expired" (red), "Expires in Xh" (amber, <24h), or expiration date (gray). Backend extracts `exp` claim via new `jwt.ts` utility; frontend displays with Clock icon
 - Workspace convenience scripts: `dev:backend`, `dev:frontend`, `typecheck` (both workspaces)

@@ -4,9 +4,6 @@
 
 ## Technical Debt / Refactoring
 
-### Backend
-- Split `backend/src/routes/usage.ts` into separate modules (`history.ts`, `analytics.ts`)
-
 ### Frontend
 - Extract custom hooks from `frontend/src/App.tsx` (service management, view state)
 - Split `frontend/src/hooks/useWebSocket.ts` into connection management and status normalization utilities
