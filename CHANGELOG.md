@@ -10,6 +10,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - Settings panel now shows JWT token expiration dates for services with bearer tokens
 
+### Fixed
+- JWT expiration now included in WebSocket initial payload (previously only appeared after refresh)
+
 ## [0.4.2] - 2026-02-03
 
 ### Fixed

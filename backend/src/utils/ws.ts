@@ -3,6 +3,7 @@ import type { Server } from "http";
 import type { AIService, ServiceStatus } from "../types/index.ts";
 import { getDatabase } from "../database/index.ts";
 import { nowTs } from "./dates.ts";
+import { getJWTExpiration } from "./jwt.ts";
 import { logger } from "./logger.ts";
 
 // WebSocket connections
@@ -121,6 +122,15 @@ async function sendStatusToClient(ws: WebSocket) {
         0,
       );
 
+      // Extract JWT expiration from bearer token or API key
+      let tokenExpiration: number | undefined;
+      if (service.bearerToken) {
+        tokenExpiration = getJWTExpiration(service.bearerToken);
+      }
+      if (!tokenExpiration && service.apiKey) {
+        tokenExpiration = getJWTExpiration(service.apiKey);
+      }
+
       return {
         service,
         quotas,
@@ -128,6 +138,7 @@ async function sendStatusToClient(ws: WebSocket) {
         isHealthy: quotas.length > 0,
         authError: false,
         error: quotas.length > 0 ? undefined : "No cached quota data yet",
+        tokenExpiration,
       };
     });
 
