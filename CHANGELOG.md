@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- Settings panel now shows JWT token expiration dates for services with bearer tokens
+
 ## [0.4.2] - 2026-02-03
 
 ### Fixed

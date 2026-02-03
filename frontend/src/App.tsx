@@ -236,6 +236,31 @@ function App() {
                     />
                     <span className="text-sm font-medium">{service.name}</span>
                     <span className="text-xs text-zinc-500">{service.provider}</span>
+                    {(() => {
+                      const tokenExp = statuses.find(
+                        (s) => s.service.id === service.id,
+                      )?.tokenExpiration;
+                      if (!tokenExp) return null;
+                      const now = Date.now() / 1000;
+                      const hoursLeft = (tokenExp - now) / 3600;
+                      if (hoursLeft <= 0) {
+                        return (
+                          <span className="text-xs text-red-400 font-medium">Token expired</span>
+                        );
+                      }
+                      if (hoursLeft <= 24) {
+                        return (
+                          <span className="text-xs text-amber-400">
+                            Exp {Math.ceil(hoursLeft)}h
+                          </span>
+                        );
+                      }
+                      return (
+                        <span className="text-xs text-zinc-500">
+                          Exp {new Date(tokenExp * 1000).toLocaleDateString()}
+                        </span>
+                      );
+                    })()}
                   </div>
                   <div className="flex gap-1">
                     <button
