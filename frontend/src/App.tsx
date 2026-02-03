@@ -165,15 +165,6 @@ function App() {
                   </button>
 
                   <button
-                    onClick={openModal}
-                    disabled={!isConnected}
-                    className={`btn-icon tooltip bg-violet-600 border-violet-500 hover:bg-violet-500 ${!isConnected ? "opacity-40 cursor-not-allowed" : ""}`}
-                    data-tooltip={isConnected ? "Add service" : "Offline - cannot add services"}
-                  >
-                    <Plus size={14} />
-                  </button>
-
-                  <button
                     onClick={() => toggleSettings(isConnected)}
                     disabled={!isConnected}
                     className={`btn-icon tooltip ${showSettings && isConnected ? "bg-zinc-700 text-white" : ""} ${!isConnected ? "opacity-40 cursor-not-allowed" : ""}`}
@@ -277,6 +268,13 @@ function App() {
                 </div>
               ))}
             </div>
+            <button
+              onClick={openModal}
+              className="mt-3 w-full flex items-center justify-center gap-2 px-3 py-2 bg-violet-600 hover:bg-violet-500 text-white text-sm font-medium rounded-lg transition-colors"
+            >
+              <Plus size={14} />
+              Add Service
+            </button>
           </div>
         )}
 

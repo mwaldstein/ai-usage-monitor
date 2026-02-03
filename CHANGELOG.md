@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Changed
+- Moved "Add Service" button from header menu to Settings panel for better UX
 - Refactored `frontend/src/App.tsx`: extracted `useServiceManagement` hook (112 lines, service CRUD and modal state) and `useViewState` hook (35 lines, view mode, settings, and selection state), reducing main component from 463 to 383 lines. Separates service management and UI state concerns per SRP
 - Refactored `frontend/src/hooks/useWebSocket.ts`: split 236-line hook into `wsConnection.ts` (84 lines, connection lifecycle and reconnection logic), `statusNormalization.ts` (70 lines, merge helpers and metric sorting), and `useWebSocket.ts` (82 lines, status state management). Separates WebSocket connection management from status normalization per SRP
 - Refactored `backend/src/routes/usage.ts`: split 223-line monolithic router into `history.ts` (47 lines) and `analytics.ts` (166 lines), with `usage.ts` reduced to 10 lines of re-exports. Separates history retrieval from analytics aggregation per SRP
