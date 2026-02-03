@@ -48,7 +48,7 @@ COPY --from=backend-prep /app/backend/src ./backend/src
 COPY --from=backend-prep /app/backend/scripts ./backend/scripts
 
 # Copy frontend build to serve static files
-COPY --from=frontend-builder /app/frontend/dist ./frontend-dist
+COPY --from=frontend-builder /app/frontend/dist ./backend/frontend-dist
 
 # Create data directory
 RUN mkdir -p data
