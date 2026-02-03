@@ -31,7 +31,7 @@ RUN npm ci
 
 # Copy backend and generate version
 COPY backend/ ./backend/
-RUN npm run prestart -w backend
+RUN npm run generate-version -w backend
 
 # Production stage
 FROM node:24-alpine
