@@ -181,26 +181,26 @@ function App() {
               <button
                 onClick={() => setCurrentView("dashboard")}
                 disabled={!isConnected}
-                className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+                className={`flex items-center gap-2 px-2 sm:px-4 py-2 rounded-lg text-sm font-medium transition-all ${
                   currentView === "dashboard"
                     ? "bg-zinc-800 text-white border border-white/10"
                     : "text-zinc-400 hover:text-white hover:bg-zinc-800/50"
                 } ${!isConnected ? "opacity-40 cursor-not-allowed" : ""}`}
               >
                 <LayoutGrid size={16} />
-                <span>Dashboard</span>
+                <span className="hidden sm:inline">Dashboard</span>
               </button>
               <button
                 onClick={() => setCurrentView("analytics")}
                 disabled={!isConnected}
-                className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+                className={`flex items-center gap-2 px-2 sm:px-4 py-2 rounded-lg text-sm font-medium transition-all ${
                   currentView === "analytics"
                     ? "bg-zinc-800 text-white border border-white/10"
                     : "text-zinc-400 hover:text-white hover:bg-zinc-800/50"
                 } ${!isConnected ? "opacity-40 cursor-not-allowed" : ""}`}
               >
                 <BarChart3 size={16} />
-                <span>Analytics</span>
+                <span className="hidden sm:inline">Analytics</span>
               </button>
             </div>
           </div>

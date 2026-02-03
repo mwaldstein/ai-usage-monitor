@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- Mobile nav improvements: Dashboard/Analytics buttons now show icons only on small screens, with reduced horizontal padding
+
 ### Changed
 - Moved "Add Service" button from header menu to Settings panel for better UX
 - Refactored `frontend/src/App.tsx`: extracted `useServiceManagement` hook (112 lines, service CRUD and modal state) and `useViewState` hook (35 lines, view mode, settings, and selection state), reducing main component from 463 to 383 lines. Separates service management and UI state concerns per SRP
