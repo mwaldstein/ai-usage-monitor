@@ -5,7 +5,6 @@
 ## Technical Debt / Refactoring
 
 ### Frontend
-- Extract custom hooks from `frontend/src/App.tsx` (service management, view state)
 - Break down `frontend/src/components/AnalyticsView.tsx` into chart-specific sub-components
 
 ## Features

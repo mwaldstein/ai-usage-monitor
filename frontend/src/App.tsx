@@ -1,6 +1,8 @@
-import { useState, useCallback, useEffect } from "react";
+import { useCallback, useEffect } from "react";
 import { useWebSocket } from "./hooks/useWebSocket";
-import { useServices, useUsageHistory, useVersion } from "./hooks/useApi";
+import { useUsageHistory, useVersion } from "./hooks/useApi";
+import { useServiceManagement } from "./hooks/useServiceManagement";
+import { useViewState } from "./hooks/useViewState";
 import { ServiceCard } from "./components/ServiceCard";
 import { AddServiceModal } from "./components/AddServiceModal";
 import { AnalyticsView } from "./components/AnalyticsView";
@@ -21,7 +23,6 @@ import {
   AlertCircle,
   BarChart3,
 } from "lucide-react";
-import type { AIService } from "./types";
 
 function App() {
   const {
@@ -33,24 +34,34 @@ function App() {
     refresh,
     refreshService,
   } = useWebSocket();
+
   const {
     services,
-    addService,
-    updateService,
-    deleteService,
-    reorderServices,
-    refresh: refreshServices,
-  } = useServices();
-  const { history, refresh: refreshHistory } = useUsageHistory(undefined, 2); // Fetch 2 hours of history for comparisons
-  const { version, commitSha } = useVersion();
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [showSettings, setShowSettings] = useState(false);
-  const [editingService, setEditingService] = useState<AIService | null>(null);
-  const [viewMode, setViewMode] = useState<"compact" | "expanded">("compact");
-  const [selectedService, setSelectedService] = useState<string | null>(null);
-  const [currentView, setCurrentView] = useState<"dashboard" | "analytics">("dashboard");
+    isModalOpen,
+    editingService,
+    openModal,
+    handleCloseModal,
+    handleModalSubmit,
+    handleEditService,
+    handleDeleteService,
+    handleReorderService,
+  } = useServiceManagement({ reloadCached });
 
-  // Keep history in sync with live updates.
+  const {
+    showSettings,
+    viewMode,
+    selectedService,
+    currentView,
+    setViewMode,
+    setCurrentView,
+    toggleSettings,
+    closeSettings,
+    toggleServiceSelection,
+  } = useViewState();
+
+  const { history, refresh: refreshHistory } = useUsageHistory(undefined, 2);
+  const { version, commitSha } = useVersion();
+
   useEffect(() => {
     if (!lastUpdate) return;
     refreshHistory();
@@ -59,85 +70,6 @@ function App() {
   const handleRefreshAll = useCallback(() => {
     refresh();
   }, [refresh]);
-
-  const handleAddService = async (
-    service: Omit<AIService, "id" | "createdAt" | "updatedAt" | "displayOrder">,
-  ) => {
-    const success = await addService(service);
-    if (success) {
-      reloadCached();
-    }
-  };
-
-  const handleUpdateService = async (service: Partial<AIService>) => {
-    if (!editingService) return;
-    const success = await updateService(editingService.id, service);
-    if (success) {
-      setEditingService(null);
-      reloadCached();
-    }
-  };
-
-  const handleDeleteService = async (id: string) => {
-    if (confirm("Delete this service?")) {
-      await deleteService(id);
-      refreshServices();
-      reloadCached();
-    }
-  };
-
-  const handleEditService = (service: AIService) => {
-    setEditingService(service);
-    setIsModalOpen(true);
-  };
-
-  const handleReorderService = async (serviceId: string, direction: "up" | "down") => {
-    const currentIndex = services.findIndex((s) => s.id === serviceId);
-    if (currentIndex === -1) return;
-
-    let newServices = [...services];
-    if (direction === "up" && currentIndex > 0) {
-      [newServices[currentIndex], newServices[currentIndex - 1]] = [
-        newServices[currentIndex - 1],
-        newServices[currentIndex],
-      ];
-    } else if (direction === "down" && currentIndex < services.length - 1) {
-      [newServices[currentIndex], newServices[currentIndex + 1]] = [
-        newServices[currentIndex + 1],
-        newServices[currentIndex],
-      ];
-    } else {
-      return; // Can't move in this direction
-    }
-
-    // Update backend and then refresh the display immediately
-    await reorderServices(newServices.map((s) => s.id));
-    reloadCached(); // Force immediate refresh of WebSocket statuses
-  };
-
-  const handleCloseModal = () => {
-    setIsModalOpen(false);
-    setEditingService(null);
-  };
-
-  const handleModalSubmit = async (
-    service: Omit<AIService, "id" | "createdAt" | "updatedAt" | "displayOrder">,
-  ) => {
-    if (editingService) {
-      // For editing, convert to Partial<AIService> by including all fields from the form
-      const updateData: Partial<AIService> = {
-        name: service.name,
-        provider: service.provider,
-        apiKey: service.apiKey,
-        bearerToken: service.bearerToken,
-        baseUrl: service.baseUrl,
-        enabled: service.enabled,
-      };
-      await handleUpdateService(updateData);
-    } else {
-      await handleAddService(service);
-    }
-  };
 
   const healthyCount = statuses.filter((s) => s.isHealthy).length;
   const totalCount = statuses.length;
@@ -233,7 +165,7 @@ function App() {
                   </button>
 
                   <button
-                    onClick={() => setIsModalOpen(true)}
+                    onClick={openModal}
                     disabled={!isConnected}
                     className={`btn-icon tooltip bg-violet-600 border-violet-500 hover:bg-violet-500 ${!isConnected ? "opacity-40 cursor-not-allowed" : ""}`}
                     data-tooltip={isConnected ? "Add service" : "Offline - cannot add services"}
@@ -242,7 +174,7 @@ function App() {
                   </button>
 
                   <button
-                    onClick={() => isConnected && setShowSettings(!showSettings)}
+                    onClick={() => toggleSettings(isConnected)}
                     disabled={!isConnected}
                     className={`btn-icon tooltip ${showSettings && isConnected ? "bg-zinc-700 text-white" : ""} ${!isConnected ? "opacity-40 cursor-not-allowed" : ""}`}
                     data-tooltip={isConnected ? "Settings" : "Offline - settings unavailable"}
@@ -293,10 +225,7 @@ function App() {
               <h3 className="text-xs font-semibold text-zinc-400 uppercase tracking-wider">
                 Services
               </h3>
-              <button
-                onClick={() => setShowSettings(false)}
-                className="text-zinc-500 hover:text-white"
-              >
+              <button onClick={closeSettings} className="text-zinc-500 hover:text-white">
                 <ChevronUp size={16} />
               </button>
             </div>
@@ -385,11 +314,7 @@ function App() {
                   viewMode={viewMode}
                   onRefresh={() => refreshService(status.service.id)}
                   isSelected={selectedService === status.service.id}
-                  onSelect={() =>
-                    setSelectedService(
-                      selectedService === status.service.id ? null : status.service.id,
-                    )
-                  }
+                  onSelect={() => toggleServiceSelection(status.service.id)}
                   isConnected={isConnected}
                 />
               ))}
@@ -403,7 +328,7 @@ function App() {
                 </div>
                 <p className="text-zinc-400 text-sm mb-3">No services configured</p>
                 <button
-                  onClick={() => setIsModalOpen(true)}
+                  onClick={openModal}
                   disabled={!isConnected}
                   className={`px-4 py-2 bg-violet-600 hover:bg-violet-500 text-white text-sm font-medium rounded-lg transition-colors ${!isConnected ? "opacity-40 cursor-not-allowed" : ""}`}
                 >
