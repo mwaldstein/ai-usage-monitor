@@ -16,6 +16,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - JWT expiration warnings: Parse JWT tokens from bearer tokens and API keys to display expiration time in ServiceCard. Shows "Token expired" (red), "Expires in Xh" (amber, <24h), or expiration date (gray). Backend extracts `exp` claim via new `jwt.ts` utility; frontend displays with Clock icon
 - Workspace convenience scripts: `dev:backend`, `dev:frontend`, `typecheck` (both workspaces)
 
+### Fixed
+- Hide change indicators (+0.0%) for unchanged quotas in expanded ServiceCard view
+
 ### Changed
 - Refactored `backend/src/index.ts`: extracted server lifecycle logic (`startServer`, `gracefulShutdown`, signal handlers) into `backend/src/utils/lifecycle.ts`, reducing main file from 185 to 68 lines (63% reduction). Separates server orchestration from lifecycle management per SRP
 - Refactored `backend/src/index.ts`: extracted WebSocket handling into `backend/src/utils/ws.ts` and quota refresh logic into `backend/src/services/quotas.ts`, reducing main file from 470 to 187 lines (60% reduction total). Separates real-time communication, quota management, and server orchestration concerns per SRP

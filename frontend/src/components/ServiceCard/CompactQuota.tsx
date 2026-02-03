@@ -122,9 +122,9 @@ export function CompactQuota({
             )}
           </div>
           <div className="flex items-center gap-2">
-            {viewMode === "expanded" && sparklineData.length > 1 && (
+            {viewMode === "expanded" && sparklineData.length > 1 && delta !== 0 && (
               <span
-                className={`text-xs font-semibold ${delta < 0 ? "text-red-400" : delta > 0 ? "text-emerald-400" : "text-zinc-400"}`}
+                className={`text-xs font-semibold ${delta < 0 ? "text-red-400" : "text-emerald-400"}`}
               >
                 {deltaText}
               </span>
