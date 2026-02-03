@@ -5,7 +5,6 @@
 ## Technical Debt / Refactoring
 
 ### Backend
-- Extract server lifecycle module from `backend/src/index.ts` (`startServer`, `gracefulShutdown`, signal handlers)
 - Split `backend/src/routes/usage.ts` into separate modules (`history.ts`, `analytics.ts`)
 
 ### Frontend

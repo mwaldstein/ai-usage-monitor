@@ -12,6 +12,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Workspace convenience scripts: `dev:backend`, `dev:frontend`, `typecheck` (both workspaces)
 
 ### Changed
+- Refactored `backend/src/index.ts`: extracted server lifecycle logic (`startServer`, `gracefulShutdown`, signal handlers) into `backend/src/utils/lifecycle.ts`, reducing main file from 185 to 68 lines (63% reduction). Separates server orchestration from lifecycle management per SRP
 - Refactored `backend/src/index.ts`: extracted WebSocket handling into `backend/src/utils/ws.ts` and quota refresh logic into `backend/src/services/quotas.ts`, reducing main file from 470 to 187 lines (60% reduction total). Separates real-time communication, quota management, and server orchestration concerns per SRP
 - Migrated to npm workspaces: consolidated root, backend, and frontend into single workspace configuration with root-level lockfile
 - Updated Docker build: multi-stage now installs from root package.json with workspace-aware commands
