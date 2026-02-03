@@ -7,28 +7,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4.0] - 2026-02-03
+
 ### Added
 - Mobile nav improvements: Dashboard/Analytics buttons now show icons only on small screens, with reduced horizontal padding
-
-### Changed
-- Moved "Add Service" button from header menu to Settings panel for better UX
-- Refactored `frontend/src/App.tsx`: extracted `useServiceManagement` hook (112 lines, service CRUD and modal state) and `useViewState` hook (35 lines, view mode, settings, and selection state), reducing main component from 463 to 383 lines. Separates service management and UI state concerns per SRP
-- Refactored `frontend/src/hooks/useWebSocket.ts`: split 236-line hook into `wsConnection.ts` (84 lines, connection lifecycle and reconnection logic), `statusNormalization.ts` (70 lines, merge helpers and metric sorting), and `useWebSocket.ts` (82 lines, status state management). Separates WebSocket connection management from status normalization per SRP
-- Refactored `backend/src/routes/usage.ts`: split 223-line monolithic router into `history.ts` (47 lines) and `analytics.ts` (166 lines), with `usage.ts` reduced to 10 lines of re-exports. Separates history retrieval from analytics aggregation per SRP
-
-### Added
 - JWT expiration warnings: Parse JWT tokens from bearer tokens and API keys to display expiration time in ServiceCard. Shows "Token expired" (red), "Expires in Xh" (amber, <24h), or expiration date (gray). Backend extracts `exp` claim via new `jwt.ts` utility; frontend displays with Clock icon
 - Workspace convenience scripts: `dev:backend`, `dev:frontend`, `typecheck` (both workspaces)
 
-### Fixed
-- Hide change indicators (+0.0%) for unchanged quotas in expanded ServiceCard view
-
 ### Changed
-- Refactored `backend/src/index.ts`: extracted server lifecycle logic (`startServer`, `gracefulShutdown`, signal handlers) into `backend/src/utils/lifecycle.ts`, reducing main file from 185 to 68 lines (63% reduction). Separates server orchestration from lifecycle management per SRP
-- Refactored `backend/src/index.ts`: extracted WebSocket handling into `backend/src/utils/ws.ts` and quota refresh logic into `backend/src/services/quotas.ts`, reducing main file from 470 to 187 lines (60% reduction total). Separates real-time communication, quota management, and server orchestration concerns per SRP
+- Moved "Add Service" button from header menu to Settings panel for better UX
+- Refactored `frontend/src/App.tsx`: extracted `useServiceManagement` hook (112 lines, service CRUD and modal state) and `useViewState` hook (35 lines, view mode, settings, and selection state), reducing main component from 463 to 383 lines
+- Refactored `frontend/src/hooks/useWebSocket.ts`: split 236-line hook into `wsConnection.ts`, `statusNormalization.ts`, and `useWebSocket.ts`
+- Refactored `backend/src/routes/usage.ts`: split into `history.ts` and `analytics.ts`
+- Refactored `backend/src/index.ts`: extracted server lifecycle logic into `lifecycle.ts`, WebSocket handling into `ws.ts`, and quota refresh into `quotas.ts`
 - Migrated to npm workspaces: consolidated root, backend, and frontend into single workspace configuration with root-level lockfile
 - Updated Docker build: multi-stage now installs from root package.json with workspace-aware commands
 - Simplified GitHub Actions: removed redundant npm ci in subdirectories, now uses single root install
+
+### Fixed
+- Hide change indicators (+0.0%) for unchanged quotas in expanded ServiceCard view
 
 ## [0.3.1] - 2026-01-31
 
@@ -138,7 +135,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 - Added missing dependencies (uuid, sqlite) for Docker builds
 
-[Unreleased]: https://github.com/mwaldstein/ai-usage-monitor/compare/v0.3.1...HEAD
+[Unreleased]: https://github.com/mwaldstein/ai-usage-monitor/compare/v0.4.0...HEAD
+[0.4.0]: https://github.com/mwaldstein/ai-usage-monitor/compare/v0.3.1...v0.4.0
 [0.3.1]: https://github.com/mwaldstein/ai-usage-monitor/compare/v0.3.0...v0.3.1
 [0.3.0]: https://github.com/mwaldstein/ai-usage-monitor/compare/v0.2.0...v0.3.0
 [0.2.0]: https://github.com/mwaldstein/ai-usage-monitor/compare/v0.1.2...v0.2.0
