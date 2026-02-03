@@ -12,6 +12,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 - JWT expiration now included in WebSocket initial payload (previously only appeared after refresh)
+- Analytics view: fixed 404 error for provider comparison API (incorrect route path)
 
 ## [0.4.2] - 2026-02-03
 

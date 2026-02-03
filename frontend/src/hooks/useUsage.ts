@@ -85,7 +85,7 @@ export function useProviderAnalytics(days: number = 30) {
       const params = new URLSearchParams();
       params.append("days", days.toString());
 
-      const response = await fetch(`${API_URL}/usage/providers?${params}`);
+      const response = await fetch(`${API_URL}/usage/analytics/providers?${params}`);
       if (!response.ok) throw new Error("Failed to fetch provider analytics");
       const data = await response.json();
       setProviderAnalytics(data);
