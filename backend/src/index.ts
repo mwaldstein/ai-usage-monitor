@@ -14,6 +14,7 @@ import { initTracing } from "./utils/tracing.ts";
 import { initializeWebSocket, broadcast } from "./utils/ws.ts";
 import { startServer, registerSignalHandlers } from "./utils/lifecycle.ts";
 import { HealthResponse, VersionResponse } from "shared/api";
+import { getEnv } from "./schemas/env.ts";
 
 const tracingSdk = initTracing();
 
@@ -22,16 +23,14 @@ const __dirname = path.dirname(__filename);
 
 dotenv.config({ quiet: true });
 
+const env = getEnv();
+
 const app = express();
 const server = createServer(app);
 const wss = initializeWebSocket(server);
 
-const PORT = process.env.PORT || 3001;
-
-const REFRESH_INTERVAL_RAW = process.env.REFRESH_INTERVAL || "*/5 * * * *";
-const REFRESH_INTERVAL = /^\d+$/.test(REFRESH_INTERVAL_RAW)
-  ? `*/${REFRESH_INTERVAL_RAW} * * * *`
-  : REFRESH_INTERVAL_RAW;
+const PORT = env.port;
+const REFRESH_INTERVAL = env.refreshInterval;
 
 // Middleware
 app.use(cors());
@@ -51,7 +50,7 @@ app.get("/version", (req, res) => {
 });
 
 // Serve static frontend files in production
-if (process.env.NODE_ENV === "production") {
+if (env.nodeEnv === "production") {
   const frontendDistPath = path.join(__dirname, "../frontend-dist");
   app.use(express.static(frontendDistPath));
 

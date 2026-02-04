@@ -19,6 +19,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Reauth flow uses cached service data (no per-id fetch)
 - Docker compose now mounts `backend/data` by default; docs clarify data paths
 - Docker compose now sets `DATA_DIR=/app/data` for prod DB path
+- Env startup now validates/normalizes PORT, REFRESH_INTERVAL, NODE_ENV, DATA_DIR via Effect schema
 
 ### Fixed
 - JWT expiration now included in WebSocket initial payload (previously only appeared after refresh)

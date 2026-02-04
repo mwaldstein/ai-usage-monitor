@@ -11,7 +11,7 @@ Goal: protect every external interface with Effect Schema decode/encode; no `any
 - Frontend fetch decode: `frontend/src/hooks/*`
 
 ## Plan
-1. Env schema: add `backend/src/schemas/env.ts`; parse `PORT`, `REFRESH_INTERVAL`, `NODE_ENV`, `DATA_DIR`; fail fast with clear errors.
+1. Env schema: add `backend/src/schemas/env.ts`; parse `PORT`, `REFRESH_INTERVAL`, `NODE_ENV`, `DATA_DIR`; fail fast with clear errors. (done)
 2. Query/params schema: replace ad-hoc parsers with schema refinements; decode `req.query`, `req.params`, `req.body` in each route.
 3. DB row schema: define row schemas (service, quota, history, analytics); decode before mapping; model nulls explicitly.
 4. Provider response schema: per-provider decode module; parse external JSON/HTML to unknown -> schema -> domain; map errors to typed provider errors.

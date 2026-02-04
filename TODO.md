@@ -7,6 +7,9 @@
 ### Frontend
 - Break down `frontend/src/components/AnalyticsView.tsx` into chart-specific sub-components
 
+### Backend
+- Extend env schema to cover LOG_LEVEL and OTEL_* variables
+
 ## Features
 
 - **Quota-reset aware refresh**: Track quota floor (lowest point reached) to enable strategic refresh timing shortly before reset

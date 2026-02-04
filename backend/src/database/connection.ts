@@ -9,17 +9,19 @@ import {
   migrateUsageHistorySchema,
 } from "./migrations.ts";
 import { logger } from "../utils/logger.ts";
+import { getEnv } from "../schemas/env.ts";
 
 let db: Database<sqlite3.Database> | null = null;
 
 function getDataDir(): string {
+  const env = getEnv();
   // Explicit DATA_DIR takes precedence
-  if (process.env.DATA_DIR) {
-    return process.env.DATA_DIR;
+  if (env.dataDir) {
+    return env.dataDir;
   }
 
   // In production (Docker), use /app/data
-  if (process.env.NODE_ENV === "production") {
+  if (env.nodeEnv === "production") {
     return path.join(process.cwd(), "data");
   }
 
@@ -41,6 +43,7 @@ export async function initializeDatabase(): Promise<Database<sqlite3.Database>> 
   const dataDir = getDataDir();
   const dbPath = path.join(dataDir, "ai-usage.db");
   const dbExists = fs.existsSync(dbPath);
+  const env = getEnv();
 
   logger.info(
     {
@@ -48,8 +51,8 @@ export async function initializeDatabase(): Promise<Database<sqlite3.Database>> 
       dbPath,
       dbExists,
       cwd: process.cwd(),
-      NODE_ENV: process.env.NODE_ENV,
-      DATA_DIR: process.env.DATA_DIR,
+      NODE_ENV: env.nodeEnv,
+      DATA_DIR: env.dataDir,
     },
     "Initializing database",
   );
