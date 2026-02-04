@@ -17,12 +17,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Validate API query/params + system responses via shared schemas
 - Service provider now typed as AIProvider across API + UI
 - Reauth flow uses cached service data (no per-id fetch)
+- Docker compose now mounts `backend/data` by default; docs clarify data paths
+- Docker compose now sets `DATA_DIR=/app/data` for prod DB path
 
 ### Fixed
 - JWT expiration now included in WebSocket initial payload (previously only appeared after refresh)
 - Analytics view: fixed 404 error for provider comparison API (incorrect route path)
 - Refresh skips invalid service rows
-- Codex quota gauges now track percent used (not remaining) for windowed limits
+- Codex windowed quotas now display percent remaining with low-remaining thresholds
 
 ## [0.4.2] - 2026-02-03
 

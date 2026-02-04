@@ -215,7 +215,7 @@ REFRESH_INTERVAL=*/5 * * * * # Cron schedule for auto-refresh (default: every 5 
 
 ### Database
 
-The application uses SQLite for data storage. The database file is created automatically at `backend/data/ai-usage.db`.
+The application uses SQLite for data storage. Default path: `backend/data/ai-usage.db` in dev, `/app/data/ai-usage.db` in Docker/production. Override with `DATA_DIR`.
 
 ## Development
 
@@ -308,7 +308,7 @@ docker build -t ai-usage-quota .
 docker run -d \
   --name ai-usage-quota \
   -p 3001:3001 \
-  -v $(pwd)/data:/app/data \
+  -v $(pwd)/backend/data:/app/data \
   ai-usage-quota
 ```
 
@@ -354,7 +354,7 @@ You can customize the configuration by passing environment variables:
 docker run -d \
   --name ai-usage-quota \
   -p 3001:3001 \
-  -v $(pwd)/data:/app/data \
+  -v $(pwd)/backend/data:/app/data \
   -e PORT=3001 \
   -e REFRESH_INTERVAL=*/5 * * * * \
   ai-usage-quota
@@ -372,7 +372,7 @@ services:
     ports:
       - "3001:3001"
     volumes:
-      - ./data:/app/data
+      - ./backend/data:/app/data
     environment:
       - PORT=3001
       - REFRESH_INTERVAL=*/5 * * * *
@@ -390,7 +390,7 @@ docker-compose up -d
 **⚠️ Important: This application lacks production-grade security features.**
 
 - **No user authentication**: The application has no login system or user management
-- **Unencrypted storage**: API keys are stored as plaintext in the SQLite database (`backend/data/ai-usage.db`)
+- **Unencrypted storage**: API keys are stored as plaintext in the SQLite database (`backend/data/ai-usage.db` in dev, `/app/data/ai-usage.db` in Docker)
 - **No access control**: Anyone who can reach the application endpoints can view and modify all data
 - **No HTTPS**: The development server runs on plain HTTP
 - **No audit logging**: Changes are not tracked or logged
@@ -402,7 +402,7 @@ If you absolutely need to access this remotely:
 1. Place it behind a reverse proxy (nginx, traefik) with HTTPS
 2. Implement a VPN or SSH tunnel for access
 3. Add basic HTTP authentication at the reverse proxy level
-4. Restrict database file permissions (`chmod 600 backend/data/ai-usage.db`)
+4. Restrict database file permissions (`chmod 600 backend/data/ai-usage.db` or `/app/data/ai-usage.db`)
 5. Do not store production API keys with high privileges
 6. Consider the API keys exposed/compromised and rotate them regularly
 

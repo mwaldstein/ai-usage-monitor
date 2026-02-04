@@ -138,27 +138,27 @@ export const CODEX_METRIC_DEFINITIONS: Record<string, MetricAnnotation> = {
     format: "percentage",
     displayName: "5-Hour Limit",
     priority: 10,
-    warnWhenLow: false,
-    warnThreshold: 70,
-    errorThreshold: 90,
+    warnWhenLow: true,
+    warnThreshold: 25,
+    errorThreshold: 10,
   },
   // Weekly usage (percentage)
   weekly: {
     format: "percentage",
     displayName: "Weekly Limit",
     priority: 20,
-    warnWhenLow: false,
-    warnThreshold: 70,
-    errorThreshold: 90,
+    warnWhenLow: true,
+    warnThreshold: 25,
+    errorThreshold: 10,
   },
   // Code reviews (percentage of weekly allowance)
   code_reviews: {
     format: "percentage",
     displayName: "Code Reviews",
     priority: 30,
-    warnWhenLow: false,
-    warnThreshold: 70,
-    errorThreshold: 90,
+    warnWhenLow: true,
+    warnThreshold: 25,
+    errorThreshold: 10,
   },
   // Paid credits balance
   credits: {

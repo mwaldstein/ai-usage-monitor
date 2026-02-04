@@ -129,7 +129,7 @@ export class CodexService extends BaseAIService {
           resetAt: window.reset_at,
           createdAt: nowTs(),
           updatedAt: nowTs(),
-          type: "rate_limit",
+          type: "usage",
         });
       }
 
@@ -149,7 +149,7 @@ export class CodexService extends BaseAIService {
           resetAt: window.reset_at,
           createdAt: nowTs(),
           updatedAt: nowTs(),
-          type: "rate_limit",
+          type: "usage",
         });
       }
 
@@ -169,7 +169,7 @@ export class CodexService extends BaseAIService {
           resetAt: window.reset_at,
           createdAt: nowTs(),
           updatedAt: nowTs(),
-          type: "rate_limit",
+          type: "usage",
         });
       }
 

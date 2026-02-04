@@ -6,8 +6,9 @@ services:
     ports:
       - "3001:3001"
     volumes:
-      - ./data:/app/data
+      - ./backend/data:/app/data
     environment:
       - PORT=3001
       - REFRESH_INTERVAL=*/5 * * * *
+      - DATA_DIR=/app/data
     restart: unless-stopped
