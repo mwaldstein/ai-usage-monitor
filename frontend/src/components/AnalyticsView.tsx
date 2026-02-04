@@ -344,7 +344,7 @@ export function AnalyticsView({ services, isConnected }: AnalyticsViewProps) {
 
           {chartData.length > 0 ? (
             <div className="h-80">
-              <ResponsiveContainer width="100%" height="100%">
+              <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={1}>
                 <LineChart data={chartData} margin={{ top: 5, right: 20, bottom: 5, left: 0 }}>
                   <CartesianGrid strokeDasharray="3 3" stroke="#27272a" />
                   <XAxis
@@ -402,7 +402,7 @@ export function AnalyticsView({ services, isConnected }: AnalyticsViewProps) {
             <h3 className="text-sm font-semibold text-zinc-300 mb-4">Provider Comparison</h3>
 
             <div className="h-64">
-              <ResponsiveContainer width="100%" height="100%">
+              <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={1}>
                 <BarChart data={providerData} margin={{ top: 5, right: 20, bottom: 5, left: 0 }}>
                   <CartesianGrid strokeDasharray="3 3" stroke="#27272a" />
                   <XAxis dataKey="name" stroke="#71717a" fontSize={10} tickLine={false} />

@@ -32,7 +32,33 @@ async function saveQuotasToDb(
 ): Promise<void> {
   const now = nowTs();
 
+  const persistedQuotas: UsageQuota[] = [];
+
   for (const quota of quotas) {
+    // Avoid persisting NaN/Infinity (JSON serializes them as null).
+    if (
+      !Number.isFinite(quota.limit) ||
+      !Number.isFinite(quota.used) ||
+      !Number.isFinite(quota.remaining) ||
+      !Number.isFinite(quota.resetAt)
+    ) {
+      logger.warn(
+        {
+          service: service.name,
+          serviceId: quota.serviceId,
+          metric: quota.metric,
+          limit: quota.limit,
+          used: quota.used,
+          remaining: quota.remaining,
+          resetAt: quota.resetAt,
+        },
+        "Skipping quota with non-finite numeric values",
+      );
+      continue;
+    }
+
+    persistedQuotas.push(quota);
+
     await db.run(
       `INSERT INTO quotas (id, service_id, metric, limit_value, used_value, remaining_value, type, replenishment_amount, replenishment_period, reset_at, created_at, updated_at) 
        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
@@ -64,7 +90,7 @@ async function saveQuotasToDb(
   }
 
   // Log usage history
-  for (const quota of quotas) {
+  for (const quota of persistedQuotas) {
     await db.run(
       "INSERT OR REPLACE INTO usage_history (service_id, metric, ts, value) VALUES (?, ?, ?, ?)",
       [quota.serviceId, quota.metric, now, quota.used],

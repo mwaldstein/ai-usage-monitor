@@ -167,31 +167,59 @@ router.get("/", async (req, res) => {
     }));
 
     const quotasQuery = `
-      SELECT
-        q.service_id as serviceId,
-        q.metric as metric,
-        q.limit_value as "limit",
-        q.used_value as used,
-        q.type as type,
-        s.name as service_name,
-        s.provider as provider
-      FROM quotas q
-      JOIN services s ON q.service_id = s.id
-      WHERE s.enabled = 1
+      SELECT * FROM (
+        SELECT
+          q.service_id as serviceId,
+          q.metric as metric,
+          q.limit_value as "limit",
+          q.used_value as used,
+          q.type as type,
+          s.name as service_name,
+          s.provider as provider,
+          ROW_NUMBER() OVER (
+            PARTITION BY q.service_id, q.metric
+            ORDER BY q.rowid DESC
+          ) AS rn
+        FROM quotas q
+        JOIN services s ON q.service_id = s.id
+        WHERE s.enabled = 1
+      )
+      WHERE rn = 1
     `;
 
     const quotas = serviceId
-      ? await db.all(quotasQuery + " AND q.service_id = ?", [serviceId])
+      ? await db.all(quotasQuery + " AND serviceId = ?", [serviceId])
       : await db.all(quotasQuery);
-    const normalizedQuotas = quotas.map((quota) => ({
-      serviceId: String(quota.serviceId),
-      metric: String(quota.metric),
-      limit: Number(quota.limit),
-      used: Number(quota.used),
-      type: quota.type ?? undefined,
-      service_name: String(quota.service_name),
-      provider: String(quota.provider),
-    }));
+    const normalizedQuotas = quotas
+      .map((quota) => {
+        const limit = Number(quota.limit);
+        const used = Number(quota.used);
+
+        // Prevent NaN/Infinity from being serialized as null in JSON.
+        if (!Number.isFinite(limit) || !Number.isFinite(used)) {
+          logger.warn(
+            {
+              serviceId: quota.serviceId,
+              metric: quota.metric,
+              limit: quota.limit,
+              used: quota.used,
+            },
+            "Skipping non-finite quota values in analytics response",
+          );
+          return null;
+        }
+
+        return {
+          serviceId: String(quota.serviceId),
+          metric: String(quota.metric),
+          limit,
+          used,
+          type: quota.type ?? undefined,
+          service_name: String(quota.service_name),
+          provider: String(quota.provider),
+        };
+      })
+      .filter((q): q is NonNullable<typeof q> => q !== null);
 
     let summaryQuery = `
       SELECT

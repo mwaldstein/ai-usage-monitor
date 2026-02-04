@@ -1,37 +1,80 @@
+import { Schema as S, Either } from "effect";
 import type { AIService, UsageQuota } from "../types/index.ts";
+import { AIProviderSchema } from "../types/index.ts";
+import { QuotaType, ReplenishmentPeriod } from "shared/schemas";
 
-export function mapServiceRow(row: any): AIService {
+function toNonEmptyString(value: unknown): string {
+  if (typeof value !== "string") return "";
+  return value.trim();
+}
+
+function toFiniteNumber(value: unknown, fallback: number): number {
+  if (typeof value === "number") {
+    return Number.isFinite(value) ? value : fallback;
+  }
+  if (typeof value === "string") {
+    const trimmed = value.trim();
+    if (trimmed.length === 0) return fallback;
+    const parsed = Number(trimmed);
+    return Number.isFinite(parsed) ? parsed : fallback;
+  }
+  return fallback;
+}
+
+function decodeOrUndefined<To, From>(
+  schema: S.Schema<To, From, never>,
+  value: unknown,
+): To | undefined {
+  const decoded = S.decodeUnknownEither(schema)(value);
+  return Either.isRight(decoded) ? decoded.right : undefined;
+}
+
+function decodeProvider(value: unknown): AIService["provider"] {
+  const decoded = S.decodeUnknownEither(AIProviderSchema)(value);
+  if (Either.isRight(decoded)) return decoded.right;
+
+  // Defensive fallback: DB should only contain valid provider values.
+  return "openai";
+}
+
+export function mapServiceRow(row: unknown): AIService {
+  const r = row as Record<string, unknown>;
   return {
-    id: row.id,
-    name: row.name,
-    provider: row.provider,
-    apiKey: row.api_key ?? undefined,
-    bearerToken: row.bearer_token ?? undefined,
-    baseUrl: row.base_url ?? undefined,
-    enabled: row.enabled === 1,
-    displayOrder: row.display_order ?? 0,
-    createdAt: row.created_at ?? 0,
-    updatedAt: row.updated_at ?? 0,
+    id: toNonEmptyString(r.id),
+    name: toNonEmptyString(r.name),
+    provider: decodeProvider(r.provider),
+    apiKey: typeof r.api_key === "string" ? r.api_key : undefined,
+    bearerToken: typeof r.bearer_token === "string" ? r.bearer_token : undefined,
+    baseUrl: typeof r.base_url === "string" ? r.base_url : undefined,
+    enabled: r.enabled === 1 || r.enabled === true,
+    displayOrder: toFiniteNumber(r.display_order, 0),
+    createdAt: toFiniteNumber(r.created_at, 0),
+    updatedAt: toFiniteNumber(r.updated_at, 0),
   };
 }
 
-export function mapQuotaRow(row: any): UsageQuota {
+export function mapQuotaRow(row: unknown): UsageQuota {
+  const r = row as Record<string, unknown>;
+  const quotaType = decodeOrUndefined(QuotaType, r.type);
+  const replenishmentPeriod = decodeOrUndefined(ReplenishmentPeriod, r.replenishment_period);
+
   return {
-    id: row.id,
-    serviceId: row.service_id,
-    metric: row.metric,
-    limit: row.limit_value,
-    used: row.used_value,
-    remaining: row.remaining_value,
-    resetAt: row.reset_at ?? 0,
-    createdAt: row.created_at ?? 0,
-    updatedAt: row.updated_at ?? 0,
-    type: row.type ?? undefined,
-    replenishmentRate: row.replenishment_amount
-      ? {
-          amount: row.replenishment_amount,
-          period: row.replenishment_period,
-        }
-      : undefined,
+    id: toNonEmptyString(r.id),
+    serviceId: toNonEmptyString(r.service_id),
+    metric: toNonEmptyString(r.metric),
+    limit: toFiniteNumber(r.limit_value, 0),
+    used: toFiniteNumber(r.used_value, 0),
+    remaining: toFiniteNumber(r.remaining_value, 0),
+    resetAt: toFiniteNumber(r.reset_at, 0),
+    createdAt: toFiniteNumber(r.created_at, 0),
+    updatedAt: toFiniteNumber(r.updated_at, 0),
+    type: quotaType,
+    replenishmentRate:
+      typeof r.replenishment_amount === "number" && Number.isFinite(r.replenishment_amount)
+        ? {
+            amount: r.replenishment_amount,
+            period: replenishmentPeriod ?? "day",
+          }
+        : undefined,
   };
 }

@@ -12,8 +12,12 @@ function formatPieLabel({ name, percent }: PieLabelRenderProps): string {
   return `${labelName}: ${(labelPercent * 100).toFixed(0)}%`;
 }
 
-function formatTooltipValue(value: number | undefined): string {
-  if (typeof value === "number") return value.toFixed(2);
+function formatTooltipValue(value: unknown): string {
+  if (typeof value === "number" && Number.isFinite(value)) return value.toFixed(2);
+  if (typeof value === "string") {
+    const parsed = Number(value);
+    if (Number.isFinite(parsed)) return parsed.toFixed(2);
+  }
   return "0.00";
 }
 
@@ -56,7 +60,7 @@ export function OverviewChart({ statuses }: OverviewChartProps) {
     <div className="bg-white rounded-lg shadow-md p-6 border border-gray-200">
       <h3 className="text-lg font-semibold mb-4">Usage Overview</h3>
       <div className="h-64">
-        <ResponsiveContainer width="100%" height="100%">
+        <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={1}>
           <PieChart>
             <Pie
               data={data}
@@ -72,7 +76,7 @@ export function OverviewChart({ statuses }: OverviewChartProps) {
                 <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
               ))}
             </Pie>
-            <Tooltip formatter={formatTooltipValue} />
+            <Tooltip formatter={(value) => formatTooltipValue(value)} />
             <Legend />
           </PieChart>
         </ResponsiveContainer>
