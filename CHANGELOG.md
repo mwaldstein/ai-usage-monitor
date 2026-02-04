@@ -16,6 +16,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `/api/quotas` now returns UsageQuota fields only
 - Validate API query/params + system responses via shared schemas
 - Service provider now typed as AIProvider across API + UI
+- Reauth flow uses cached service data (no per-id fetch)
 
 ### Fixed
 - JWT expiration now included in WebSocket initial payload (previously only appeared after refresh)

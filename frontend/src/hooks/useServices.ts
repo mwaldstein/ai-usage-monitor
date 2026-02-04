@@ -13,6 +13,23 @@ import {
 
 const API_URL = getApiBaseUrl();
 
+function getProviderHelpUrl(provider: AIService["provider"]): string {
+  switch (provider) {
+    case "zai":
+      return "https://z.ai";
+    case "opencode":
+      return "https://opencode.ai";
+    case "amp":
+      return "https://ampcode.com";
+    case "openai":
+    case "anthropic":
+    case "google":
+      return "https://platform.openai.com/api-keys";
+    default:
+      return "";
+  }
+}
+
 export function useServices() {
   const [services, setServices] = useState<AIService[]>([]);
   const [loading, setLoading] = useState(true);
@@ -96,31 +113,10 @@ export function useServices() {
   };
 
   const reauthenticateService = async (id: string) => {
-    const response = await fetch(`${API_URL}/services/${id}`);
-    if (!response.ok) return;
+    const service = services.find((candidate) => candidate.id === id);
+    if (!service) return;
 
-    const service = await response.json();
-    let helpUrl = "";
-
-    switch (service.provider) {
-      case "zai":
-        helpUrl = "https://z.ai";
-        break;
-      case "opencode":
-        helpUrl = "https://opencode.ai";
-        break;
-      case "amp":
-        helpUrl = "https://ampcode.com";
-        break;
-      case "openai":
-      case "anthropic":
-      case "google":
-        helpUrl = "https://platform.openai.com/api-keys";
-        break;
-      default:
-        helpUrl = "";
-    }
-
+    const helpUrl = getProviderHelpUrl(service.provider);
     if (helpUrl) {
       window.open(helpUrl, "_blank");
     }
