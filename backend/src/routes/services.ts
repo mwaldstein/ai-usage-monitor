@@ -12,6 +12,7 @@ import {
   ListServicesResponse,
   ReorderServicesRequest,
   ReorderServicesResponse,
+  ServiceIdParams,
   UpdateServiceRequest,
   UpdateServiceResponse,
 } from "shared/api";
@@ -43,7 +44,7 @@ router.post("/", async (req, res) => {
 
     const { name, provider, apiKey, bearerToken, baseUrl, enabled } = decoded.right;
 
-    if (!name || !provider) {
+    if (!name.trim() || !provider) {
       return res
         .status(400)
         .json(S.encodeSync(ApiError)({ error: "Name and provider are required" }));
@@ -83,7 +84,18 @@ router.post("/", async (req, res) => {
 
 router.put("/:id", async (req, res) => {
   try {
-    const { id } = req.params;
+    const paramsDecoded = S.decodeUnknownEither(ServiceIdParams)(req.params);
+    if (Either.isLeft(paramsDecoded)) {
+      return res
+        .status(400)
+        .json(S.encodeSync(ApiError)({ error: "Invalid service id", details: paramsDecoded.left }));
+    }
+
+    const { id } = paramsDecoded.right;
+    if (!id.trim()) {
+      return res.status(400).json(S.encodeSync(ApiError)({ error: "Service id required" }));
+    }
+
     const decoded = S.decodeUnknownEither(UpdateServiceRequest)(req.body);
     if (Either.isLeft(decoded)) {
       return res
@@ -146,7 +158,18 @@ router.put("/:id", async (req, res) => {
 
 router.delete("/:id", async (req, res) => {
   try {
-    const { id } = req.params;
+    const paramsDecoded = S.decodeUnknownEither(ServiceIdParams)(req.params);
+    if (Either.isLeft(paramsDecoded)) {
+      return res
+        .status(400)
+        .json(S.encodeSync(ApiError)({ error: "Invalid service id", details: paramsDecoded.left }));
+    }
+
+    const { id } = paramsDecoded.right;
+    if (!id.trim()) {
+      return res.status(400).json(S.encodeSync(ApiError)({ error: "Service id required" }));
+    }
+
     const db = getDatabase();
 
     await db.run("DELETE FROM services WHERE id = ?", [id]);

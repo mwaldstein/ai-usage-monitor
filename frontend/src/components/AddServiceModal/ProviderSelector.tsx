@@ -1,9 +1,10 @@
+import type { AIProvider } from "../../types";
 import { PROVIDERS } from "./providerConfigs";
 
 interface ProviderSelectorProps {
-  provider: string;
+  provider: AIProvider;
   isEditing: boolean;
-  onProviderChange: (provider: string) => void;
+  onProviderChange: (provider: AIProvider) => void;
 }
 
 export function ProviderSelector({ provider, isEditing, onProviderChange }: ProviderSelectorProps) {

@@ -9,3 +9,9 @@ export type QuotasResponse = S.Schema.Type<typeof QuotasResponse>;
 // POST /api/quotas/refresh - Force refresh
 export const RefreshQuotasResponse = S.Array(ServiceStatus);
 export type RefreshQuotasResponse = S.Schema.Type<typeof RefreshQuotasResponse>;
+
+// Params: /api/quotas/refresh/:serviceId
+export const RefreshQuotasParams = S.Struct({
+  serviceId: S.String,
+});
+export type RefreshQuotasParams = S.Schema.Type<typeof RefreshQuotasParams>;

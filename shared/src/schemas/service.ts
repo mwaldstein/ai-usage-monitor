@@ -15,7 +15,7 @@ export type AIProvider = S.Schema.Type<typeof AIProvider>;
 export const AIService = S.Struct({
   id: S.String,
   name: S.String,
-  provider: S.String,
+  provider: AIProvider,
   apiKey: S.optional(S.String),
   bearerToken: S.optional(S.String),
   baseUrl: S.optional(S.String),

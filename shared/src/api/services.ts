@@ -1,10 +1,10 @@
 import { Schema as S } from "effect";
-import { AIService } from "../schemas/service.ts";
+import { AIProvider, AIService } from "../schemas/service.ts";
 
 // POST /api/services - Create service
 export const CreateServiceRequest = S.Struct({
   name: S.String,
-  provider: S.String,
+  provider: AIProvider,
   apiKey: S.optional(S.String),
   bearerToken: S.optional(S.String),
   baseUrl: S.optional(S.String),
@@ -43,3 +43,9 @@ export type ReorderServicesRequest = S.Schema.Type<typeof ReorderServicesRequest
 
 export const ReorderServicesResponse = S.Array(AIService);
 export type ReorderServicesResponse = S.Schema.Type<typeof ReorderServicesResponse>;
+
+// Params: /api/services/:id
+export const ServiceIdParams = S.Struct({
+  id: S.String,
+});
+export type ServiceIdParams = S.Schema.Type<typeof ServiceIdParams>;

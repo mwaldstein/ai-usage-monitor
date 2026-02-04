@@ -1,4 +1,4 @@
-import type { AIService, AIProvider, ServiceStatus } from "../types/index.ts";
+import type { AIService, ServiceStatus } from "../types/index.ts";
 import { BaseAIService } from "./base.ts";
 import {
   OpenAIService,
@@ -13,7 +13,7 @@ import { CodexService } from "./codex.ts";
 
 export class ServiceFactory {
   static createService(service: AIService): BaseAIService {
-    switch (service.provider as AIProvider) {
+    switch (service.provider) {
       case "openai":
         return new OpenAIService(service);
       case "codex":

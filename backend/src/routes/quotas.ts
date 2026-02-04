@@ -1,12 +1,12 @@
 import { Router } from "express";
-import { Schema as S } from "effect";
+import { Schema as S, Either } from "effect";
 import { getDatabase } from "../database/index.ts";
 import { ServiceFactory } from "../services/factory.ts";
 import { mapQuotaRow, mapServiceRow } from "./mappers.ts";
 import type { AIService, ServiceStatus, UsageQuota } from "../types/index.ts";
 import { nowTs } from "../utils/dates.ts";
 import { logger } from "../utils/logger.ts";
-import { ApiError, QuotasResponse, RefreshQuotasResponse } from "shared/api";
+import { ApiError, QuotasResponse, RefreshQuotasParams, RefreshQuotasResponse } from "shared/api";
 import { ServiceStatus as ServiceStatusSchema } from "shared/schemas";
 
 const router = Router();
@@ -121,12 +121,23 @@ router.post("/refresh", async (req, res) => {
 
 router.post("/refresh/:serviceId", async (req, res) => {
   try {
-    const { serviceId } = req.params;
+    const paramsDecoded = S.decodeUnknownEither(RefreshQuotasParams)(req.params);
+    if (Either.isLeft(paramsDecoded)) {
+      return res
+        .status(400)
+        .json(S.encodeSync(ApiError)({ error: "Invalid service id", details: paramsDecoded.left }));
+    }
+
+    const { serviceId } = paramsDecoded.right;
+    if (!serviceId.trim()) {
+      return res.status(400).json(S.encodeSync(ApiError)({ error: "Service id required" }));
+    }
+
     const db = getDatabase();
     const row = await db.get("SELECT * FROM services WHERE id = ? AND enabled = 1", [serviceId]);
 
     if (!row) {
-      return res.status(404).json({ error: "Service not found" });
+      return res.status(404).json(S.encodeSync(ApiError)({ error: "Service not found" }));
     }
 
     const service = mapServiceRow(row);

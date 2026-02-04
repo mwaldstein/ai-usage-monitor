@@ -1,17 +1,65 @@
 import { Router } from "express";
-import { Schema as S } from "effect";
+import { Schema as S, Either } from "effect";
 import { getDatabase } from "../database/index.ts";
 import { logger } from "../utils/logger.ts";
-import { ApiError, HistoryResponse } from "shared/api";
+import { ApiError, HistoryQuery, HistoryResponse } from "shared/api";
 
 const router = Router();
 
+type ParseResult = { ok: true; value: number } | { ok: false; error: string };
+
+function parseBoundedInt(
+  value: string | undefined,
+  defaultValue: number,
+  min: number,
+  max: number,
+  field: string,
+): ParseResult {
+  if (value === undefined) {
+    return { ok: true, value: defaultValue };
+  }
+
+  const trimmed = value.trim();
+  if (!/^[0-9]+$/.test(trimmed)) {
+    return { ok: false, error: `${field} must be a positive integer` };
+  }
+
+  const parsed = Number.parseInt(trimmed, 10);
+  if (parsed < min || parsed > max) {
+    return { ok: false, error: `${field} must be between ${min} and ${max}` };
+  }
+
+  return { ok: true, value: parsed };
+}
+
 router.get("/", async (req, res) => {
   try {
-    const { serviceId, metric, hours = 24 } = req.query;
+    const decodedQuery = S.decodeUnknownEither(HistoryQuery)(req.query);
+    if (Either.isLeft(decodedQuery)) {
+      return res.status(400).json(
+        S.encodeSync(ApiError)({
+          error: "Invalid query parameters",
+          details: decodedQuery.left,
+        }),
+      );
+    }
+
+    const { serviceId, metric, hours } = decodedQuery.right;
+    if (serviceId !== undefined && serviceId.trim().length === 0) {
+      return res.status(400).json(S.encodeSync(ApiError)({ error: "serviceId must be non-empty" }));
+    }
+    if (metric !== undefined && metric.trim().length === 0) {
+      return res.status(400).json(S.encodeSync(ApiError)({ error: "metric must be non-empty" }));
+    }
+
+    const hoursResult = parseBoundedInt(hours, 24, 1, 168, "hours");
+    if (!hoursResult.ok) {
+      return res.status(400).json(S.encodeSync(ApiError)({ error: hoursResult.error }));
+    }
+
     const db = getDatabase();
 
-    const hoursNum = Math.max(1, Math.min(168, parseInt(String(hours), 10) || 24));
+    const hoursNum = hoursResult.value;
     const sinceTs = Math.floor((Date.now() - hoursNum * 60 * 60 * 1000) / 1000);
 
     let query = `

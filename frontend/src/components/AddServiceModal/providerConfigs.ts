@@ -1,5 +1,7 @@
+import type { AIProvider } from "../../types";
+
 export interface ProviderConfig {
-  value: string;
+  value: AIProvider;
   label: string;
   color: string;
 }
@@ -32,7 +34,7 @@ export const PROVIDERS: ProviderConfig[] = [
   { value: "zai", label: "z.ai", color: "#10b981" },
 ];
 
-export const PROVIDER_INSTRUCTIONS: Record<string, ProviderInstructions> = {
+export const PROVIDER_INSTRUCTIONS: Record<AIProvider, ProviderInstructions> = {
   openai: {
     apiKeyLabel: "API Key",
     apiKeyPlaceholder: "sk-...",

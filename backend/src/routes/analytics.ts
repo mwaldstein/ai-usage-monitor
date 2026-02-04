@@ -1,32 +1,107 @@
 import { Router } from "express";
-import { Schema as S } from "effect";
+import { Schema as S, Either } from "effect";
 import { getDatabase } from "../database/index.ts";
 import { nowTs } from "../utils/dates.ts";
 import { logger } from "../utils/logger.ts";
-import { AnalyticsResponse, ApiError, ProviderAnalyticsResponse } from "shared/api";
+import {
+  AnalyticsQuery,
+  AnalyticsResponse,
+  ApiError,
+  ProviderAnalyticsQuery,
+  ProviderAnalyticsResponse,
+} from "shared/api";
 
 const router = Router();
 
+type ParseResult = { ok: true; value: number } | { ok: false; error: string };
+
+function parseBoundedInt(
+  value: string | undefined,
+  defaultValue: number,
+  min: number,
+  max: number,
+  field: string,
+): ParseResult {
+  if (value === undefined) {
+    return { ok: true, value: defaultValue };
+  }
+
+  const trimmed = value.trim();
+  if (!/^[0-9]+$/.test(trimmed)) {
+    return { ok: false, error: `${field} must be a positive integer` };
+  }
+
+  const parsed = Number.parseInt(trimmed, 10);
+  if (parsed < min || parsed > max) {
+    return { ok: false, error: `${field} must be between ${min} and ${max}` };
+  }
+
+  return { ok: true, value: parsed };
+}
+
+type IntervalParseResult =
+  | { ok: true; raw: string; intervalSeconds: number }
+  | { ok: false; error: string };
+
+function parseInterval(value: string | undefined): IntervalParseResult {
+  const raw = (value ?? "1h").trim();
+  const match = raw.match(/^(\d+)(m|h|d)$/);
+  if (!match) {
+    return { ok: false, error: "interval must match <number><m|h|d>" };
+  }
+
+  const amount = Number.parseInt(match[1], 10);
+  if (amount <= 0) {
+    return { ok: false, error: "interval must be greater than 0" };
+  }
+
+  const unit = match[2];
+  const intervalMinutes = amount * (unit === "d" ? 1440 : unit === "h" ? 60 : 1);
+  return { ok: true, raw, intervalSeconds: intervalMinutes * 60 };
+}
+
 router.get("/", async (req, res) => {
   try {
-    const { days = 30, serviceId, interval = "1h", groupBy = "service" } = req.query;
+    const decodedQuery = S.decodeUnknownEither(AnalyticsQuery)(req.query);
+    if (Either.isLeft(decodedQuery)) {
+      return res.status(400).json(
+        S.encodeSync(ApiError)({
+          error: "Invalid query parameters",
+          details: decodedQuery.left,
+        }),
+      );
+    }
+
+    const { days, serviceId, interval, groupBy } = decodedQuery.right;
+    if (serviceId !== undefined && serviceId.trim().length === 0) {
+      return res.status(400).json(S.encodeSync(ApiError)({ error: "serviceId must be non-empty" }));
+    }
+
+    const daysResult = parseBoundedInt(days, 30, 1, 365, "days");
+    if (!daysResult.ok) {
+      return res.status(400).json(S.encodeSync(ApiError)({ error: daysResult.error }));
+    }
+
+    const intervalResult = parseInterval(interval);
+    if (!intervalResult.ok) {
+      return res.status(400).json(S.encodeSync(ApiError)({ error: intervalResult.error }));
+    }
+
+    const groupByValue = groupBy ?? "service";
     const db = getDatabase();
 
-    const daysNum = Math.max(1, Math.min(365, parseInt(String(days), 10) || 30));
+    const daysNum = daysResult.value;
     const sinceTs = Math.floor((Date.now() - daysNum * 24 * 60 * 60 * 1000) / 1000);
 
-    logger.info({ days: daysNum, interval, groupBy, sinceTs }, "API /usage/analytics request");
+    logger.info(
+      { days: daysNum, interval: intervalResult.raw, groupBy: groupByValue, sinceTs },
+      "API /usage/analytics request",
+    );
 
-    const intervalMatch = String(interval).match(/^(\d+)(m|h|d)$/);
-    const intervalMinutes = intervalMatch
-      ? parseInt(intervalMatch[1]) *
-        (intervalMatch[2] === "d" ? 1440 : intervalMatch[2] === "h" ? 60 : 1)
-      : 60;
-
-    const intervalSeconds = intervalMinutes * 60;
+    const intervalSeconds = intervalResult.intervalSeconds;
     const timeBucket = `(uh.ts / ${intervalSeconds}) * ${intervalSeconds}`;
 
-    const groupByColumn = String(groupBy);
+    const groupByColumn = groupByValue;
     let selectColumns: string;
     let groupByClause: string;
 
@@ -151,10 +226,25 @@ router.get("/", async (req, res) => {
 
 router.get("/providers", async (req, res) => {
   try {
-    const { days = 30 } = req.query;
+    const decodedQuery = S.decodeUnknownEither(ProviderAnalyticsQuery)(req.query);
+    if (Either.isLeft(decodedQuery)) {
+      return res.status(400).json(
+        S.encodeSync(ApiError)({
+          error: "Invalid query parameters",
+          details: decodedQuery.left,
+        }),
+      );
+    }
+
+    const { days } = decodedQuery.right;
     const db = getDatabase();
 
-    const daysNum = Math.max(1, Math.min(365, parseInt(String(days), 10) || 30));
+    const daysResult = parseBoundedInt(days, 30, 1, 365, "days");
+    if (!daysResult.ok) {
+      return res.status(400).json(S.encodeSync(ApiError)({ error: daysResult.error }));
+    }
+
+    const daysNum = daysResult.value;
     const sinceTs = Math.floor((Date.now() - daysNum * 24 * 60 * 60 * 1000) / 1000);
 
     const query = `

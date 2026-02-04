@@ -1,6 +1,7 @@
 import express from "express";
 import cors from "cors";
 import dotenv from "dotenv";
+import { Schema as S } from "effect";
 
 import { createServer } from "http";
 import path from "path";
@@ -12,6 +13,7 @@ import { nowTs } from "./utils/dates.ts";
 import { initTracing } from "./utils/tracing.ts";
 import { initializeWebSocket, broadcast } from "./utils/ws.ts";
 import { startServer, registerSignalHandlers } from "./utils/lifecycle.ts";
+import { HealthResponse, VersionResponse } from "shared/api";
 
 const tracingSdk = initTracing();
 
@@ -40,12 +42,12 @@ app.use("/api", apiRoutes);
 
 // Health check
 app.get("/health", (req, res) => {
-  res.json({ status: "ok", ts: nowTs() });
+  res.json(S.encodeSync(HealthResponse)({ status: "ok", ts: nowTs() }));
 });
 
 // Version endpoint
 app.get("/version", (req, res) => {
-  res.json({ version: VERSION, commitSha: COMMIT_SHA });
+  res.json(S.encodeSync(VersionResponse)({ version: VERSION, commitSha: COMMIT_SHA }));
 });
 
 // Serve static frontend files in production

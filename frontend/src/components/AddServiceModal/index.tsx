@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import type { AIService } from "../../types";
+import type { AIProvider, AIService } from "../../types";
 import { PROVIDERS, PROVIDER_INSTRUCTIONS } from "./providerConfigs";
 import { ProviderSelector } from "./ProviderSelector";
 import { InstructionsPanel } from "./InstructionsPanel";
@@ -22,7 +22,7 @@ export function AddServiceModal({
   disabled,
 }: AddServiceModalProps) {
   const [name, setName] = useState("");
-  const [provider, setProvider] = useState("openai");
+  const [provider, setProvider] = useState<AIProvider>("openai");
   const [apiKey, setApiKey] = useState("");
   const [bearerToken, setBearerToken] = useState("");
   const [baseUrl, setBaseUrl] = useState("");
@@ -65,7 +65,7 @@ export function AddServiceModal({
     onClose();
   };
 
-  const handleProviderChange = (newProvider: string) => {
+  const handleProviderChange = (newProvider: AIProvider) => {
     setProvider(newProvider);
     setApiKey("");
     setBearerToken("");

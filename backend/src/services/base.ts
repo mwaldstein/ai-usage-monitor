@@ -1,6 +1,6 @@
 import axios from "axios";
 import type { AxiosInstance } from "axios";
-import type { AIService, UsageQuota, ServiceStatus, AIProvider } from "../types/index.ts";
+import type { AIService, UsageQuota, ServiceStatus } from "../types/index.ts";
 import { providerConfigs } from "./providers.ts";
 import { nowTs } from "../utils/dates.ts";
 import { getJWTExpiration } from "../utils/jwt.ts";
@@ -11,12 +11,9 @@ export abstract class BaseAIService {
 
   constructor(service: AIService) {
     this.service = service;
-    const config = providerConfigs[service.provider as AIProvider];
+    const config = providerConfigs[service.provider];
 
     let baseURL = service.baseUrl || config.baseUrl;
-    if (service.provider === "azure" && baseURL && service.baseUrl) {
-      baseURL = baseURL.replace("{endpoint}", service.baseUrl);
-    }
 
     // Some providers (like Codex) don't use the base client - they create their own
     // For those cases, we create a minimal client that won't be used

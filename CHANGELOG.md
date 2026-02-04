@@ -14,10 +14,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 - API and WebSocket handlers now encode/decode via shared schemas
 - `/api/quotas` now returns UsageQuota fields only
+- Validate API query/params + system responses via shared schemas
+- Service provider now typed as AIProvider across API + UI
 
 ### Fixed
 - JWT expiration now included in WebSocket initial payload (previously only appeared after refresh)
 - Analytics view: fixed 404 error for provider comparison API (incorrect route path)
+- Refresh skips invalid service rows
 
 ## [0.4.2] - 2026-02-03
 
