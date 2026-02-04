@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+- Fixed analytics view "Error loading analytics" - added data type normalization in backend to convert SQLite aggregation results to proper types (String/Number) before schema validation
+- Added console error logging in frontend to capture schema validation failures with full response data for debugging
+
 ## [0.5.0] - 2026-02-04
 
 ### Added

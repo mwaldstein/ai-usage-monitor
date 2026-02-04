@@ -153,7 +153,18 @@ router.get("/", async (req, res) => {
       ORDER BY ts ASC, metric
     `;
 
-    const timeSeries = await db.all(timeSeriesQuery, params);
+    const timeSeriesRaw = await db.all(timeSeriesQuery, params);
+    const timeSeries = timeSeriesRaw.map((row) => ({
+      service_name: String(row.service_name),
+      provider: String(row.provider),
+      serviceId: String(row.serviceId),
+      metric: String(row.metric),
+      ts: Number(row.ts),
+      avg_value: Number(row.avg_value),
+      min_value: Number(row.min_value),
+      max_value: Number(row.max_value),
+      data_points: Number(row.data_points),
+    }));
 
     const quotasQuery = `
       SELECT
@@ -173,8 +184,13 @@ router.get("/", async (req, res) => {
       ? await db.all(quotasQuery + " AND q.service_id = ?", [serviceId])
       : await db.all(quotasQuery);
     const normalizedQuotas = quotas.map((quota) => ({
-      ...quota,
+      serviceId: String(quota.serviceId),
+      metric: String(quota.metric),
+      limit: Number(quota.limit),
+      used: Number(quota.used),
       type: quota.type ?? undefined,
+      service_name: String(quota.service_name),
+      provider: String(quota.provider),
     }));
 
     let summaryQuery = `
@@ -207,7 +223,20 @@ router.get("/", async (req, res) => {
       ORDER BY total_consumed DESC
     `;
 
-    const summary = await db.all(summaryQuery, summaryParams);
+    const summaryRaw = await db.all(summaryQuery, summaryParams);
+    const summary = summaryRaw.map((row) => ({
+      service_name: String(row.service_name),
+      provider: String(row.provider),
+      serviceId: String(row.serviceId),
+      metric: String(row.metric),
+      min_value: Number(row.min_value),
+      max_value: Number(row.max_value),
+      avg_value: Number(row.avg_value),
+      total_consumed: Number(row.total_consumed),
+      first_record_ts: Number(row.first_record_ts),
+      last_record_ts: Number(row.last_record_ts),
+      active_days: Number(row.active_days),
+    }));
 
     res.json(
       S.encodeSync(AnalyticsResponse)({
@@ -263,7 +292,16 @@ router.get("/providers", async (req, res) => {
       ORDER BY total_usage DESC
     `;
 
-    const providers = await db.all(query, [sinceTs]);
+    const providersRaw = await db.all(query, [sinceTs]);
+    const providers = providersRaw.map((row) => ({
+      provider: String(row.provider),
+      service_count: Number(row.service_count),
+      metric_count: Number(row.metric_count),
+      total_usage: Number(row.total_usage),
+      avg_usage: Number(row.avg_usage),
+      peak_usage: Number(row.peak_usage),
+      data_points: Number(row.data_points),
+    }));
 
     res.json(
       S.encodeSync(ProviderAnalyticsResponse)({

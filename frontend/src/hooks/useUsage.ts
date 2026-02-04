@@ -67,6 +67,8 @@ export function useUsageAnalytics(
       const data: unknown = await response.json();
       const decoded = S.decodeUnknownEither(AnalyticsResponse)(data);
       if (Either.isLeft(decoded)) {
+        console.error("Analytics schema validation failed:", decoded.left);
+        console.error("Response data:", data);
         throw new Error("Invalid usage analytics response");
       }
       setAnalytics(decoded.right);
@@ -101,6 +103,8 @@ export function useProviderAnalytics(days: number = 30) {
       const data: unknown = await response.json();
       const decoded = S.decodeUnknownEither(ProviderAnalyticsResponse)(data);
       if (Either.isLeft(decoded)) {
+        console.error("Provider analytics schema validation failed:", decoded.left);
+        console.error("Response data:", data);
         throw new Error("Invalid provider analytics response");
       }
       setProviderAnalytics(decoded.right);
