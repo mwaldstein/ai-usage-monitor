@@ -12,6 +12,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Shared `shared/` package with Effect Schema contracts for API and WebSocket payloads
 
 ### Changed
+- Header now uses reduced horizontal padding on mobile screens (px-2 sm:px-3)
 - API and WebSocket handlers now encode/decode via shared schemas
 - `/api/quotas` now returns UsageQuota fields only
 - Validate API query/params + system responses via shared schemas

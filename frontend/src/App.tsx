@@ -96,7 +96,7 @@ function App() {
           isConnected ? "border-white/10" : "border-red-500/50 bg-red-950/20"
         }`}
       >
-        <div className="max-w-7xl mx-auto px-3 py-2">
+        <div className="max-w-7xl mx-auto px-2 sm:px-3 py-2">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               <div className="flex items-center gap-2">
