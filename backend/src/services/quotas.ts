@@ -3,6 +3,7 @@ import { getDatabase } from "../database/index.ts";
 import { ServiceFactory } from "./factory.ts";
 import { logger } from "../utils/logger.ts";
 import { nowTs } from "../utils/dates.ts";
+import type { ServerMessage as ServerMessageType } from "shared/ws";
 
 let refreshInProgress = false;
 
@@ -25,7 +26,7 @@ export function getRefreshIntervalMinutes(refreshInterval: string): number {
 async function saveQuotasToDb(
   db: Awaited<ReturnType<typeof getDatabase>>,
   service: AIService,
-  quotas: UsageQuota[],
+  quotas: readonly UsageQuota[],
 ): Promise<void> {
   const now = nowTs();
 
@@ -112,7 +113,7 @@ function mapServiceRow(row: Record<string, unknown>): AIService {
 
 // Refresh quotas periodically
 export async function refreshQuotas(
-  broadcast: (data: unknown) => void,
+  broadcast: (data: ServerMessageType) => void,
   refreshInterval: string,
 ): Promise<void> {
   if (refreshInProgress) {

@@ -6,9 +6,13 @@ WORKDIR /app
 # Copy workspace configuration
 COPY package*.json ./
 COPY frontend/package*.json ./frontend/
+COPY shared/package*.json ./shared/
 
 # Install dependencies
 RUN npm ci
+
+# Copy shared package first (frontend depends on it)
+COPY shared/ ./shared/
 
 # Copy and build frontend
 COPY frontend/ ./frontend/
@@ -25,9 +29,13 @@ WORKDIR /app
 # Copy workspace configuration
 COPY package*.json ./
 COPY backend/package*.json ./backend/
+COPY shared/package*.json ./shared/
 
 # Install dependencies
 RUN npm ci
+
+# Copy shared package first (backend depends on it)
+COPY shared/ ./shared/
 
 # Copy backend and generate version
 COPY backend/ ./backend/
@@ -41,7 +49,11 @@ WORKDIR /app
 # Copy workspace configuration and install production deps
 COPY package*.json ./
 COPY backend/package*.json ./backend/
+COPY shared/package*.json ./shared/
 RUN npm ci --production
+
+# Copy shared package source
+COPY shared/src ./shared/src
 
 # Copy backend source (with generated version.ts)
 COPY --from=backend-prep /app/backend/src ./backend/src

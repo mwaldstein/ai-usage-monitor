@@ -4,18 +4,19 @@
   "private": true,
   "type": "module",
   "workspaces": [
+    "shared",
     "backend",
     "frontend"
   ],
   "scripts": {
     "hooks:install": "git config core.hooksPath .githooks",
-    "lint": "oxlint backend/src frontend/src",
-    "lint:fix": "oxlint backend/src frontend/src --fix",
-    "fmt": "oxfmt backend/src frontend/src",
-    "fmt:check": "oxfmt backend/src frontend/src --check",
+    "lint": "oxlint shared/src backend/src frontend/src",
+    "lint:fix": "oxlint shared/src backend/src frontend/src --fix",
+    "fmt": "oxfmt shared/src backend/src frontend/src",
+    "fmt:check": "oxfmt shared/src backend/src frontend/src --check",
     "dev:backend": "npm run dev -w backend",
     "dev:frontend": "npm run dev -w frontend",
-    "typecheck": "npm run typecheck -w backend && npm run typecheck -w frontend"
+    "typecheck": "npm run typecheck -w shared && npm run typecheck -w backend && npm run typecheck -w frontend"
   },
   "devDependencies": {
     "oxfmt": "^0.27.0",

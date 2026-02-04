@@ -1,7 +1,9 @@
 import { Router } from "express";
+import { Schema as S } from "effect";
 import { getDatabase } from "../database/index.ts";
 import { nowTs } from "../utils/dates.ts";
 import { logger } from "../utils/logger.ts";
+import { AnalyticsResponse, ApiError, ProviderAnalyticsResponse } from "shared/api";
 
 const router = Router();
 
@@ -95,6 +97,10 @@ router.get("/", async (req, res) => {
     const quotas = serviceId
       ? await db.all(quotasQuery + " AND q.service_id = ?", [serviceId])
       : await db.all(quotasQuery);
+    const normalizedQuotas = quotas.map((quota) => ({
+      ...quota,
+      type: quota.type ?? undefined,
+    }));
 
     let summaryQuery = `
       SELECT
@@ -128,16 +134,18 @@ router.get("/", async (req, res) => {
 
     const summary = await db.all(summaryQuery, summaryParams);
 
-    res.json({
-      timeSeries,
-      quotas,
-      summary,
-      days: daysNum,
-      generatedAt: nowTs(),
-    });
+    res.json(
+      S.encodeSync(AnalyticsResponse)({
+        timeSeries,
+        quotas: normalizedQuotas,
+        summary,
+        days: daysNum,
+        generatedAt: nowTs(),
+      }),
+    );
   } catch (error) {
     logger.error({ err: error }, "Error fetching usage analytics");
-    res.status(500).json({ error: "Failed to fetch usage analytics" });
+    res.status(500).json(S.encodeSync(ApiError)({ error: "Failed to fetch usage analytics" }));
   }
 });
 
@@ -167,14 +175,16 @@ router.get("/providers", async (req, res) => {
 
     const providers = await db.all(query, [sinceTs]);
 
-    res.json({
-      providers,
-      days: daysNum,
-      generatedAt: nowTs(),
-    });
+    res.json(
+      S.encodeSync(ProviderAnalyticsResponse)({
+        providers,
+        days: daysNum,
+        generatedAt: nowTs(),
+      }),
+    );
   } catch (error) {
     logger.error({ err: error }, "Error fetching provider comparison");
-    res.status(500).json({ error: "Failed to fetch provider comparison" });
+    res.status(500).json(S.encodeSync(ApiError)({ error: "Failed to fetch provider comparison" }));
   }
 });
 

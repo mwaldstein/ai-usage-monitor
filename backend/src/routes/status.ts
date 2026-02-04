@@ -1,4 +1,5 @@
 import { Router } from "express";
+import { Schema as S } from "effect";
 import { getDatabase } from "../database/index.ts";
 import { ServiceFactory } from "../services/factory.ts";
 import { mapServiceRow, mapQuotaRow } from "./mappers.ts";
@@ -6,6 +7,7 @@ import type { AIService, ServiceStatus, UsageQuota } from "../types/index.ts";
 import { nowTs } from "../utils/dates.ts";
 import { logger } from "../utils/logger.ts";
 import { getJWTExpiration } from "../utils/jwt.ts";
+import { ApiError, CachedStatusResponse, StatusResponse } from "shared/api";
 
 const router = Router();
 
@@ -72,10 +74,10 @@ router.get("/cached", async (req, res) => {
       };
     });
 
-    res.json(statuses);
+    res.json(S.encodeSync(CachedStatusResponse)(statuses));
   } catch (error) {
     logger.error({ err: error }, "Error fetching cached status");
-    res.status(500).json({ error: "Failed to fetch cached status" });
+    res.status(500).json(S.encodeSync(ApiError)({ error: "Failed to fetch cached status" }));
   }
 });
 
@@ -84,7 +86,7 @@ router.get("/", async (req, res) => {
     const db = getDatabase();
     const rows = await db.all("SELECT * FROM services WHERE enabled = 1");
     const services: AIService[] = rows.map(mapServiceRow);
-    const statuses: any[] = [];
+    const statuses: ServiceStatus[] = [];
 
     for (const service of services) {
       try {
@@ -109,10 +111,10 @@ router.get("/", async (req, res) => {
       }
     }
 
-    res.json(statuses);
+    res.json(S.encodeSync(StatusResponse)(statuses));
   } catch (error) {
     logger.error({ err: error }, "Error fetching status");
-    res.status(500).json({ error: "Failed to fetch status" });
+    res.status(500).json(S.encodeSync(ApiError)({ error: "Failed to fetch status" }));
   }
 });
 

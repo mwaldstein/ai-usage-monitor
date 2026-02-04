@@ -1,7 +1,9 @@
 import { useState, useEffect, useCallback } from "react";
+import { Schema as S, Either } from "effect";
 import type { UsageHistory, UsageAnalytics, ProviderAnalytics } from "../types";
 
 import { getApiBaseUrl } from "../services/backendUrls";
+import { AnalyticsResponse, HistoryResponse, ProviderAnalyticsResponse } from "shared/api";
 
 const API_URL = getApiBaseUrl();
 
@@ -19,8 +21,13 @@ export function useUsageHistory(serviceId?: string, hours: number = 24) {
 
       const response = await fetch(`${API_URL}/usage/history?${params}`);
       if (!response.ok) throw new Error("Failed to fetch usage history");
-      const data = await response.json();
-      setHistory(data);
+      const data: unknown = await response.json();
+      const decoded = S.decodeUnknownEither(HistoryResponse)(data);
+      if (Either.isLeft(decoded)) {
+        throw new Error("Invalid usage history response");
+      }
+      const nextHistory = Array.from(decoded.right, (entry) => ({ ...entry }));
+      setHistory(nextHistory);
       setError(null);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Unknown error");
@@ -57,8 +64,12 @@ export function useUsageAnalytics(
 
       const response = await fetch(`${API_URL}/usage/analytics?${params}`);
       if (!response.ok) throw new Error("Failed to fetch usage analytics");
-      const data = await response.json();
-      setAnalytics(data);
+      const data: unknown = await response.json();
+      const decoded = S.decodeUnknownEither(AnalyticsResponse)(data);
+      if (Either.isLeft(decoded)) {
+        throw new Error("Invalid usage analytics response");
+      }
+      setAnalytics(decoded.right);
       setError(null);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Unknown error");
@@ -87,8 +98,12 @@ export function useProviderAnalytics(days: number = 30) {
 
       const response = await fetch(`${API_URL}/usage/analytics/providers?${params}`);
       if (!response.ok) throw new Error("Failed to fetch provider analytics");
-      const data = await response.json();
-      setProviderAnalytics(data);
+      const data: unknown = await response.json();
+      const decoded = S.decodeUnknownEither(ProviderAnalyticsResponse)(data);
+      if (Either.isLeft(decoded)) {
+        throw new Error("Invalid provider analytics response");
+      }
+      setProviderAnalytics(decoded.right);
       setError(null);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Unknown error");

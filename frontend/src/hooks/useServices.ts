@@ -1,7 +1,15 @@
 import { useState, useEffect } from "react";
+import { Schema as S, Either } from "effect";
 import type { AIService } from "../types";
 
 import { getApiBaseUrl } from "../services/backendUrls";
+import {
+  CreateServiceRequest,
+  ListServicesResponse,
+  ReorderServicesRequest,
+  ReorderServicesResponse,
+  UpdateServiceRequest,
+} from "shared/api";
 
 const API_URL = getApiBaseUrl();
 
@@ -15,8 +23,13 @@ export function useServices() {
       setLoading(true);
       const response = await fetch(`${API_URL}/services`);
       if (!response.ok) throw new Error("Failed to fetch services");
-      const data = await response.json();
-      setServices(data);
+      const data: unknown = await response.json();
+      const decoded = S.decodeUnknownEither(ListServicesResponse)(data);
+      if (Either.isLeft(decoded)) {
+        throw new Error("Invalid services response");
+      }
+      const nextServices = Array.from(decoded.right, (service) => ({ ...service }));
+      setServices(nextServices);
       setError(null);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Unknown error");
@@ -25,14 +38,13 @@ export function useServices() {
     }
   };
 
-  const addService = async (
-    service: Omit<AIService, "id" | "createdAt" | "updatedAt" | "displayOrder">,
-  ) => {
+  const addService = async (service: CreateServiceRequest) => {
     try {
+      const payload = S.encodeSync(CreateServiceRequest)(service);
       const response = await fetch(`${API_URL}/services`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(service),
+        body: JSON.stringify(payload),
       });
       if (!response.ok) throw new Error("Failed to add service");
       await fetchServices();
@@ -45,10 +57,20 @@ export function useServices() {
 
   const updateService = async (id: string, service: Partial<AIService>) => {
     try {
+      const payload = {
+        ...(service.name !== undefined ? { name: service.name } : {}),
+        ...(service.apiKey !== undefined ? { apiKey: service.apiKey } : {}),
+        ...(service.bearerToken !== undefined ? { bearerToken: service.bearerToken } : {}),
+        ...(service.baseUrl !== undefined ? { baseUrl: service.baseUrl } : {}),
+        ...(service.enabled !== undefined ? { enabled: service.enabled } : {}),
+        ...(service.displayOrder !== undefined ? { displayOrder: service.displayOrder } : {}),
+      };
+
+      const body = S.encodeSync(UpdateServiceRequest)(payload);
       const response = await fetch(`${API_URL}/services/${id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(service),
+        body: JSON.stringify(body),
       });
       if (!response.ok) throw new Error("Failed to update service");
       await fetchServices();
@@ -106,14 +128,20 @@ export function useServices() {
 
   const reorderServices = async (serviceIds: string[]) => {
     try {
+      const body = S.encodeSync(ReorderServicesRequest)({ serviceIds });
       const response = await fetch(`${API_URL}/services/reorder`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ serviceIds }),
+        body: JSON.stringify(body),
       });
       if (!response.ok) throw new Error("Failed to reorder services");
-      const data = await response.json();
-      setServices(data);
+      const data: unknown = await response.json();
+      const decoded = S.decodeUnknownEither(ReorderServicesResponse)(data);
+      if (Either.isLeft(decoded)) {
+        throw new Error("Invalid reorder response");
+      }
+      const nextServices = Array.from(decoded.right, (service) => ({ ...service }));
+      setServices(nextServices);
       return true;
     } catch (err) {
       setError(err instanceof Error ? err.message : "Unknown error");

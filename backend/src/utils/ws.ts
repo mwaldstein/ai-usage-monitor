@@ -1,10 +1,18 @@
 import { WebSocket, WebSocketServer } from "ws";
 import type { Server } from "http";
-import type { AIService, ServiceStatus } from "../types/index.ts";
+import { Schema as S, Either } from "effect";
+import type { AIService, ServiceStatus, UsageQuota } from "../types/index.ts";
 import { getDatabase } from "../database/index.ts";
 import { nowTs } from "./dates.ts";
 import { getJWTExpiration } from "./jwt.ts";
 import { logger } from "./logger.ts";
+import { mapQuotaRow, mapServiceRow } from "../routes/mappers.ts";
+import { ClientMessage, ErrorMessage, ServerMessage, StatusMessage } from "shared/ws";
+import type {
+  ErrorMessage as ErrorMessageType,
+  ServerMessage as ServerMessageType,
+  StatusMessage as StatusMessageType,
+} from "shared/ws";
 
 // WebSocket connections
 const clients = new Set<WebSocket>();
@@ -23,10 +31,15 @@ function handleConnection(ws: WebSocket) {
 
   ws.on("message", (message) => {
     try {
-      const data = JSON.parse(message.toString());
+      const data: unknown = JSON.parse(message.toString());
+      const decoded = S.decodeUnknownEither(ClientMessage)(data);
+      if (Either.isLeft(decoded)) {
+        logger.warn({ err: decoded.left }, "Invalid WebSocket message");
+        return;
+      }
 
-      if (data.type === "subscribe") {
-        // Client subscribed to updates
+      const messageData = decoded.right;
+      if (messageData.type === "subscribe") {
         logger.info("Client subscribed to updates");
       }
     } catch (error) {
@@ -49,10 +62,11 @@ function handleConnection(ws: WebSocket) {
 }
 
 // Broadcast to all clients
-export function broadcast(data: unknown) {
+export function broadcast(data: ServerMessageType) {
+  const encoded = S.encodeSync(ServerMessage)(data);
   clients.forEach((client) => {
     if (client.readyState === WebSocket.OPEN) {
-      client.send(JSON.stringify(data));
+      client.send(JSON.stringify(encoded));
     }
   });
 }
@@ -64,18 +78,7 @@ async function sendStatusToClient(ws: WebSocket) {
 
     // Read-only initial payload: use cached quotas from the DB (no upstream fetch).
     const serviceRows = await db.all("SELECT * FROM services WHERE enabled = 1");
-    const services: AIService[] = serviceRows.map((row: Record<string, unknown>) => ({
-      id: row.id as string,
-      name: row.name as string,
-      provider: row.provider as string,
-      apiKey: row.api_key as string | undefined,
-      bearerToken: row.bearer_token as string | undefined,
-      baseUrl: row.base_url as string | undefined,
-      enabled: row.enabled === 1,
-      displayOrder: (row.display_order as number) ?? 0,
-      createdAt: (row.created_at as number) ?? 0,
-      updatedAt: (row.updated_at as number) ?? 0,
-    }));
+    const services: AIService[] = serviceRows.map(mapServiceRow);
 
     const quotaRows = await db.all(`
       SELECT * FROM (
@@ -94,29 +97,16 @@ async function sendStatusToClient(ws: WebSocket) {
       WHERE rn = 1
     `);
 
-    const quotasByService = new Map<string, unknown[]>();
+    const quotasByService = new Map<string, UsageQuota[]>();
     for (const row of quotaRows) {
-      const list = quotasByService.get(row.service_id as string) || [];
-      list.push({
-        id: row.id,
-        serviceId: row.service_id,
-        metric: row.metric,
-        limit: row.limit_value,
-        used: row.used_value,
-        remaining: row.remaining_value,
-        resetAt: row.reset_at ?? 0,
-        createdAt: row.created_at ?? 0,
-        updatedAt: row.updated_at ?? 0,
-        type: row.type,
-        replenishmentRate: row.replenishment_amount
-          ? { amount: row.replenishment_amount, period: row.replenishment_period }
-          : undefined,
-      });
-      quotasByService.set(row.service_id as string, list);
+      const quota = mapQuotaRow(row);
+      const list = quotasByService.get(quota.serviceId) || [];
+      list.push(quota);
+      quotasByService.set(quota.serviceId, list);
     }
 
     const statuses: ServiceStatus[] = services.map((service) => {
-      const quotas = (quotasByService.get(service.id) || []) as ServiceStatus["quotas"];
+      const quotas = quotasByService.get(service.id) || [];
       const lastUpdated = quotas.reduce<number>(
         (max, q) => (q.updatedAt > max ? q.updatedAt : max),
         0,
@@ -125,10 +115,10 @@ async function sendStatusToClient(ws: WebSocket) {
       // Extract JWT expiration from bearer token or API key
       let tokenExpiration: number | undefined;
       if (service.bearerToken) {
-        tokenExpiration = getJWTExpiration(service.bearerToken);
+        tokenExpiration = getJWTExpiration(service.bearerToken) ?? undefined;
       }
       if (!tokenExpiration && service.apiKey) {
-        tokenExpiration = getJWTExpiration(service.apiKey);
+        tokenExpiration = getJWTExpiration(service.apiKey) ?? undefined;
       }
 
       return {
@@ -142,21 +132,19 @@ async function sendStatusToClient(ws: WebSocket) {
       };
     });
 
-    ws.send(
-      JSON.stringify({
-        type: "status",
-        data: statuses,
-        ts: nowTs(),
-      }),
-    );
+    const message: StatusMessageType = {
+      type: "status",
+      data: statuses,
+      ts: nowTs(),
+    };
+    ws.send(JSON.stringify(S.encodeSync(StatusMessage)(message)));
   } catch (error) {
     logger.error({ err: error }, "Error sending status to client");
-    ws.send(
-      JSON.stringify({
-        type: "error",
-        error: "Failed to fetch status",
-      }),
-    );
+    const message: ErrorMessageType = {
+      type: "error",
+      error: "Failed to fetch status",
+    };
+    ws.send(JSON.stringify(S.encodeSync(ErrorMessage)(message)));
   }
 }
 

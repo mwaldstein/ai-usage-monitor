@@ -9,6 +9,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 - Settings panel now shows JWT token expiration dates for services with bearer tokens
+- Shared `shared/` package with Effect Schema contracts for API and WebSocket payloads
+
+### Changed
+- API and WebSocket handlers now encode/decode via shared schemas
+- `/api/quotas` now returns UsageQuota fields only
 
 ### Fixed
 - JWT expiration now included in WebSocket initial payload (previously only appeared after refresh)

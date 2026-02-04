@@ -2,6 +2,7 @@ import type { Server } from "http";
 import type { ScheduledTask } from "node-cron";
 import type { WebSocketServer } from "ws";
 import type { NodeSDK } from "@opentelemetry/sdk-node";
+import type { ServerMessage as ServerMessageType } from "shared/ws";
 
 import cron from "node-cron";
 import path from "path";
@@ -19,7 +20,7 @@ interface LifecycleOptions {
   tracingSdk: NodeSDK | undefined;
   port: string | number;
   refreshInterval: string;
-  broadcast: (data: unknown) => void;
+  broadcast: (data: ServerMessageType) => void;
 }
 
 interface LifecycleState {

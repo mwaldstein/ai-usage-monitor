@@ -5,9 +5,9 @@ export function mapServiceRow(row: any): AIService {
     id: row.id,
     name: row.name,
     provider: row.provider,
-    apiKey: row.api_key,
-    bearerToken: row.bearer_token,
-    baseUrl: row.base_url,
+    apiKey: row.api_key ?? undefined,
+    bearerToken: row.bearer_token ?? undefined,
+    baseUrl: row.base_url ?? undefined,
     enabled: row.enabled === 1,
     displayOrder: row.display_order ?? 0,
     createdAt: row.created_at ?? 0,
@@ -26,7 +26,7 @@ export function mapQuotaRow(row: any): UsageQuota {
     resetAt: row.reset_at ?? 0,
     createdAt: row.created_at ?? 0,
     updatedAt: row.updated_at ?? 0,
-    type: row.type,
+    type: row.type ?? undefined,
     replenishmentRate: row.replenishment_amount
       ? {
           amount: row.replenishment_amount,

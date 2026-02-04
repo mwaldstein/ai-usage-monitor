@@ -61,8 +61,8 @@ function formatTimestamp(ts: number, interval: Interval): string {
 }
 
 export function useChartData(
-  timeSeries: TimeSeriesData[] | undefined,
-  quotas: QuotaWithService[] | undefined,
+  timeSeries: readonly TimeSeriesData[] | undefined,
+  quotas: readonly QuotaWithService[] | undefined,
   groupBy: GroupBy,
   chartMetric: ChartMetric,
   interval: Interval,
@@ -154,8 +154,8 @@ export function useChartKeys(chartData: ChartDataPoint[]): string[] {
 }
 
 export function useSummaryStats(
-  summary: AnalyticsSummary[] | undefined,
-  quotas: QuotaWithService[] | undefined,
+  summary: readonly AnalyticsSummary[] | undefined,
+  quotas: readonly QuotaWithService[] | undefined,
   timeRange: TimeRange,
 ): SummaryStats | null {
   return useMemo(() => {

@@ -1,16 +1,23 @@
 import { Router } from "express";
+import { Schema as S } from "effect";
 import { getDatabase } from "../database/index.ts";
 import { ServiceFactory } from "../services/factory.ts";
-import { mapServiceRow } from "./mappers.ts";
-import type { AIService } from "../types/index.ts";
+import { mapQuotaRow, mapServiceRow } from "./mappers.ts";
+import type { AIService, ServiceStatus, UsageQuota } from "../types/index.ts";
 import { nowTs } from "../utils/dates.ts";
 import { logger } from "../utils/logger.ts";
+import { ApiError, QuotasResponse, RefreshQuotasResponse } from "shared/api";
+import { ServiceStatus as ServiceStatusSchema } from "shared/schemas";
 
 const router = Router();
 
 const SERVICE_TIMEOUT = 15000;
 
-async function saveQuotasToDb(db: any, service: AIService, quotas: any[]): Promise<void> {
+async function saveQuotasToDb(
+  db: Awaited<ReturnType<typeof getDatabase>>,
+  service: AIService,
+  quotas: readonly UsageQuota[],
+): Promise<void> {
   const now = nowTs();
   for (const quota of quotas) {
     await db.run(
@@ -52,17 +59,18 @@ async function saveQuotasToDb(db: any, service: AIService, quotas: any[]): Promi
 router.get("/", async (req, res) => {
   try {
     const db = getDatabase();
-    const quotas = await db.all(`
+    const rows = await db.all(`
       SELECT q.*, s.name as service_name, s.provider
       FROM quotas q
       JOIN services s ON q.service_id = s.id
       WHERE s.enabled = 1
       ORDER BY s.name, q.metric
     `);
-    res.json(quotas);
+    const quotas = rows.map(mapQuotaRow);
+    res.json(S.encodeSync(QuotasResponse)(quotas));
   } catch (error) {
     logger.error({ err: error }, "Error fetching quotas");
-    res.status(500).json({ error: "Failed to fetch quotas" });
+    res.status(500).json(S.encodeSync(ApiError)({ error: "Failed to fetch quotas" }));
   }
 });
 
@@ -71,7 +79,7 @@ router.post("/refresh", async (req, res) => {
     const db = getDatabase();
     const rows = await db.all("SELECT * FROM services WHERE enabled = 1");
     const services: AIService[] = rows.map(mapServiceRow);
-    const results: any[] = [];
+    const results: ServiceStatus[] = [];
 
     for (const service of services) {
       try {
@@ -104,10 +112,10 @@ router.post("/refresh", async (req, res) => {
       }
     }
 
-    res.json(results);
+    res.json(S.encodeSync(RefreshQuotasResponse)(results));
   } catch (error) {
     logger.error({ err: error }, "Error refreshing quotas");
-    res.status(500).json({ error: "Failed to refresh quotas" });
+    res.status(500).json(S.encodeSync(ApiError)({ error: "Failed to refresh quotas" }));
   }
 });
 
@@ -138,10 +146,10 @@ router.post("/refresh/:serviceId", async (req, res) => {
       }
     }
 
-    res.json(status);
+    res.json(S.encodeSync(ServiceStatusSchema)(status));
   } catch (error) {
     logger.error({ err: error }, "Error refreshing quotas for service");
-    res.status(500).json({ error: "Failed to refresh service" });
+    res.status(500).json(S.encodeSync(ApiError)({ error: "Failed to refresh service" }));
   }
 });
 

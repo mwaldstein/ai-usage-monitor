@@ -1,6 +1,8 @@
 import { Router } from "express";
+import { Schema as S } from "effect";
 import { getDatabase } from "../database/index.ts";
 import { logger } from "../utils/logger.ts";
+import { ApiError, HistoryResponse } from "shared/api";
 
 const router = Router();
 
@@ -39,10 +41,10 @@ router.get("/", async (req, res) => {
     query += " ORDER BY uh.ts DESC";
 
     const history = await db.all(query, params);
-    res.json(history);
+    res.json(S.encodeSync(HistoryResponse)(history));
   } catch (error) {
     logger.error({ err: error }, "Error fetching usage history");
-    res.status(500).json({ error: "Failed to fetch usage history" });
+    res.status(500).json(S.encodeSync(ApiError)({ error: "Failed to fetch usage history" }));
   }
 });
 
