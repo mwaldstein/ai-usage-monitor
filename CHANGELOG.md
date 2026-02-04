@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.5.1] - 2026-02-04
+
 ### Fixed
 - Fixed analytics view "Error loading analytics" - added data type normalization in backend to convert SQLite aggregation results to proper types (String/Number) before schema validation
 - Added console error logging in frontend to capture schema validation failures with full response data for debugging
@@ -176,7 +178,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 - Added missing dependencies (uuid, sqlite) for Docker builds
 
-[Unreleased]: https://github.com/mwaldstein/ai-usage-monitor/compare/v0.5.0...HEAD
+[Unreleased]: https://github.com/mwaldstein/ai-usage-monitor/compare/v0.5.1...HEAD
+[0.5.1]: https://github.com/mwaldstein/ai-usage-monitor/compare/v0.5.0...v0.5.1
 [0.5.0]: https://github.com/mwaldstein/ai-usage-monitor/compare/v0.4.2...v0.5.0
 [0.4.2]: https://github.com/mwaldstein/ai-usage-monitor/compare/v0.4.1...v0.4.2
 [0.4.1]: https://github.com/mwaldstein/ai-usage-monitor/compare/v0.4.0...v0.4.1
