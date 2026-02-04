@@ -141,17 +141,17 @@ function App() {
                   <div className="flex items-center bg-zinc-800/50 rounded-lg p-0.5 border border-white/5">
                     <button
                       onClick={() => setViewMode("compact")}
-                      className={`p-1.5 rounded-md transition-all ${viewMode === "compact" ? "bg-zinc-700 text-white" : "text-zinc-400 hover:text-white"}`}
+                      className={`p-1 sm:p-1.5 rounded-md transition-all ${viewMode === "compact" ? "bg-zinc-700 text-white" : "text-zinc-400 hover:text-white"}`}
                       title="Compact view"
                     >
-                      <LayoutGrid size={14} />
+                      <LayoutGrid size={12} className="sm:size-[14px]" />
                     </button>
                     <button
                       onClick={() => setViewMode("expanded")}
-                      className={`p-1.5 rounded-md transition-all ${viewMode === "expanded" ? "bg-zinc-700 text-white" : "text-zinc-400 hover:text-white"}`}
+                      className={`p-1 sm:p-1.5 rounded-md transition-all ${viewMode === "expanded" ? "bg-zinc-700 text-white" : "text-zinc-400 hover:text-white"}`}
                       title="Expanded view"
                     >
-                      <List size={14} />
+                      <List size={12} className="sm:size-[14px]" />
                     </button>
                   </div>
 
