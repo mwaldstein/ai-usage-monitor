@@ -74,7 +74,10 @@ export function AddServiceModal({
   };
 
   return (
-    <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+    <div
+      className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4"
+      data-testid="add-service-modal"
+    >
       <div className="glass-strong rounded-2xl w-full max-w-lg max-h-[90vh] overflow-hidden flex flex-col">
         {/* Header */}
         <div className="flex items-center justify-between p-4 border-b border-white/10">
@@ -136,6 +139,7 @@ export function AddServiceModal({
             onClick={handleSubmit}
             disabled={disabled}
             className={`flex-1 px-4 py-2.5 bg-violet-600 hover:bg-violet-500 text-white rounded-lg text-sm font-medium transition-all shadow-lg shadow-violet-600/20 ${disabled ? "opacity-50 cursor-not-allowed" : ""}`}
+            data-testid="submit-service-button"
           >
             {disabled ? "Offline" : isEditing ? "Save Changes" : "Add Service"}
           </button>

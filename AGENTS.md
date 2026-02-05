@@ -14,6 +14,7 @@ Full-stack TypeScript app for monitoring AI service quotas across multiple provi
 npm run check        # Run lint + format check
 npm run lint         # Lint with oxlint
 npm run fmt          # Format with oxfmt
+npm run test:e2e     # Run Playwright end-to-end suite
 
 # Backend (cd backend)
 npm run dev          # Dev with file watch
@@ -23,6 +24,16 @@ npm run start        # Production (uses --experimental-strip-types)
 npm run dev          # Vite dev server
 npm run build        # Production build
 ```
+
+## E2E Testing
+
+- Framework: Playwright (`@playwright/test`)
+- Config: `playwright.config.ts`
+- Tests: `e2e/tests/`
+- Mock provider server: `e2e/mock-provider-server.mjs`
+- Global setup (isolated data dir reset): `e2e/global-setup.ts`
+- Default e2e ports: frontend `3100`, backend `3101`, mock provider `4110`
+- Frontend e2e backend override uses `VITE_BACKEND_ORIGIN`
 
 ## Project Structure
 
@@ -63,9 +74,9 @@ frontend/src/
 ## Adding a Provider
 
 1. Add type to `AIProvider` union → `backend/src/types/`
-2. Add config to `providerConfigs` → `backend/src/services/providerConfigs.ts`
-3. Create provider class extending `BaseAIService` → `backend/src/services/providers/`
-4. Register in `ServiceFactory` → `backend/src/services/ServiceFactory.ts`
+2. Add config to `providerConfigs` → `backend/src/services/providers.ts`
+3. Create provider class extending `BaseAIService` → `backend/src/services/`
+4. Register in `ServiceFactory` → `backend/src/services/factory.ts`
 5. Add icon/color mapping → `frontend/src/components/`
 
 Auth patterns: session cookies (opencode, AMP) or Bearer tokens (z.ai, Codex). Handle 401/403/429 as auth errors.

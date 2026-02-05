@@ -172,6 +172,7 @@ function App() {
                     disabled={!isConnected}
                     className={`btn-icon tooltip ${!isConnected ? "opacity-40 cursor-not-allowed" : ""}`}
                     data-tooltip={isConnected ? "Refresh all" : "Offline - cannot refresh"}
+                    data-testid="refresh-all-button"
                   >
                     <RefreshCw size={14} />
                   </button>
@@ -181,6 +182,7 @@ function App() {
                     disabled={!isConnected}
                     className={`btn-icon tooltip ${!isConnected ? "opacity-40 cursor-not-allowed" : ""}`}
                     data-tooltip={isConnected ? "Settings" : "Offline - settings unavailable"}
+                    data-testid="open-settings-icon"
                   >
                     <Settings size={14} />
                   </button>
@@ -193,6 +195,7 @@ function App() {
                     onClick={() => setIsPasswordModalOpen(true)}
                     className="btn-icon tooltip"
                     data-tooltip={`Change password (${auth.user.username})`}
+                    data-testid="change-password-button"
                   >
                     <KeyRound size={14} />
                   </button>
@@ -200,6 +203,7 @@ function App() {
                     onClick={auth.logout}
                     className="btn-icon tooltip"
                     data-tooltip={`Logout (${auth.user.username})`}
+                    data-testid="logout-button"
                   >
                     <LogOut size={14} />
                   </button>
@@ -217,6 +221,7 @@ function App() {
                     ? "bg-zinc-800 text-white border border-white/10"
                     : "text-zinc-400 hover:text-white hover:bg-zinc-800/50"
                 } ${!isConnected ? "opacity-40 cursor-not-allowed" : ""}`}
+                data-testid="nav-dashboard"
               >
                 <LayoutGrid size={16} />
                 <span className="hidden sm:inline">Dashboard</span>
@@ -229,6 +234,7 @@ function App() {
                     ? "bg-zinc-800 text-white border border-white/10"
                     : "text-zinc-400 hover:text-white hover:bg-zinc-800/50"
                 } ${!isConnected ? "opacity-40 cursor-not-allowed" : ""}`}
+                data-testid="nav-analytics"
               >
                 <BarChart3 size={16} />
                 <span className="hidden sm:inline">Analytics</span>
@@ -241,6 +247,7 @@ function App() {
                     ? "bg-zinc-800 text-white border border-white/10"
                     : "text-zinc-400 hover:text-white hover:bg-zinc-800/50"
                 } ${!isConnected ? "opacity-40 cursor-not-allowed" : ""}`}
+                data-testid="nav-settings"
               >
                 <Settings size={16} />
                 <span className="hidden sm:inline">Settings</span>
@@ -351,7 +358,9 @@ function App() {
               </span>
             )}
           </div>
-          {lastUpdate && <span>Updated {lastUpdate.toLocaleTimeString()}</span>}
+          {lastUpdate && (
+            <span data-testid="last-updated">Updated {lastUpdate.toLocaleTimeString()}</span>
+          )}
         </div>
       </footer>
 

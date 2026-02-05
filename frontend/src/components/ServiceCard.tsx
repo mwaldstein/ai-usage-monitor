@@ -102,6 +102,7 @@ export function ServiceCard({
         isSelected ? "ring-1 ring-violet-500/50" : ""
       }`}
       onClick={handleCardClick}
+      data-testid={`service-card-${service.id}`}
     >
       <div className="p-4">
         <div className="flex flex-wrap items-start justify-between gap-2 mb-2">
@@ -110,7 +111,12 @@ export function ServiceCard({
 
             <div className="min-w-0">
               <div className="flex items-center gap-1.5 min-w-0">
-                <h3 className="text-sm font-semibold text-white truncate">{service.name}</h3>
+                <h3
+                  className="text-sm font-semibold text-white truncate"
+                  data-testid={`service-card-name-${service.id}`}
+                >
+                  {service.name}
+                </h3>
                 {isHealthy ? (
                   <CheckCircle2 size={12} className="text-emerald-500" />
                 ) : (

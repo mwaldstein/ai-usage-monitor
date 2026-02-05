@@ -64,10 +64,15 @@ Thumbs.db
 # Temporary files
 *.tmp
 *.temp
+.tmp/
 .cache/
 *.pid
 *.seed
 *.pid.lock
+
+# Playwright artifacts
+playwright-report/
+test-results/
 
 # Coverage reports
 coverage/

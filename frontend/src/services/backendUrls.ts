@@ -95,7 +95,7 @@ export function getRuntimeBasePath(): string {
 
 function getBackendOrigin(): string {
   if (isProd()) return window.location.origin;
-  return "http://localhost:3001";
+  return import.meta.env.VITE_BACKEND_ORIGIN || "http://localhost:3001";
 }
 
 export function getBackendBaseUrl(): string {
@@ -113,7 +113,16 @@ export function getVersionUrl(): string {
 }
 
 export function getWebSocketUrl(): string {
-  if (!isProd()) return "ws://localhost:3001/";
+  if (!isProd()) {
+    const backendOrigin = getBackendOrigin();
+    if (backendOrigin.startsWith("https://")) {
+      return `wss://${backendOrigin.slice("https://".length)}/`;
+    }
+    if (backendOrigin.startsWith("http://")) {
+      return `ws://${backendOrigin.slice("http://".length)}/`;
+    }
+    return "ws://localhost:3001/";
+  }
 
   const wsProtocol = window.location.protocol === "https:" ? "wss:" : "ws:";
   const basePath = getRuntimeBasePath();

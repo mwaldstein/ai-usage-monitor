@@ -34,6 +34,7 @@ export function SettingsView({
           onClick={onOpenAddServiceModal}
           disabled={!isConnected}
           className={`flex items-center gap-2 px-3 py-2 bg-violet-600 hover:bg-violet-500 text-white text-sm font-medium rounded-lg transition-colors ${!isConnected ? "opacity-40 cursor-not-allowed" : ""}`}
+          data-testid="add-service-button"
         >
           <Plus size={14} />
           Add Service
@@ -45,6 +46,7 @@ export function SettingsView({
           <div
             key={service.id}
             className="flex items-center justify-between p-2.5 rounded-lg bg-zinc-800/30 border border-white/5 hover:border-white/10 transition-colors"
+            data-testid={`settings-service-row-${service.id}`}
           >
             <div className="flex items-center gap-2">
               <div
@@ -54,7 +56,12 @@ export function SettingsView({
                     : "bg-red-500"
                 }`}
               />
-              <span className="text-sm font-medium">{service.name}</span>
+              <span
+                className="text-sm font-medium"
+                data-testid={`settings-service-name-${service.id}`}
+              >
+                {service.name}
+              </span>
               <span className="text-xs text-zinc-500">{service.provider}</span>
               {(() => {
                 const tokenExp = statuses.find((s) => s.service.id === service.id)?.tokenExpiration;
@@ -81,6 +88,7 @@ export function SettingsView({
                 onClick={() => onReorderService(service.id, "up")}
                 disabled={index === 0 || !isConnected}
                 className="p-1.5 text-zinc-400 hover:text-zinc-300 hover:bg-zinc-700/50 rounded-md transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                data-testid={`settings-reorder-up-${service.id}`}
               >
                 <ArrowUp size={12} />
               </button>
@@ -88,6 +96,7 @@ export function SettingsView({
                 onClick={() => onReorderService(service.id, "down")}
                 disabled={index === services.length - 1 || !isConnected}
                 className="p-1.5 text-zinc-400 hover:text-zinc-300 hover:bg-zinc-700/50 rounded-md transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                data-testid={`settings-reorder-down-${service.id}`}
               >
                 <ArrowDown size={12} />
               </button>

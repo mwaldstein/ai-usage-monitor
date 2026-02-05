@@ -34,6 +34,7 @@ export function ServiceFormFields({
           type="text"
           value={name}
           onChange={(e) => onNameChange(e.target.value)}
+          data-testid="service-name-input"
           className="w-full px-3 py-2.5 bg-zinc-800/50 border border-white/10 rounded-lg focus:outline-none focus:ring-2 focus:ring-violet-500/50 focus:border-violet-500/50 text-sm text-white placeholder-zinc-600 transition-all"
           placeholder="e.g., Production OpenAI"
           required
@@ -49,6 +50,7 @@ export function ServiceFormFields({
         <textarea
           value={apiKey}
           onChange={(e) => onApiKeyChange(e.target.value)}
+          data-testid="service-api-key-input"
           className="w-full px-3 py-2.5 bg-zinc-800/50 border border-white/10 rounded-lg focus:outline-none focus:ring-2 focus:ring-violet-500/50 focus:border-violet-500/50 text-xs font-mono text-white placeholder-zinc-600 transition-all resize-none"
           placeholder={instructions.apiKeyPlaceholder}
           rows={3}
@@ -65,6 +67,7 @@ export function ServiceFormFields({
           <textarea
             value={bearerToken}
             onChange={(e) => onBearerTokenChange(e.target.value)}
+            data-testid="service-bearer-token-input"
             className="w-full px-3 py-2.5 bg-zinc-800/50 border border-white/10 rounded-lg focus:outline-none focus:ring-2 focus:ring-violet-500/50 focus:border-violet-500/50 text-xs font-mono text-white placeholder-zinc-600 transition-all resize-none"
             placeholder={instructions.bearerTokenPlaceholder}
             rows={3}
@@ -85,6 +88,7 @@ export function ServiceFormFields({
             type="text"
             value={baseUrl}
             onChange={(e) => onBaseUrlChange(e.target.value)}
+            data-testid="service-base-url-input"
             className="w-full px-3 py-2.5 bg-zinc-800/50 border border-white/10 rounded-lg focus:outline-none focus:ring-2 focus:ring-violet-500/50 focus:border-violet-500/50 text-xs font-mono text-white placeholder-zinc-600 transition-all"
             placeholder={instructions.baseUrlPlaceholder || "https://api.example.com/v1"}
           />

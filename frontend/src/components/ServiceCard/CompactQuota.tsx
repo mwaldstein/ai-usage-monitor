@@ -151,7 +151,10 @@ export function CompactQuota({
             <span className="text-xs text-zinc-300 font-mono">{timeRemaining}</span>
           </div>
         </div>
-        <div className="text-[10px] text-zinc-500">
+        <div
+          className="text-[10px] text-zinc-500"
+          data-testid={`quota-value-${quota.serviceId}-${quota.metric}`}
+        >
           {isBalanceMetric ? (
             <span>Balance: {displayRemaining}</span>
           ) : isBurnDown ? (

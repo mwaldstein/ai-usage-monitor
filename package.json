@@ -17,9 +17,14 @@
     "fmt:check": "oxfmt shared/src backend/src frontend/src --check",
     "dev:backend": "npm run dev -w backend",
     "dev:frontend": "npm run dev -w frontend",
-    "typecheck": "npm run typecheck -w shared && npm run typecheck -w backend && npm run typecheck -w frontend"
+    "typecheck": "npm run typecheck -w shared && npm run typecheck -w backend && npm run typecheck -w frontend",
+    "test:e2e": "playwright test",
+    "test:e2e:headed": "playwright test --headed",
+    "test:e2e:contracts": "playwright test e2e/tests/api-contract.spec.ts",
+    "smoke:prod": "bash ./scripts/smoke-prod.sh"
   },
   "devDependencies": {
+    "@playwright/test": "^1.55.0",
     "oxfmt": "^0.27.0",
     "oxlint": "^1.42.0",
     "typescript": "~5.9.3"

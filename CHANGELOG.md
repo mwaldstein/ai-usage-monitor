@@ -11,6 +11,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Added in-app password management with a new header action and change-password modal for authenticated users
 - Added `POST /api/auth/change-password` endpoint with current-password verification and session-token-only enforcement
 - Added shared WebSocket schema tests covering client/server message decode and server message encode paths
+- Added a Playwright end-to-end test harness with deterministic P0 coverage for setup/auth, service management, refresh behavior, and reorder persistence
+- Added a local mock provider server and isolated e2e data directory setup to keep browser tests deterministic and independent from real AI provider APIs
+- Added an e2e planning document outlining prioritized coverage, constraints, and phased rollout (`docs/e2e-test-plan.md`)
+- Added API contract smoke tests that validate critical auth/services/quotas/status responses against shared schemas using a local mock provider
+- Added a database migration safety test that validates legacy-schema reconciliation (timestamp conversion, raw quota backfill, and usage-history deduplication)
+- Added a production smoke script (`npm run smoke:prod`) and release readiness checklist (`docs/release-readiness-checklist.md`)
 
 ### Security
 - Revoked other active sessions after password changes so old logins are invalidated
@@ -31,6 +37,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Migrated multi-step writes from manual SQL transaction statements to native `@effect/sql` `withTransaction` semantics
 - Added Effect-managed startup migration execution using `@effect/sql` Migrator with an `effect_sql_migrations` table and initial migration scaffolding
 - Replaced ad-hoc startup schema bootstrap/mutation steps with migrator-owned baseline and legacy reconciliation migrations for existing pre-migrator databases
+- Added stable `data-testid` hooks for key dashboard/settings/modal/quota elements to make e2e selectors robust during UI refactors
+- Updated frontend backend URL resolution to support overriding dev backend origin via `VITE_BACKEND_ORIGIN` (used by e2e orchestration)
 
 ### Removed
 - Removed Google AI (Gemini) provider — was a stub returning hardcoded placeholder quotas
