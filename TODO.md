@@ -6,7 +6,8 @@
 
 ### Backend
 
-- **Provider error normalization**: Extract shared auth/rate-limit/network error mapping from provider services into reusable utilities to reduce duplicated status handling logic
+- **Database Effect safety rollout**: Implement the staged DB resource/error/transaction migration plan in `docs/database-effect-plan.md`
+- **External interface schema hardening**: Continue schema-first decoding/encoding for routes, provider responses, WS, and frontend hooks per `docs/external-interface-schema-plan.md`
 
 ## Testing
 

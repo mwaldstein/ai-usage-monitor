@@ -2,6 +2,7 @@ import axios from "axios";
 import type { AxiosInstance } from "axios";
 import type { AIService, UsageQuota, ServiceStatus } from "../types/index.ts";
 import { providerConfigs } from "./providers.ts";
+import { isProviderAuthError } from "./errorNormalization.ts";
 import { nowTs } from "../utils/dates.ts";
 import { getJWTExpiration } from "../utils/jwt.ts";
 
@@ -81,23 +82,7 @@ export abstract class BaseAIService {
     }
   }
 
-  protected isAuthError(error: any): boolean {
-    // Check for common authentication error patterns
-    if (error?.response?.status === 401) return true;
-    if (error?.response?.status === 403) return true;
-    if (error?.response?.status === 429) return true;
-    if (error?.code === "UNAUTHORIZED") return true;
-    if (error?.code === "INVALID_TOKEN") return true;
-    if (error?.code === "TOKEN_EXPIRED") return true;
-
-    // Check for rate limiting that might be auth-related
-    if (
-      error?.response?.status === 429 &&
-      (error?.response?.data?.message?.includes("token") ||
-        error?.response?.data?.message?.includes("auth"))
-    )
-      return true;
-
-    return false;
+  protected isAuthError(error: unknown): boolean {
+    return isProviderAuthError(error);
   }
 }

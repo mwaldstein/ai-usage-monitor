@@ -3,6 +3,7 @@ import type { UsageQuota } from "../types/index.ts";
 import { randomUUID } from "crypto";
 import { nowTs, dateToTs } from "../utils/dates.ts";
 import { logger } from "../utils/logger.ts";
+import { normalizeProviderError } from "./errorNormalization.ts";
 
 interface ZAISubscription {
   id: string;
@@ -164,7 +165,16 @@ export class ZAIService extends BaseAIService {
 
       return quotas;
     } catch (error) {
-      logger.error({ err: error }, `Error fetching z.ai quotas for ${this.service.name}`);
+      const normalizedError = normalizeProviderError(error);
+      logger.error(
+        {
+          err: error,
+          errorKind: normalizedError.kind,
+          status: normalizedError.status,
+          providerCode: normalizedError.providerCode,
+        },
+        `Error fetching z.ai quotas for ${this.service.name}: ${normalizedError.message}`,
+      );
       return [];
     }
   }

@@ -4,6 +4,7 @@ import { randomUUID } from "crypto";
 import axios from "axios";
 import { nowTs } from "../utils/dates.ts";
 import { logger } from "../utils/logger.ts";
+import { normalizeProviderError } from "./errorNormalization.ts";
 
 // Interfaces for Codex usage data from the API response
 interface CodexWindow {
@@ -188,10 +189,16 @@ export class CodexService extends BaseAIService {
           type: "credits",
         });
       }
-    } catch (error: any) {
+    } catch (error) {
+      const normalizedError = normalizeProviderError(error);
       logger.error(
-        { err: error },
-        `[Codex:${serviceName}] ERROR during fetch: ${error.message || "Unknown error"}`,
+        {
+          err: error,
+          errorKind: normalizedError.kind,
+          status: normalizedError.status,
+          providerCode: normalizedError.providerCode,
+        },
+        `[Codex:${serviceName}] ERROR during fetch: ${normalizedError.message}`,
       );
     }
 

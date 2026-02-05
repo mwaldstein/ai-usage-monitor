@@ -3,6 +3,7 @@ import type { UsageQuota } from "../types/index.ts";
 import { randomUUID } from "crypto";
 import { nowTs } from "../utils/dates.ts";
 import { logger } from "../utils/logger.ts";
+import { normalizeProviderError } from "./errorNormalization.ts";
 
 interface AMPQuotaData {
   bucket: string;
@@ -208,7 +209,16 @@ export class AMPService extends BaseAIService {
 
       return quotas;
     } catch (error) {
-      logger.error({ err: error }, `Error fetching AMP quotas for ${this.service.name}`);
+      const normalizedError = normalizeProviderError(error);
+      logger.error(
+        {
+          err: error,
+          errorKind: normalizedError.kind,
+          status: normalizedError.status,
+          providerCode: normalizedError.providerCode,
+        },
+        `Error fetching AMP quotas for ${this.service.name}: ${normalizedError.message}`,
+      );
       return [];
     }
   }

@@ -3,6 +3,7 @@ import type { UsageQuota, AIService } from "../../types/index.ts";
 import { randomUUID } from "crypto";
 import { nowTs, dateToTs } from "../../utils/dates.ts";
 import { logger } from "../../utils/logger.ts";
+import { ProviderServiceError, normalizeProviderError } from "../errorNormalization.ts";
 import {
   parseHydrationData,
   type OpenCodeBillingData,
@@ -165,11 +166,10 @@ export class OpenCodeService extends BaseAIService {
       if (!hasAnyData) {
         if (this.detectAuthPage(html)) {
           logger.error(`Authentication required for ${this.service.name} - received login page`);
-          const error = new Error(
+          throw new ProviderServiceError(
             "Authentication failed: Session cookie expired or invalid. Please get a new session cookie from your browser.",
+            "UNAUTHORIZED",
           );
-          (error as Error & { code: string }).code = "UNAUTHORIZED";
-          throw error;
         } else {
           logger.error(`No billing or subscription data found in HTML for ${this.service.name}`);
           throw new Error("No quota data found in response.");
@@ -204,7 +204,16 @@ export class OpenCodeService extends BaseAIService {
 
       return quotas;
     } catch (error) {
-      logger.error({ err: error }, `Error fetching opencode quotas for ${this.service.name}`);
+      const normalizedError = normalizeProviderError(error);
+      logger.error(
+        {
+          err: error,
+          errorKind: normalizedError.kind,
+          status: normalizedError.status,
+          providerCode: normalizedError.providerCode,
+        },
+        `Error fetching opencode quotas for ${this.service.name}: ${normalizedError.message}`,
+      );
       return [];
     }
   }
