@@ -4,6 +4,7 @@ import type { AIService } from "../types";
 
 import { getApiBaseUrl } from "../services/backendUrls";
 import { authFetch } from "../services/authFetch";
+import { getApiErrorMessage } from "../services/apiErrors";
 import {
   CreateServiceRequest,
   ListServicesResponse,
@@ -42,7 +43,9 @@ export function useServices() {
     try {
       setLoading(true);
       const response = await authFetch(`${API_URL}/services`);
-      if (!response.ok) throw new Error("Failed to fetch services");
+      if (!response.ok) {
+        throw new Error(await getApiErrorMessage(response, "Failed to fetch services"));
+      }
       const data: unknown = await response.json();
       const decoded = S.decodeUnknownEither(ListServicesResponse)(data);
       if (Either.isLeft(decoded)) {
@@ -66,7 +69,9 @@ export function useServices() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
       });
-      if (!response.ok) throw new Error("Failed to add service");
+      if (!response.ok) {
+        throw new Error(await getApiErrorMessage(response, "Failed to add service"));
+      }
       await fetchServices();
       return true;
     } catch (err) {
@@ -92,7 +97,9 @@ export function useServices() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(body),
       });
-      if (!response.ok) throw new Error("Failed to update service");
+      if (!response.ok) {
+        throw new Error(await getApiErrorMessage(response, "Failed to update service"));
+      }
       await fetchServices();
       return true;
     } catch (err) {
@@ -106,7 +113,9 @@ export function useServices() {
       const response = await authFetch(`${API_URL}/services/${id}`, {
         method: "DELETE",
       });
-      if (!response.ok) throw new Error("Failed to delete service");
+      if (!response.ok) {
+        throw new Error(await getApiErrorMessage(response, "Failed to delete service"));
+      }
       await fetchServices();
       return true;
     } catch (err) {
@@ -133,7 +142,9 @@ export function useServices() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(body),
       });
-      if (!response.ok) throw new Error("Failed to reorder services");
+      if (!response.ok) {
+        throw new Error(await getApiErrorMessage(response, "Failed to reorder services"));
+      }
       const data: unknown = await response.json();
       const decoded = S.decodeUnknownEither(ReorderServicesResponse)(data);
       if (Either.isLeft(decoded)) {

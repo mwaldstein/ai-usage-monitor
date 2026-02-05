@@ -4,6 +4,7 @@ import type { UsageHistory, UsageAnalytics, ProviderAnalytics } from "../types";
 
 import { getApiBaseUrl } from "../services/backendUrls";
 import { authFetch } from "../services/authFetch";
+import { getApiErrorMessage } from "../services/apiErrors";
 import { AnalyticsResponse, HistoryResponse, ProviderAnalyticsResponse } from "shared/api";
 
 const API_URL = getApiBaseUrl();
@@ -21,7 +22,9 @@ export function useUsageHistory(serviceId?: string, hours: number = 24) {
       params.append("hours", hours.toString());
 
       const response = await authFetch(`${API_URL}/usage/history?${params}`);
-      if (!response.ok) throw new Error("Failed to fetch usage history");
+      if (!response.ok) {
+        throw new Error(await getApiErrorMessage(response, "Failed to fetch usage history"));
+      }
       const data: unknown = await response.json();
       const decoded = S.decodeUnknownEither(HistoryResponse)(data);
       if (Either.isLeft(decoded)) {
@@ -64,7 +67,9 @@ export function useUsageAnalytics(
       if (groupBy) params.append("groupBy", groupBy);
 
       const response = await authFetch(`${API_URL}/usage/analytics?${params}`);
-      if (!response.ok) throw new Error("Failed to fetch usage analytics");
+      if (!response.ok) {
+        throw new Error(await getApiErrorMessage(response, "Failed to fetch usage analytics"));
+      }
       const data: unknown = await response.json();
       const decoded = S.decodeUnknownEither(AnalyticsResponse)(data);
       if (Either.isLeft(decoded)) {
@@ -100,7 +105,9 @@ export function useProviderAnalytics(days: number = 30) {
       params.append("days", days.toString());
 
       const response = await authFetch(`${API_URL}/usage/analytics/providers?${params}`);
-      if (!response.ok) throw new Error("Failed to fetch provider analytics");
+      if (!response.ok) {
+        throw new Error(await getApiErrorMessage(response, "Failed to fetch provider analytics"));
+      }
       const data: unknown = await response.json();
       const decoded = S.decodeUnknownEither(ProviderAnalyticsResponse)(data);
       if (Either.isLeft(decoded)) {

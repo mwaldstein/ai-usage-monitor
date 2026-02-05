@@ -4,6 +4,7 @@ import { LogsResponse } from "shared/api";
 import type { LogEntry } from "shared/schemas";
 import { getApiBaseUrl } from "../services/backendUrls";
 import { authFetch } from "../services/authFetch";
+import { getApiErrorMessage } from "../services/apiErrors";
 
 const API_URL = getApiBaseUrl();
 
@@ -18,7 +19,7 @@ export function useLogs(limit = 200, enabled = true) {
       setLoading(true);
       const response = await authFetch(`${API_URL}/logs?limit=${limit}`);
       if (!response.ok) {
-        throw new Error("Failed to fetch logs");
+        throw new Error(await getApiErrorMessage(response, "Failed to fetch logs"));
       }
       const data: unknown = await response.json();
       const decoded = S.decodeUnknownEither(LogsResponse)(data);

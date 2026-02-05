@@ -1,7 +1,15 @@
 import { useState, useEffect, useCallback } from "react";
 import { Schema as S, Either } from "effect";
 import { getApiBaseUrl } from "../services/backendUrls";
-import { AuthStatusResponse, AuthResponse } from "shared/api";
+import { getApiErrorMessage } from "../services/apiErrors";
+import {
+  AuthStatusResponse,
+  AuthResponse,
+  ChangePasswordRequest,
+  LoginRequest,
+  MeResponse,
+  RegisterRequest,
+} from "shared/api";
 
 const API_URL = getApiBaseUrl();
 const TOKEN_KEY = "aum_auth_token";
@@ -11,6 +19,11 @@ export interface AuthUser {
   id: string;
   username: string;
 }
+
+const StoredAuthUser = S.Struct({
+  id: S.String,
+  username: S.String,
+});
 
 export interface AuthState {
   /** Whether auth is enabled on the server */
@@ -45,7 +58,12 @@ function loadUser(): AuthUser | null {
   try {
     const raw = localStorage.getItem(USER_KEY);
     if (!raw) return null;
-    return JSON.parse(raw) as AuthUser;
+    const parsed: unknown = JSON.parse(raw);
+    const decoded = S.decodeUnknownEither(StoredAuthUser)(parsed);
+    if (Either.isLeft(decoded)) {
+      return null;
+    }
+    return decoded.right;
   } catch {
     return null;
   }
@@ -109,6 +127,14 @@ export function useAuth(): AuthState {
               clearAuth();
               setToken(null);
               setUser(null);
+            } else {
+              const meData: unknown = await meResponse.json();
+              const meDecoded = S.decodeUnknownEither(MeResponse)(meData);
+              if (Either.isLeft(meDecoded)) {
+                clearAuth();
+                setToken(null);
+                setUser(null);
+              }
             }
           }
 
@@ -130,15 +156,15 @@ export function useAuth(): AuthState {
 
   const login = useCallback(async (username: string, password: string): Promise<string | null> => {
     try {
+      const body = S.encodeSync(LoginRequest)({ username, password });
       const response = await fetch(`${API_URL}/auth/login`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ username, password }),
+        body: JSON.stringify(body),
       });
 
       if (!response.ok) {
-        const body = (await response.json()) as { error?: string };
-        return body.error ?? "Login failed";
+        return getApiErrorMessage(response, "Login failed");
       }
 
       const data: unknown = await response.json();
@@ -161,15 +187,15 @@ export function useAuth(): AuthState {
   const register = useCallback(
     async (username: string, password: string, setupCode: string): Promise<string | null> => {
       try {
+        const body = S.encodeSync(RegisterRequest)({ username, password, setupCode });
         const response = await fetch(`${API_URL}/auth/register`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ username, password, setupCode }),
+          body: JSON.stringify(body),
         });
 
         if (!response.ok) {
-          const body = (await response.json()) as { error?: string };
-          return body.error ?? "Registration failed";
+          return getApiErrorMessage(response, "Registration failed");
         }
 
         const data: unknown = await response.json();
@@ -214,18 +240,18 @@ export function useAuth(): AuthState {
       }
 
       try {
+        const body = S.encodeSync(ChangePasswordRequest)({ currentPassword, newPassword });
         const response = await fetch(`${API_URL}/auth/change-password`, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
             Authorization: `Bearer ${token}`,
           },
-          body: JSON.stringify({ currentPassword, newPassword }),
+          body: JSON.stringify(body),
         });
 
         if (!response.ok) {
-          const body = (await response.json()) as { error?: string };
-          return body.error ?? "Password change failed";
+          return getApiErrorMessage(response, "Password change failed");
         }
 
         return null;
