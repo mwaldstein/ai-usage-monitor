@@ -8,6 +8,7 @@ import {
   migrateQuotasSchema,
   migrateUsageHistorySchema,
 } from "./migrations.ts";
+import { toDbError } from "./errors.ts";
 import { logger } from "../utils/logger.ts";
 import { getEnv } from "../schemas/env.ts";
 
@@ -59,22 +60,43 @@ export async function initializeDatabase(): Promise<Database<sqlite3.Database>> 
 
   fs.mkdirSync(dataDir, { recursive: true });
 
-  db = await open({
-    filename: dbPath,
-    driver: sqlite3.Database,
-  });
+  let openedDb: Database<sqlite3.Database> | null = null;
 
-  await db.exec(PRAGMA_SQL);
+  try {
+    openedDb = await open({
+      filename: dbPath,
+      driver: sqlite3.Database,
+    });
 
-  // Run migrations before creating tables
-  await migrateUsageHistorySchema(db);
-  await migrateServicesSchema(db);
-  await migrateQuotasSchema(db);
+    await openedDb.exec(PRAGMA_SQL);
 
-  await db.exec(SCHEMA_SQL);
+    // Run migrations before creating tables
+    await migrateUsageHistorySchema(openedDb);
+    await migrateServicesSchema(openedDb);
+    await migrateQuotasSchema(openedDb);
 
-  // Apply additive migrations for columns added after initial schema
-  await applyAdditiveMigrations(db);
+    await openedDb.exec(SCHEMA_SQL);
+
+    // Apply additive migrations for columns added after initial schema
+    await applyAdditiveMigrations(openedDb);
+  } catch (error) {
+    if (openedDb) {
+      await openedDb.close().catch(() => {
+        // Ignore close failures while surfacing initialization error.
+      });
+      throw toDbError(error, { operation: "query" });
+    }
+
+    throw toDbError(error, { operation: "open" });
+  }
+
+  if (!openedDb) {
+    throw toDbError(new Error("Database initialization completed without a connection"), {
+      operation: "open",
+    });
+  }
+
+  db = openedDb;
 
   logger.info({ dbPath }, "Database initialized successfully");
 

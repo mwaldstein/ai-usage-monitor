@@ -36,5 +36,10 @@ Goal: use `@effect/sql` with `@effect/sql-sqlite-node` for DB resource safety, e
    - in-memory sqlite Layer for unit tests
    - verify transactions + retry behavior
 
+## Progress (Current)
+- Added backend `DbError` tags and sqlite error-code mapping for DB open/query failures.
+- Added transaction-level busy-lock retry for `BEGIN IMMEDIATE` acquisition.
+- Remaining: migrate to `@effect/sql` `SqliteClient` layer and convert route/service call-sites.
+
 ## Unresolved Questions
 - none

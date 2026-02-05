@@ -6,7 +6,7 @@
 
 ### Backend
 
-- **Database Effect safety rollout**: Add `@effect/sql` + `@effect/sql-sqlite-node` and migrate DB lifecycle to a `SqliteClient` layer with typed DB error mapping (`docs/database-effect-plan.md`)
+- **Database Effect safety rollout**: Add `@effect/sql` + `@effect/sql-sqlite-node` and migrate DB lifecycle/call-sites to a `SqliteClient` layer (typed DB error mapping + busy-lock retry are now in place) (`docs/database-effect-plan.md`)
 
 ## Testing
 
