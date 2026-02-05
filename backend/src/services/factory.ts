@@ -1,11 +1,6 @@
 import type { AIService, ServiceStatus } from "../types/index.ts";
 import { BaseAIService } from "./base.ts";
-import {
-  OpenAIService,
-  GoogleAIService,
-  AnthropicService,
-  GenericAIService,
-} from "./implementations.ts";
+import { OpenAIService, AnthropicService } from "./implementations.ts";
 import { OpenCodeService } from "./opencode/index.ts";
 import { AMPService } from "./amp.ts";
 import { ZAIService } from "./zai.ts";
@@ -18,8 +13,6 @@ export class ServiceFactory {
         return new OpenAIService(service);
       case "codex":
         return new CodexService(service);
-      case "google":
-        return new GoogleAIService(service);
       case "anthropic":
         return new AnthropicService(service);
       case "opencode":
@@ -28,10 +21,10 @@ export class ServiceFactory {
         return new AMPService(service);
       case "zai":
         return new ZAIService(service);
-      case "aws":
-        return new GenericAIService(service);
-      default:
-        return new GenericAIService(service);
+      default: {
+        const _exhaustive: never = service.provider;
+        throw new Error(`Unknown provider: ${_exhaustive}`);
+      }
     }
   }
 

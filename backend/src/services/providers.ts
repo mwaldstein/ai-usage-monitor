@@ -23,23 +23,6 @@ export const providerConfigs: Record<AIProvider, ProviderConfig> = {
       "anthropic-version": "2023-06-01",
     },
   },
-  google: {
-    name: "Google AI",
-    baseUrl: "https://generativelanguage.googleapis.com/v1beta",
-    quotaEndpoints: {
-      usage: "/usage",
-    },
-    headers: {
-      Authorization: "Bearer {apiKey}",
-    },
-  },
-  aws: {
-    name: "AWS Bedrock",
-    baseUrl: "https://bedrock-runtime.{region}.amazonaws.com",
-    headers: {
-      // AWS uses signature-based auth
-    },
-  },
   opencode: {
     name: "opencode zen",
     baseUrl: "https://api.opencode.ai/v1",

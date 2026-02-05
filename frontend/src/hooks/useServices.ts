@@ -23,9 +23,11 @@ function getProviderHelpUrl(provider: AIService["provider"]): string {
     case "amp":
       return "https://ampcode.com";
     case "openai":
-    case "anthropic":
-    case "google":
       return "https://platform.openai.com/api-keys";
+    case "anthropic":
+      return "https://console.anthropic.com/settings/keys";
+    case "codex":
+      return "https://chatgpt.com";
     default:
       return "";
   }

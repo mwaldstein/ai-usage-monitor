@@ -14,6 +14,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Security
 - Revoked other active sessions after password changes so old logins are invalidated
 
+### Removed
+- Removed Google AI (Gemini) provider — was a stub returning hardcoded placeholder quotas
+- Removed AWS Bedrock provider — was an unimplemented generic stub with no real quota fetching
+
 ## [0.6.1] - 2026-02-05
 
 ### Added
@@ -210,8 +214,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Multi-provider AI service monitoring supporting:
   - OpenAI (billing and usage limits)
   - Anthropic (rate limits)
-  - Google AI/Gemini (quota tracking)
-  - AWS Bedrock (model-specific quotas)
   - opencode zen (session-based auth)
   - AMP/ampcode.com (free tier credits)
   - z.ai (token consumption)

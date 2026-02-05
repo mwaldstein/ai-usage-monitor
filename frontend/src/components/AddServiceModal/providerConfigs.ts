@@ -27,8 +27,6 @@ export const PROVIDERS: ProviderConfig[] = [
   { value: "openai", label: "OpenAI", color: "#10a37f" },
   { value: "codex", label: "OpenAI Codex", color: "#10a37f" },
   { value: "anthropic", label: "Anthropic", color: "#d97757" },
-  { value: "google", label: "Google AI", color: "#4285f4" },
-  { value: "aws", label: "AWS Bedrock", color: "#ff9900" },
   { value: "opencode", label: "opencode zen", color: "#8b5cf6" },
   { value: "amp", label: "AMP", color: "#06b6d4" },
   { value: "zai", label: "z.ai", color: "#10b981" },
@@ -67,37 +65,6 @@ export const PROVIDER_INSTRUCTIONS: Record<AIProvider, ProviderInstructions> = {
         "Paste it here",
       ],
       link: { text: "Open Anthropic Console", url: "https://console.anthropic.com/settings/keys" },
-    },
-  },
-  google: {
-    apiKeyLabel: "API Key",
-    apiKeyPlaceholder: "AIza...",
-    apiKeyHelp: "Your Google AI API key from Google Cloud Console",
-    showBaseUrl: true,
-    instructions: {
-      title: "How to get your Google AI API Key",
-      steps: [
-        "Go to https://makersuite.google.com/app/apikey",
-        "Log in to your Google account",
-        'Click "Create API Key"',
-        'Copy the key (it starts with "AIza")',
-        "Paste it here",
-      ],
-      link: { text: "Open Google AI Studio", url: "https://makersuite.google.com/app/apikey" },
-    },
-  },
-  aws: {
-    apiKeyLabel: "AWS Credentials",
-    apiKeyPlaceholder: "Not implemented - requires AWS Signature V4",
-    apiKeyHelp: "AWS access key and secret (not yet supported)",
-    showBaseUrl: true,
-    instructions: {
-      title: "AWS Bedrock Support",
-      steps: [
-        "AWS Bedrock requires AWS Signature V4 authentication",
-        "This is not yet fully implemented",
-        "Please use another provider for now",
-      ],
     },
   },
   opencode: {
