@@ -1,6 +1,20 @@
 import * as SqlClient from "@effect/sql/SqlClient";
+import * as Effect from "effect/Effect";
 import type * as ManagedRuntime from "effect/ManagedRuntime";
 import { toDbError } from "./errors.ts";
+
+export interface EffectDatabaseClient {
+  all<T extends object = Record<string, unknown>>(
+    sql: string,
+    params?: readonly unknown[],
+  ): Effect.Effect<readonly T[], unknown>;
+  get<T extends object = Record<string, unknown>>(
+    sql: string,
+    params?: readonly unknown[],
+  ): Effect.Effect<T | undefined, unknown>;
+  run(sql: string, params?: readonly unknown[]): Effect.Effect<void, unknown>;
+  exec(sql: string): Effect.Effect<void, unknown>;
+}
 
 export interface DatabaseClient {
   all<T extends object = Record<string, unknown>>(
@@ -13,6 +27,9 @@ export interface DatabaseClient {
   ): Promise<T | undefined>;
   run(sql: string, params?: readonly unknown[]): Promise<void>;
   exec(sql: string): Promise<void>;
+  withTransaction<T>(
+    operation: (txDb: EffectDatabaseClient) => Effect.Effect<T, unknown>,
+  ): Promise<T>;
 }
 
 interface MakeDatabaseClientOptions {
@@ -22,47 +39,80 @@ interface MakeDatabaseClientOptions {
 
 export function makeDatabaseClient(options: MakeDatabaseClientOptions): DatabaseClient {
   const { runtime, sqlClient } = options;
-
-  async function queryRows<T extends object>(
-    sql: string,
-    params: readonly unknown[] = [],
-  ): Promise<readonly T[]> {
-    try {
-      const statement = sqlClient.unsafe<T>(sql, params);
-      return await runtime.runPromise(statement);
-    } catch (error) {
-      throw toDbError(error, { operation: "query", sql, params });
-    }
-  }
+  const effectDb = makeEffectDatabaseClient(sqlClient);
 
   return {
     all<T extends object = Record<string, unknown>>(
       sql: string,
       params: readonly unknown[] = [],
     ): Promise<readonly T[]> {
-      return queryRows<T>(sql, params);
+      return runtime.runPromise(effectDb.all<T>(sql, params));
     },
 
-    async get<T extends object = Record<string, unknown>>(
+    get<T extends object = Record<string, unknown>>(
       sql: string,
       params: readonly unknown[] = [],
     ): Promise<T | undefined> {
-      const rows = await queryRows<T>(sql, params);
-      return rows[0];
+      return runtime.runPromise(effectDb.get<T>(sql, params));
     },
 
-    async run(sql: string, params: readonly unknown[] = []): Promise<void> {
-      await queryRows(sql, params);
+    run(sql: string, params: readonly unknown[] = []): Promise<void> {
+      return runtime.runPromise(effectDb.run(sql, params));
     },
 
-    async exec(sql: string): Promise<void> {
-      for (const statement of splitSqlStatements(sql)) {
-        if (statement.length === 0) {
-          continue;
-        }
+    exec(sql: string): Promise<void> {
+      return runtime.runPromise(effectDb.exec(sql));
+    },
 
-        await queryRows(statement);
+    async withTransaction<T>(
+      operation: (txDb: EffectDatabaseClient) => Effect.Effect<T, unknown>,
+    ): Promise<T> {
+      try {
+        const txDb = makeEffectDatabaseClient(sqlClient);
+        return await runtime.runPromise(sqlClient.withTransaction(operation(txDb)));
+      } catch (error) {
+        throw toDbError(error, { operation: "query" });
       }
+    },
+  };
+}
+
+function makeEffectDatabaseClient(sqlClient: SqlClient.SqlClient): EffectDatabaseClient {
+  function queryRows<T extends object>(
+    sql: string,
+    params: readonly unknown[] = [],
+  ): Effect.Effect<readonly T[], unknown> {
+    const statement = sqlClient.unsafe<T>(sql, params);
+    return Effect.catchAll(statement, (error) =>
+      Effect.fail(toDbError(error, { operation: "query", sql, params })),
+    );
+  }
+
+  return {
+    all<T extends object = Record<string, unknown>>(
+      sql: string,
+      params: readonly unknown[] = [],
+    ): Effect.Effect<readonly T[], unknown> {
+      return queryRows<T>(sql, params);
+    },
+
+    get<T extends object = Record<string, unknown>>(
+      sql: string,
+      params: readonly unknown[] = [],
+    ): Effect.Effect<T | undefined, unknown> {
+      return Effect.map(queryRows<T>(sql, params), (rows) => rows[0]);
+    },
+
+    run(sql: string, params: readonly unknown[] = []): Effect.Effect<void, unknown> {
+      return Effect.asVoid(queryRows(sql, params));
+    },
+
+    exec(sql: string): Effect.Effect<void, unknown> {
+      return Effect.forEach(
+        splitSqlStatements(sql),
+        (statement) => (statement.length === 0 ? Effect.void : Effect.asVoid(queryRows(statement))),
+        { discard: true },
+      );
     },
   };
 }

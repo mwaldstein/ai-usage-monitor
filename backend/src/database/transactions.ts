@@ -1,26 +1,18 @@
-import type { DatabaseClient } from "./client.ts";
-import { isBusyDbError, toDbError } from "./errors.ts";
+import * as Effect from "effect/Effect";
+import type { DatabaseClient, EffectDatabaseClient } from "./client.ts";
+import { isBusyDbError } from "./errors.ts";
 
-type DbTransaction = Pick<DatabaseClient, "exec">;
+type DbTransaction = Pick<DatabaseClient, "withTransaction">;
 
 const BUSY_RETRY_DELAYS_MS = [25, 75, 150] as const;
 
 export async function runInTransaction<T>(
   db: DbTransaction,
-  operation: () => Promise<T>,
+  operation: (txDb: EffectDatabaseClient) => Effect.Effect<T, unknown>,
 ): Promise<T> {
   for (let attempt = 0; ; attempt++) {
     try {
-      await execSql(db, "BEGIN IMMEDIATE");
-
-      try {
-        const result = await operation();
-        await execSql(db, "COMMIT");
-        return result;
-      } catch (error) {
-        await rollbackQuietly(db);
-        throw error;
-      }
+      return await db.withTransaction(operation);
     } catch (error) {
       if (isBusyDbError(error) && attempt < BUSY_RETRY_DELAYS_MS.length) {
         await sleep(BUSY_RETRY_DELAYS_MS[attempt]);
@@ -29,22 +21,6 @@ export async function runInTransaction<T>(
 
       throw error;
     }
-  }
-}
-
-async function execSql(db: DbTransaction, sql: string): Promise<void> {
-  try {
-    await db.exec(sql);
-  } catch (error) {
-    throw toDbError(error, { operation: "query", sql });
-  }
-}
-
-async function rollbackQuietly(db: DbTransaction): Promise<void> {
-  try {
-    await db.exec("ROLLBACK");
-  } catch {
-    // Ignore rollback failures so original error is preserved.
   }
 }
 
