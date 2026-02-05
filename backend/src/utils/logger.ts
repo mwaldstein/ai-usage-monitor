@@ -78,7 +78,7 @@ function resolveLogLevel(level: number | undefined): LogLevel {
 export const logger = pino({
   level: LOG_LEVEL,
   hooks: {
-    logMethod: (args: unknown[], method: (...args: unknown[]) => void, level: number) => {
+    logMethod(this: pino.Logger, args: unknown[], method: (...a: unknown[]) => void, level: number) {
       const { message, details } = extractMessageAndDetails(args);
       addLogEntry({
         ts: Date.now(),
@@ -86,7 +86,7 @@ export const logger = pino({
         message,
         ...(details ? { details } : {}),
       });
-      method(...args);
+      method.apply(this, args);
     },
   },
   ...(process.env.NODE_ENV !== "production" && {

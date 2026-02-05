@@ -7,6 +7,7 @@ import type {
   ServerMessage as ServerMessageType,
 } from "shared/ws";
 
+const TOKEN_KEY = "aum_auth_token";
 const WS_URL = getWebSocketUrl();
 
 export interface WebSocketConnection {
@@ -26,7 +27,19 @@ export function useWebSocketConnection(): WebSocketConnection {
   const connect = useCallback(() => {
     if (wsRef.current?.readyState === WebSocket.OPEN) return;
 
-    const ws = new WebSocket(WS_URL);
+    // Append auth token as query param if available
+    let wsUrl = WS_URL;
+    try {
+      const token = localStorage.getItem(TOKEN_KEY);
+      if (token) {
+        const separator = wsUrl.includes("?") ? "&" : "?";
+        wsUrl = `${wsUrl}${separator}token=${encodeURIComponent(token)}`;
+      }
+    } catch {
+      // Storage unavailable
+    }
+
+    const ws = new WebSocket(wsUrl);
     wsRef.current = ws;
 
     ws.onopen = () => {

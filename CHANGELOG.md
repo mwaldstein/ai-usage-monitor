@@ -8,8 +8,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- Added integrated authentication with local user accounts, session tokens, and API key management
+  - Always enabled: auth is enforced by default to prevent accidental exposure
+  - First-run setup: a one-time setup code is printed to backend logs and must be entered to register the first admin account
+  - `AUTH_SECRET` env var optional: auto-generated if not set; set explicitly for stable sessions across restarts
+  - Session-based login with 7-day expiry and automatic expired-session cleanup
+  - API key generation (`aum_` prefix) for CLI and programmatic access
+  - Frontend login/setup page with auth state gating
+  - WebSocket connections authenticated via `?token=` query parameter
+  - All API routes protected by Bearer token middleware when auth is enabled
+  - CLI `--token` flag for API key / session token authentication
 - Added a CLI script to fetch cached service status and print formatted quota output with optional basic auth
 - Added a frontend log viewer powered by a new in-memory backend log endpoint
+
+### Fixed
+- Fixed Tailwind CSS v4 + Vite 7 build failure by switching from `@tailwindcss/postcss` to `@tailwindcss/vite` plugin
+- Fixed pino logger crash in production (Docker) caused by lost `this` context in `logMethod` hook
 
 ### Changed
 - Removed completed planning items from TODO list

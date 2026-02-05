@@ -1,3 +1,4 @@
+import crypto from "crypto";
 import cron from "node-cron";
 import { Schema as S, Either } from "effect";
 
@@ -6,6 +7,7 @@ const EnvInputSchema = S.Struct({
   REFRESH_INTERVAL: S.optional(S.String),
   NODE_ENV: S.optional(S.String),
   DATA_DIR: S.optional(S.String),
+  AUTH_SECRET: S.optional(S.String),
 });
 
 type EnvInput = S.Schema.Type<typeof EnvInputSchema>;
@@ -17,6 +19,7 @@ export interface EnvConfig {
   refreshInterval: string;
   nodeEnv: NodeEnv;
   dataDir: string | undefined;
+  authSecret: string;
 }
 
 type ParseResult<T> = { ok: true; value: T } | { ok: false; error: string };
@@ -113,12 +116,27 @@ function parseDataDir(value: string | undefined): ParseResult<string | undefined
   return { ok: true, value: trimmed };
 }
 
+function parseAuthSecret(value: string | undefined): ParseResult<string> {
+  if (value === undefined || value.trim().length === 0) {
+    // Auto-generate a secret when not provided
+    return { ok: true, value: crypto.randomBytes(32).toString("hex") };
+  }
+
+  const trimmed = value.trim();
+  if (trimmed.length < 16) {
+    return { ok: false, error: "AUTH_SECRET must be at least 16 characters" };
+  }
+
+  return { ok: true, value: trimmed };
+}
+
 function decodeEnvInput(): EnvInput {
   const decoded = S.decodeUnknownEither(EnvInputSchema)({
     PORT: process.env.PORT,
     REFRESH_INTERVAL: process.env.REFRESH_INTERVAL,
     NODE_ENV: process.env.NODE_ENV,
     DATA_DIR: process.env.DATA_DIR,
+    AUTH_SECRET: process.env.AUTH_SECRET,
   });
 
   if (Either.isLeft(decoded)) {
@@ -142,12 +160,14 @@ export function getEnv(): EnvConfig {
   const refreshResult = parseRefreshInterval(input.REFRESH_INTERVAL);
   const nodeEnvResult = parseNodeEnv(input.NODE_ENV);
   const dataDirResult = parseDataDir(input.DATA_DIR);
+  const authSecretResult = parseAuthSecret(input.AUTH_SECRET);
 
   const errors: string[] = [];
   if (!portResult.ok) errors.push(portResult.error);
   if (!refreshResult.ok) errors.push(refreshResult.error);
   if (!nodeEnvResult.ok) errors.push(nodeEnvResult.error);
   if (!dataDirResult.ok) errors.push(dataDirResult.error);
+  if (!authSecretResult.ok) errors.push(authSecretResult.error);
 
   if (errors.length > 0) {
     throw new Error(formatEnvErrors(errors));
@@ -158,6 +178,9 @@ export function getEnv(): EnvConfig {
     refreshInterval: refreshResult.ok ? refreshResult.value : DEFAULT_REFRESH_INTERVAL,
     nodeEnv: nodeEnvResult.ok ? nodeEnvResult.value : DEFAULT_NODE_ENV,
     dataDir: dataDirResult.ok ? dataDirResult.value : undefined,
+    authSecret: authSecretResult.ok
+      ? authSecretResult.value
+      : crypto.randomBytes(32).toString("hex"),
   };
 
   return cachedEnv;

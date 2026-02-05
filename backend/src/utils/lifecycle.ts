@@ -10,6 +10,7 @@ import fs from "fs";
 
 import { initializeDatabase, getDatabase, runMaintenance } from "../database/index.ts";
 import { refreshQuotas } from "../services/quotas.ts";
+import { generateSetupCode } from "./auth.ts";
 import { logger } from "./logger.ts";
 import { shutdownTracing } from "./tracing.ts";
 import { closeAllConnections } from "./ws.ts";
@@ -44,6 +45,18 @@ export async function startServer(options: LifecycleOptions): Promise<void> {
 
     await initializeDatabase();
     logger.info("Database initialized");
+
+    // Check if first-run setup is needed
+    const db0 = getDatabase();
+    const userCount = await db0.get<{ count: number }>("SELECT COUNT(*) AS count FROM users");
+    if ((userCount?.count ?? 0) === 0) {
+      const setupCode = generateSetupCode();
+      logger.info("==========================================================");
+      logger.info("  FIRST-RUN SETUP");
+      logger.info("  No users exist. To register the first admin account,");
+      logger.info(`  enter this setup code in the web UI: ${setupCode}`);
+      logger.info("==========================================================");
+    }
 
     state.scheduledTask = cron.schedule(refreshInterval, () =>
       refreshQuotas(broadcast, refreshInterval),

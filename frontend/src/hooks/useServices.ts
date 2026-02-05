@@ -3,6 +3,7 @@ import { Schema as S, Either } from "effect";
 import type { AIService } from "../types";
 
 import { getApiBaseUrl } from "../services/backendUrls";
+import { authFetch } from "../services/authFetch";
 import {
   CreateServiceRequest,
   ListServicesResponse,
@@ -38,7 +39,7 @@ export function useServices() {
   const fetchServices = async () => {
     try {
       setLoading(true);
-      const response = await fetch(`${API_URL}/services`);
+      const response = await authFetch(`${API_URL}/services`);
       if (!response.ok) throw new Error("Failed to fetch services");
       const data: unknown = await response.json();
       const decoded = S.decodeUnknownEither(ListServicesResponse)(data);
@@ -58,7 +59,7 @@ export function useServices() {
   const addService = async (service: CreateServiceRequest) => {
     try {
       const payload = S.encodeSync(CreateServiceRequest)(service);
-      const response = await fetch(`${API_URL}/services`, {
+      const response = await authFetch(`${API_URL}/services`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
@@ -84,7 +85,7 @@ export function useServices() {
       };
 
       const body = S.encodeSync(UpdateServiceRequest)(payload);
-      const response = await fetch(`${API_URL}/services/${id}`, {
+      const response = await authFetch(`${API_URL}/services/${id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(body),
@@ -100,7 +101,7 @@ export function useServices() {
 
   const deleteService = async (id: string) => {
     try {
-      const response = await fetch(`${API_URL}/services/${id}`, {
+      const response = await authFetch(`${API_URL}/services/${id}`, {
         method: "DELETE",
       });
       if (!response.ok) throw new Error("Failed to delete service");
@@ -125,7 +126,7 @@ export function useServices() {
   const reorderServices = async (serviceIds: string[]) => {
     try {
       const body = S.encodeSync(ReorderServicesRequest)({ serviceIds });
-      const response = await fetch(`${API_URL}/services/reorder`, {
+      const response = await authFetch(`${API_URL}/services/reorder`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(body),

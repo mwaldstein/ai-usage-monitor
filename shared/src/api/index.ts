@@ -6,3 +6,4 @@ export * from "./history.ts";
 export * from "./errors.ts";
 export * from "./system.ts";
 export * from "./logs.ts";
+export * from "./auth.ts";

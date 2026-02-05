@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { Schema as S, Either } from "effect";
 import { getVersionUrl } from "../services/backendUrls";
+import { authFetch } from "../services/authFetch";
 import { VersionResponse } from "shared/api";
 
 export function useVersion() {
@@ -11,7 +12,7 @@ export function useVersion() {
   useEffect(() => {
     const fetchVersion = async () => {
       try {
-        const response = await fetch(getVersionUrl());
+        const response = await authFetch(getVersionUrl());
         if (!response.ok) throw new Error("Failed to fetch version");
         const data: unknown = await response.json();
         const decoded = S.decodeUnknownEither(VersionResponse)(data);

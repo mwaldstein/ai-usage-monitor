@@ -4,14 +4,13 @@ A web application that monitors AI service usage across multiple providers in re
 
 ## Disclaimer
 
-**This is a personal project intended for local/development use only.**
+**This is a personal project intended for local/self-hosted use.**
 
-- **No authentication**: Anyone with network access to the application can view and modify all data
-- **No encryption**: API keys are stored in plaintext in a local SQLite database
-- **No security hardening**: This is not production-ready software
+- **Built-in authentication**: User accounts with session tokens and API keys are enforced by default
+- **No encryption at rest**: Service API keys/tokens are stored in plaintext in a local SQLite database
 - **Use at your own risk**: The authors are not responsible for any data breaches, API key exposure, or other security incidents
 
-**Recommended usage**: Run only on localhost or within a trusted private network. Do not expose to the public internet without implementing proper authentication and security measures.
+**Recommended usage**: Run on localhost or within a trusted private network. If exposing remotely, place behind a reverse proxy with HTTPS.
 
 ## Screenshots
 
@@ -41,17 +40,21 @@ Track usage trends and analyze consumption patterns across all your services.
 
 ```
 ai-usage-quota/
+├── shared/           # Effect Schema contracts (API, WS, domain types)
 ├── backend/          # Node.js + Express + TypeScript
 │   ├── src/
 │   │   ├── database/    # SQLite database
-│   │   ├── routes/      # API endpoints
+│   │   ├── middleware/  # Auth middleware
+│   │   ├── routes/      # API endpoints (incl. auth)
 │   │   ├── services/    # AI provider integrations
-│   │   └── types/       # TypeScript types
+│   │   ├── types/       # TypeScript types
+│   │   └── utils/       # Helpers (auth, WS, logging)
 │   └── data/            # SQLite database files
 └── frontend/         # React + TypeScript + Tailwind CSS
     └── src/
         ├── components/    # React components
         ├── hooks/         # Custom React hooks
+        ├── services/      # API client helpers
         └── types/         # TypeScript types
 ```
 
@@ -97,6 +100,9 @@ ai-usage-quota/
 6. **Open the Dashboard**
    Navigate to http://localhost:3000 in your browser
 
+7. **Create your admin account**
+   On first run, a setup code is printed to the backend logs. Enter it in the web UI along with a username and password to create the first (admin) account. Registration closes after the first account is created.
+
 ### CLI
 
 The backend includes a minimal CLI for fetching cached quota status and printing formatted output.
@@ -107,7 +113,8 @@ npm run cli -w backend -- --url http://localhost:3001/api/status/cached
 
 Options:
 - `--url <url>`: Full endpoint URL (defaults to `http://localhost:3001/api/status/cached`)
-- `--auth <user:pass>`: Basic auth credentials
+- `--token <token>`: API key or session token (Bearer auth)
+- `--auth <user:pass>`: Basic auth credentials (legacy)
 - `--username <user>` + `--password <pass>`: Basic auth credentials (alternative to `--auth`)
 - `--json`: Print raw JSON output
 
@@ -204,6 +211,18 @@ To configure:
 
 ## API Endpoints
 
+### Authentication
+- `GET /api/auth/status` - Check if auth is enabled and if setup is needed (public)
+- `POST /api/auth/register` - Create the first admin account (requires setup code)
+- `POST /api/auth/login` - Log in with username/password
+- `POST /api/auth/logout` - Invalidate current session
+- `GET /api/auth/me` - Get current user info
+- `GET /api/auth/api-keys` - List API keys
+- `POST /api/auth/api-keys` - Create an API key
+- `DELETE /api/auth/api-keys/:id` - Delete an API key
+
+All endpoints below require a valid `Authorization: Bearer <token>` header (session token or API key).
+
 ### Services
 - `GET /api/services` - List all services
 - `POST /api/services` - Add a new service
@@ -225,6 +244,7 @@ To configure:
 ```env
 PORT=3001                    # Server port
 REFRESH_INTERVAL=*/5 * * * * # Cron schedule for auto-refresh (default: every 5 min)
+AUTH_SECRET=<random-string>  # Session signing key (auto-generated if omitted; set for stable sessions across restarts, min 16 chars)
 ```
 
 ### Database
@@ -371,6 +391,7 @@ docker run -d \
   -v $(pwd)/backend/data:/app/data \
   -e PORT=3001 \
   -e REFRESH_INTERVAL=*/5 * * * * \
+  -e AUTH_SECRET=change-me-to-a-long-random-string \
   ai-usage-quota
 ```
 
@@ -390,6 +411,7 @@ services:
     environment:
       - PORT=3001
       - REFRESH_INTERVAL=*/5 * * * *
+      - AUTH_SECRET=change-me-to-a-long-random-string
     restart: unless-stopped
 ```
 
@@ -401,24 +423,20 @@ docker-compose up -d
 
 ## Security Considerations
 
-**⚠️ Important: This application lacks production-grade security features.**
+**Authentication is enforced by default.** On first startup a one-time setup code is printed to the server logs; you must enter it in the web UI to create the first admin account.
 
-- **No user authentication**: The application has no login system or user management
-- **Unencrypted storage**: API keys are stored as plaintext in the SQLite database (`backend/data/ai-usage.db` in dev, `/app/data/ai-usage.db` in Docker)
-- **No access control**: Anyone who can reach the application endpoints can view and modify all data
+- **Built-in auth**: All API routes and WebSocket connections require a valid session token or API key
+- **Unencrypted storage**: Service API keys/tokens are stored as plaintext in the SQLite database (`backend/data/ai-usage.db` in dev, `/app/data/ai-usage.db` in Docker)
 - **No HTTPS**: The development server runs on plain HTTP
 - **No audit logging**: Changes are not tracked or logged
-- **Local-only recommendation**: This is designed to run on `localhost` for personal monitoring only
 
-### Security Best Practices (if you must expose it)
+### Security Best Practices
 
-If you absolutely need to access this remotely:
-1. Place it behind a reverse proxy (nginx, traefik) with HTTPS
-2. Implement a VPN or SSH tunnel for access
-3. Add basic HTTP authentication at the reverse proxy level
-4. Restrict database file permissions (`chmod 600 backend/data/ai-usage.db` or `/app/data/ai-usage.db`)
-5. Do not store production API keys with high privileges
-6. Consider the API keys exposed/compromised and rotate them regularly
+1. Set `AUTH_SECRET` in your `.env` so sessions survive server restarts
+2. Place behind a reverse proxy (nginx, traefik) with HTTPS for remote access
+3. Restrict database file permissions (`chmod 600 backend/data/ai-usage.db` or `/app/data/ai-usage.db`)
+4. Do not store production API keys with high privileges
+5. Use API keys (`POST /api/auth/api-keys`) for CLI/programmatic access instead of sharing your session token
 
 ## Troubleshooting
 

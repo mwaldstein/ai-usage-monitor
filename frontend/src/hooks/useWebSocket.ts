@@ -4,6 +4,7 @@ import type { ServiceStatus } from "../types";
 import { useWebSocketConnection } from "./wsConnection";
 import { mergeStatuses, normalizeStatuses, type MergeMode } from "./statusNormalization";
 import { getApiBaseUrl } from "../services/backendUrls";
+import { authFetch } from "../services/authFetch";
 import { RefreshQuotasResponse, StatusResponse } from "shared/api";
 import { ServiceStatus as ServiceStatusSchema } from "shared/schemas";
 import type { ServerMessage as ServerMessageType } from "shared/ws";
@@ -43,7 +44,7 @@ export function useWebSocket() {
   }, [addMessageHandler]);
 
   const fetchAndMerge = useCallback((url: string, mode: MergeMode) => {
-    fetch(url, mode === "partial" ? { method: "POST" } : undefined)
+    authFetch(url, mode === "partial" ? { method: "POST" } : undefined)
       .then((response) => response.json())
       .then((data: unknown) => {
         const decoded = S.decodeUnknownEither(StatusResponse)(data);
@@ -65,7 +66,7 @@ export function useWebSocket() {
   }, [fetchAndMerge]);
 
   const refresh = useCallback(() => {
-    fetch(`${API_URL}/quotas/refresh`, { method: "POST" })
+    authFetch(`${API_URL}/quotas/refresh`, { method: "POST" })
       .then((response) => response.json())
       .then((data: unknown) => {
         const decoded = S.decodeUnknownEither(RefreshQuotasResponse)(data);
@@ -83,7 +84,7 @@ export function useWebSocket() {
   }, []);
 
   const refreshService = useCallback((serviceId: string) => {
-    fetch(`${API_URL}/quotas/refresh/${serviceId}`, { method: "POST" })
+    authFetch(`${API_URL}/quotas/refresh/${serviceId}`, { method: "POST" })
       .then((response) => response.json())
       .then((data: unknown) => {
         const decoded = S.decodeUnknownEither(ServiceStatusSchema)(data);

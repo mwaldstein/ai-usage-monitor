@@ -7,6 +7,7 @@ const DEFAULT_URL = "http://localhost:3001/api/status/cached";
 interface CliOptions {
   url: string;
   auth?: string;
+  token?: string;
   json: boolean;
 }
 
@@ -19,6 +20,7 @@ function printHelp(): void {
   console.log("  --auth <user:pass>    Basic auth credentials");
   console.log("  --username <user>     Basic auth username (requires --password)");
   console.log("  --password <pass>     Basic auth password (requires --username)");
+  console.log("  --token <token>       API key or session token (Bearer auth)");
   console.log("  --json                Print raw JSON output");
   console.log("  --help                Show this help message");
 }
@@ -33,6 +35,7 @@ function requireValue(args: string[], index: number, flag: string): string {
 function parseArgs(args: string[]): CliOptions {
   let url = DEFAULT_URL;
   let auth: string | undefined;
+  let token: string | undefined;
   let username: string | undefined;
   let password: string | undefined;
   let json = false;
@@ -46,6 +49,10 @@ function parseArgs(args: string[]): CliOptions {
         break;
       case "--auth":
         auth = requireValue(args, i + 1, "--auth");
+        i += 1;
+        break;
+      case "--token":
+        token = requireValue(args, i + 1, "--token");
         i += 1;
         break;
       case "--username":
@@ -78,7 +85,7 @@ function parseArgs(args: string[]): CliOptions {
     auth = `${username}:${password}`;
   }
 
-  return { url, auth, json };
+  return { url, auth, token, json };
 }
 
 function formatTimestamp(value: number): string {
@@ -135,7 +142,9 @@ async function run(): Promise<void> {
   const options = parseArgs(process.argv.slice(2));
   const headers: Record<string, string> = {};
 
-  if (options.auth) {
+  if (options.token) {
+    headers.Authorization = `Bearer ${options.token}`;
+  } else if (options.auth) {
     headers.Authorization = `Basic ${Buffer.from(options.auth, "utf8").toString("base64")}`;
   }
 

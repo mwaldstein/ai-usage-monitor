@@ -3,6 +3,7 @@ import { Schema as S, Either } from "effect";
 import { LogsResponse } from "shared/api";
 import type { LogEntry } from "shared/schemas";
 import { getApiBaseUrl } from "../services/backendUrls";
+import { authFetch } from "../services/authFetch";
 
 const API_URL = getApiBaseUrl();
 
@@ -15,7 +16,7 @@ export function useLogs(limit = 200, enabled = true) {
     if (!enabled) return;
     try {
       setLoading(true);
-      const response = await fetch(`${API_URL}/logs?limit=${limit}`);
+      const response = await authFetch(`${API_URL}/logs?limit=${limit}`);
       if (!response.ok) {
         throw new Error("Failed to fetch logs");
       }

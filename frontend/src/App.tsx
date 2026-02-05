@@ -3,9 +3,11 @@ import { useWebSocket } from "./hooks/useWebSocket";
 import { useUsageHistory, useVersion } from "./hooks/useApi";
 import { useServiceManagement } from "./hooks/useServiceManagement";
 import { useViewState } from "./hooks/useViewState";
+import { useAuth } from "./hooks/useAuth";
 import { ServiceCard } from "./components/ServiceCard";
 import { AddServiceModal } from "./components/AddServiceModal";
 import { AnalyticsView } from "./components/AnalyticsView";
+import { LoginPage } from "./components/LoginPage";
 import { LogViewer } from "./components/LogViewer";
 import {
   Plus,
@@ -23,9 +25,11 @@ import {
   ArrowDown,
   AlertCircle,
   BarChart3,
+  LogOut,
 } from "lucide-react";
 
 function App() {
+  const auth = useAuth();
   const {
     statuses,
     isConnected,
@@ -71,6 +75,19 @@ function App() {
   const handleRefreshAll = useCallback(() => {
     refresh();
   }, [refresh]);
+
+  // Auth gate: show loading, login, or setup screen when auth is enabled
+  if (auth.loading) {
+    return (
+      <div className="min-h-screen bg-[#0f0f11] flex items-center justify-center">
+        <div className="text-zinc-500 text-sm">Loading...</div>
+      </div>
+    );
+  }
+
+  if (auth.authEnabled && !auth.user) {
+    return <LoginPage auth={auth} />;
+  }
 
   const healthyCount = statuses.filter((s) => s.isHealthy).length;
   const totalCount = statuses.length;
@@ -174,6 +191,16 @@ function App() {
                     <Settings size={14} />
                   </button>
                 </>
+              )}
+
+              {auth.authEnabled && auth.user && (
+                <button
+                  onClick={auth.logout}
+                  className="btn-icon tooltip"
+                  data-tooltip={`Logout (${auth.user.username})`}
+                >
+                  <LogOut size={14} />
+                </button>
               )}
             </div>
 

@@ -1,5 +1,5 @@
 import { WebSocket, WebSocketServer } from "ws";
-import type { Server } from "http";
+import type { Server, IncomingMessage } from "http";
 import { Schema as S, Either } from "effect";
 import type { AIService, ServiceStatus, UsageQuota } from "../types/index.ts";
 import { getDatabase } from "../database/index.ts";
@@ -7,6 +7,7 @@ import { nowTs } from "./dates.ts";
 import { getJWTExpiration } from "./jwt.ts";
 import { logger } from "./logger.ts";
 import { mapQuotaRow, mapServiceRow } from "../routes/mappers.ts";
+import { validateToken, hasAnyUsers } from "../middleware/auth.ts";
 import { ClientMessage, ErrorMessage, ServerMessage, StatusMessage } from "shared/ws";
 import type {
   ErrorMessage as ErrorMessageType,
@@ -25,10 +26,51 @@ export function initializeWebSocket(server: Server): WebSocketServer {
   return wss;
 }
 
-function handleConnection(ws: WebSocket) {
-  logger.info("Client connected");
-  clients.add(ws);
+function handleConnection(ws: WebSocket, req: IncomingMessage) {
+  const url = new URL(req.url ?? "/", `http://${req.headers.host ?? "localhost"}`);
+  const token = url.searchParams.get("token");
 
+  // If a token is provided, authenticate it
+  if (token) {
+    validateToken(token)
+      .then((user) => {
+        if (!user) {
+          logger.warn("WebSocket connection rejected: invalid token");
+          ws.close(4401, "Invalid or expired token");
+          return;
+        }
+        logger.info({ username: user.username }, "Authenticated WebSocket client connected");
+        clients.add(ws);
+        setupWebSocketHandlers(ws);
+        sendStatusToClient(ws);
+      })
+      .catch((err: unknown) => {
+        logger.error({ err }, "WebSocket auth error");
+        ws.close(4500, "Authentication error");
+      });
+    return;
+  }
+
+  // No token — only allow if no users exist yet (setup mode)
+  hasAnyUsers()
+    .then((exists) => {
+      if (exists) {
+        logger.warn("WebSocket connection rejected: no token");
+        ws.close(4401, "Authentication required");
+        return;
+      }
+      logger.info("Client connected (setup mode, no users yet)");
+      clients.add(ws);
+      setupWebSocketHandlers(ws);
+      sendStatusToClient(ws);
+    })
+    .catch((err: unknown) => {
+      logger.error({ err }, "WebSocket auth check error");
+      ws.close(4500, "Authentication error");
+    });
+}
+
+function setupWebSocketHandlers(ws: WebSocket) {
   ws.on("message", (message) => {
     try {
       const data: unknown = JSON.parse(message.toString());
@@ -56,9 +98,6 @@ function handleConnection(ws: WebSocket) {
     logger.error({ err: error }, "WebSocket error");
     clients.delete(ws);
   });
-
-  // Send initial data
-  sendStatusToClient(ws);
 }
 
 // Broadcast to all clients

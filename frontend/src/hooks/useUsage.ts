@@ -3,6 +3,7 @@ import { Schema as S, Either } from "effect";
 import type { UsageHistory, UsageAnalytics, ProviderAnalytics } from "../types";
 
 import { getApiBaseUrl } from "../services/backendUrls";
+import { authFetch } from "../services/authFetch";
 import { AnalyticsResponse, HistoryResponse, ProviderAnalyticsResponse } from "shared/api";
 
 const API_URL = getApiBaseUrl();
@@ -19,7 +20,7 @@ export function useUsageHistory(serviceId?: string, hours: number = 24) {
       if (serviceId) params.append("serviceId", serviceId);
       params.append("hours", hours.toString());
 
-      const response = await fetch(`${API_URL}/usage/history?${params}`);
+      const response = await authFetch(`${API_URL}/usage/history?${params}`);
       if (!response.ok) throw new Error("Failed to fetch usage history");
       const data: unknown = await response.json();
       const decoded = S.decodeUnknownEither(HistoryResponse)(data);
@@ -62,7 +63,7 @@ export function useUsageAnalytics(
       params.append("interval", interval);
       if (groupBy) params.append("groupBy", groupBy);
 
-      const response = await fetch(`${API_URL}/usage/analytics?${params}`);
+      const response = await authFetch(`${API_URL}/usage/analytics?${params}`);
       if (!response.ok) throw new Error("Failed to fetch usage analytics");
       const data: unknown = await response.json();
       const decoded = S.decodeUnknownEither(AnalyticsResponse)(data);
@@ -98,7 +99,7 @@ export function useProviderAnalytics(days: number = 30) {
       const params = new URLSearchParams();
       params.append("days", days.toString());
 
-      const response = await fetch(`${API_URL}/usage/analytics/providers?${params}`);
+      const response = await authFetch(`${API_URL}/usage/analytics/providers?${params}`);
       if (!response.ok) throw new Error("Failed to fetch provider analytics");
       const data: unknown = await response.json();
       const decoded = S.decodeUnknownEither(ProviderAnalyticsResponse)(data);

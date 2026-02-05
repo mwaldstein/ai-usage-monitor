@@ -10,17 +10,17 @@
     "typecheck": "tsc -b"
   },
   "dependencies": {
-    "shared": "*",
     "lucide-react": "^0.563.0",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
-    "recharts": "^3.7.0"
+    "recharts": "^3.7.0",
+    "shared": "*"
   },
   "devDependencies": {
+    "@tailwindcss/vite": "^4.1.18",
     "@types/node": "^24.10.1",
     "@types/react": "^19.2.10",
     "@types/react-dom": "^19.2.3",
-    "@tailwindcss/postcss": "^4.1.0",
     "@vitejs/plugin-react": "^5.1.1",
     "postcss": "^8.4.49",
     "tailwindcss": "^4.1.0",
