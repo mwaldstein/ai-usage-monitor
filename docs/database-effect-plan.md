@@ -1,6 +1,6 @@
 # Database Effect Safety Plan
 
-Goal: use Effect for DB resource safety, errors, transactions, concurrency. Schema only for row decode.
+Goal: use `@effect/sql` with `@effect/sql-sqlite-node` for DB resource safety, errors, transactions, concurrency. Schema only for row decode.
 
 ## Current Gaps
 - DB access scattered in routes/services
@@ -9,15 +9,18 @@ Goal: use Effect for DB resource safety, errors, transactions, concurrency. Sche
 - Global singleton lifetime; shutdown not structured
 
 ## Plan
-1. Add `effect` dependency to backend.
-2. Create `DatabaseService` tag + Layer:
-   - `run/get/all/exec` + `transaction` helpers
-   - `Layer.scoped` with `Effect.acquireRelease` open/close
+1. Add/align SQL dependencies in backend:
+   - `@effect/sql`
+   - `@effect/sql-sqlite-node`
+   - ensure compatible versions of `effect`, `@effect/platform`, and `@effect/experimental`
+2. Create DB Layer from `SqliteClient`:
+   - initialize via `SqliteClient` layer/config
+   - provide app-level DB service helpers on top of `SqlClient` where needed
 3. Typed DB errors:
    - `DbError` union: `OpenError`, `QueryError`, `BusyError`, `ConstraintError`, `DecodeError`
-   - map sqlite error codes -> tags; attach SQL + params (redacted)
+   - map sqlite / sql-client errors -> tags; attach SQL + params (redacted)
 4. Transactions:
-   - `withTransaction` uses `BEGIN IMMEDIATE` + `COMMIT`/`ROLLBACK`
+   - use `@effect/sql` transaction APIs (SQLite `BEGIN IMMEDIATE` semantics where applicable)
    - wrap reorder + quota save + history insert
 5. Concurrency + retry:
    - serialize writes with `Semaphore`
@@ -27,7 +30,7 @@ Goal: use Effect for DB resource safety, errors, transactions, concurrency. Sche
    - `Effect.timed` for query duration logs
    - add trace spans per query
 7. Integration:
-   - migrate routes/services to Effect DB ops
+   - migrate routes/services to `SqlClient`-backed Effect DB ops
    - lifecycle uses `Effect.runPromise` + Layer; close on shutdown
 8. Tests:
    - in-memory sqlite Layer for unit tests
