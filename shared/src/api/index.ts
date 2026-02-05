@@ -5,3 +5,4 @@ export * from "./analytics.ts";
 export * from "./history.ts";
 export * from "./errors.ts";
 export * from "./system.ts";
+export * from "./logs.ts";

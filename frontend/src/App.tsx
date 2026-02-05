@@ -6,6 +6,7 @@ import { useViewState } from "./hooks/useViewState";
 import { ServiceCard } from "./components/ServiceCard";
 import { AddServiceModal } from "./components/AddServiceModal";
 import { AnalyticsView } from "./components/AnalyticsView";
+import { LogViewer } from "./components/LogViewer";
 import {
   Plus,
   RefreshCw,
@@ -300,6 +301,7 @@ function App() {
               <Plus size={14} />
               Add Service
             </button>
+            <LogViewer enabled={isConnected} />
           </div>
         )}
 
