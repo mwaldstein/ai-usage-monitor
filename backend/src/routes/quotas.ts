@@ -21,9 +21,12 @@ async function saveQuotasToDb(
   const now = nowTs();
   for (const quota of quotas) {
     await db.run(
-      `INSERT INTO quotas (id, service_id, metric, limit_value, used_value, remaining_value, type, replenishment_amount, replenishment_period, reset_at, created_at, updated_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      `INSERT INTO quotas (id, service_id, metric, raw_limit_value, raw_used_value, raw_remaining_value, limit_value, used_value, remaining_value, type, replenishment_amount, replenishment_period, reset_at, created_at, updated_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
        ON CONFLICT(id) DO UPDATE SET
+       raw_limit_value = excluded.raw_limit_value,
+       raw_used_value = excluded.raw_used_value,
+       raw_remaining_value = excluded.raw_remaining_value,
        limit_value = excluded.limit_value,
        used_value = excluded.used_value,
        remaining_value = excluded.remaining_value,
@@ -36,6 +39,9 @@ async function saveQuotasToDb(
         quota.id,
         quota.serviceId,
         quota.metric,
+        quota.limit,
+        quota.used,
+        quota.remaining,
         quota.limit,
         quota.used,
         quota.remaining,

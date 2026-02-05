@@ -171,8 +171,8 @@ router.get("/", async (req, res) => {
         SELECT
           q.service_id as serviceId,
           q.metric as metric,
-          q.limit_value as "limit",
-          q.used_value as used,
+          COALESCE(q.raw_limit_value, q.limit_value) as "limit",
+          COALESCE(q.raw_used_value, q.used_value) as used,
           q.type as type,
           s.name as service_name,
           s.provider as provider,

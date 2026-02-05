@@ -5,7 +5,6 @@
 ## Technical Debt / Refactoring
 
 ### Backend
-- Store raw quota values in DB; translate to burn-down/derived views in API (may require migration or old/new record handling)
 
 ## Testing
 

@@ -61,6 +61,9 @@ export async function migrateQuotasSchema(db: Database<sqlite3.Database>): Promi
         id TEXT PRIMARY KEY,
         service_id TEXT NOT NULL,
         metric TEXT NOT NULL,
+        raw_limit_value REAL,
+        raw_used_value REAL,
+        raw_remaining_value REAL,
         limit_value REAL NOT NULL,
         used_value REAL NOT NULL,
         remaining_value REAL NOT NULL,
@@ -73,8 +76,8 @@ export async function migrateQuotasSchema(db: Database<sqlite3.Database>): Promi
         FOREIGN KEY (service_id) REFERENCES services(id) ON DELETE CASCADE
       );
 
-      INSERT INTO quotas_new (id, service_id, metric, limit_value, used_value, remaining_value, type, replenishment_amount, replenishment_period, reset_at, created_at, updated_at)
-      SELECT id, service_id, metric, limit_value, used_value, remaining_value, type, replenishment_amount, replenishment_period,
+      INSERT INTO quotas_new (id, service_id, metric, raw_limit_value, raw_used_value, raw_remaining_value, limit_value, used_value, remaining_value, type, replenishment_amount, replenishment_period, reset_at, created_at, updated_at)
+      SELECT id, service_id, metric, limit_value, used_value, remaining_value, limit_value, used_value, remaining_value, type, replenishment_amount, replenishment_period,
              CASE WHEN reset_at IS NOT NULL THEN CAST(strftime('%s', reset_at) AS INTEGER) ELSE NULL END,
              CAST(strftime('%s', created_at) AS INTEGER),
              CAST(strftime('%s', updated_at) AS INTEGER)

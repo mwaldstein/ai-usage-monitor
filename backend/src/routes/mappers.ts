@@ -37,6 +37,18 @@ function decodeProvider(value: unknown): AIService["provider"] {
   return "openai";
 }
 
+function mapDerivedQuotaValues(row: Record<string, unknown>): {
+  limit: number;
+  used: number;
+  remaining: number;
+} {
+  const limit = toFiniteNumber(row.raw_limit_value, toFiniteNumber(row.limit_value, 0));
+  const used = toFiniteNumber(row.raw_used_value, toFiniteNumber(row.used_value, 0));
+  const remaining = toFiniteNumber(row.raw_remaining_value, toFiniteNumber(row.remaining_value, 0));
+
+  return { limit, used, remaining };
+}
+
 export function mapServiceRow(row: unknown): AIService {
   const r = row as Record<string, unknown>;
   return {
@@ -57,14 +69,15 @@ export function mapQuotaRow(row: unknown): UsageQuota {
   const r = row as Record<string, unknown>;
   const quotaType = decodeOrUndefined(QuotaType, r.type);
   const replenishmentPeriod = decodeOrUndefined(ReplenishmentPeriod, r.replenishment_period);
+  const values = mapDerivedQuotaValues(r);
 
   return {
     id: toNonEmptyString(r.id),
     serviceId: toNonEmptyString(r.service_id),
     metric: toNonEmptyString(r.metric),
-    limit: toFiniteNumber(r.limit_value, 0),
-    used: toFiniteNumber(r.used_value, 0),
-    remaining: toFiniteNumber(r.remaining_value, 0),
+    limit: values.limit,
+    used: values.used,
+    remaining: values.remaining,
     resetAt: toFiniteNumber(r.reset_at, 0),
     createdAt: toFiniteNumber(r.created_at, 0),
     updatedAt: toFiniteNumber(r.updated_at, 0),

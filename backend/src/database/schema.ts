@@ -18,6 +18,9 @@ export const SCHEMA_SQL = `
     id TEXT PRIMARY KEY,
     service_id TEXT NOT NULL,
     metric TEXT NOT NULL,
+    raw_limit_value REAL,
+    raw_used_value REAL,
+    raw_remaining_value REAL,
     limit_value REAL NOT NULL,
     used_value REAL NOT NULL,
     remaining_value REAL NOT NULL,
@@ -84,6 +87,9 @@ export const ADDITIVE_MIGRATIONS: Array<{ column: string; table: string; type: s
   { column: "type", table: "quotas", type: "TEXT" },
   { column: "replenishment_amount", table: "quotas", type: "REAL" },
   { column: "replenishment_period", table: "quotas", type: "TEXT" },
+  { column: "raw_limit_value", table: "quotas", type: "REAL" },
+  { column: "raw_used_value", table: "quotas", type: "REAL" },
+  { column: "raw_remaining_value", table: "quotas", type: "REAL" },
   { column: "display_order", table: "services", type: "INTEGER DEFAULT 0" },
 ];
 
@@ -95,4 +101,11 @@ export async function applyAdditiveMigrations(db: Database<sqlite3.Database>): P
       // Column already exists or other error - ignore
     }
   }
+
+  await db.run(
+    `UPDATE quotas
+     SET raw_limit_value = COALESCE(raw_limit_value, limit_value),
+         raw_used_value = COALESCE(raw_used_value, used_value),
+         raw_remaining_value = COALESCE(raw_remaining_value, remaining_value)`,
+  );
 }

@@ -15,6 +15,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Revoked other active sessions after password changes so old logins are invalidated
 - Added IP-based rate limiting for `/api/auth/login` and `/api/auth/register` to reduce brute-force attempts
 
+### Changed
+- Refactored quota persistence to store raw quota values in the database and read API-facing quota values from raw fields with backward-compatible fallbacks for existing rows
+
 ### Removed
 - Removed Google AI (Gemini) provider — was a stub returning hardcoded placeholder quotas
 - Removed AWS Bedrock provider — was an unimplemented generic stub with no real quota fetching
