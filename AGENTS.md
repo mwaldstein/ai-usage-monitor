@@ -11,6 +11,7 @@ Full-stack TypeScript app for monitoring AI service quotas across multiple provi
 
 ```bash
 # Common commands (run from repo root)
+npm run check        # Run lint + format check
 npm run lint         # Lint with oxlint
 npm run fmt          # Format with oxfmt
 
