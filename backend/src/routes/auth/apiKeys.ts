@@ -6,7 +6,12 @@ import { requireAuth } from "../../middleware/auth.ts";
 import { generateApiKey } from "../../utils/auth.ts";
 import { nowTs } from "../../utils/dates.ts";
 import { logger } from "../../utils/logger.ts";
-import { CreateApiKeyRequest, CreateApiKeyResponse, ListApiKeysResponse } from "shared/api";
+import {
+  ApiKeyIdParams,
+  CreateApiKeyRequest,
+  CreateApiKeyResponse,
+  ListApiKeysResponse,
+} from "shared/api";
 import { requireRequestUser } from "./helpers.ts";
 
 const router = Router();
@@ -95,9 +100,21 @@ router.delete("/api-keys/:id", requireAuth, async (req, res) => {
       return;
     }
 
+    const paramsDecoded = S.decodeUnknownEither(ApiKeyIdParams)(req.params);
+    if (Either.isLeft(paramsDecoded)) {
+      res.status(400).json({ error: "Invalid API key id", details: paramsDecoded.left.message });
+      return;
+    }
+
+    const { id } = paramsDecoded.right;
+    if (!id.trim()) {
+      res.status(400).json({ error: "Invalid API key id" });
+      return;
+    }
+
     const db = getDatabase();
     const result = await db.run("DELETE FROM api_keys WHERE id = ? AND user_id = ?", [
-      req.params.id,
+      id,
       requestUser.id,
     ]);
 
@@ -106,7 +123,7 @@ router.delete("/api-keys/:id", requireAuth, async (req, res) => {
       return;
     }
 
-    logger.info({ userId: requestUser.id, keyId: req.params.id }, "API key deleted");
+    logger.info({ userId: requestUser.id, keyId: id }, "API key deleted");
     res.json({ ok: true });
   } catch (err) {
     logger.error({ err }, "Error deleting API key");

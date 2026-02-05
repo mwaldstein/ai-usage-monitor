@@ -75,3 +75,9 @@ export type ApiKeyInfo = S.Schema.Type<typeof ApiKeyInfo>;
 
 export const ListApiKeysResponse = S.Array(ApiKeyInfo);
 export type ListApiKeysResponse = S.Schema.Type<typeof ListApiKeysResponse>;
+
+// Params: /api/auth/api-keys/:id
+export const ApiKeyIdParams = S.Struct({
+  id: S.String,
+});
+export type ApiKeyIdParams = S.Schema.Type<typeof ApiKeyIdParams>;

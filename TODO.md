@@ -7,7 +7,7 @@
 ### Backend
 
 - **Database Effect safety rollout**: Implement the staged DB resource/error/transaction migration plan in `docs/database-effect-plan.md`
-- **External interface schema hardening**: Continue schema-first decoding/encoding for routes, provider responses, WS, and frontend hooks per `docs/external-interface-schema-plan.md`
+- **External interface schema hardening**: Continue schema-first decoding/encoding for provider responses, WS, and frontend hooks per `docs/external-interface-schema-plan.md` (route query/params coverage now mostly complete)
 
 ## Testing
 

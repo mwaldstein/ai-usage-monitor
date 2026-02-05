@@ -21,6 +21,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Refactored `backend/src/routes/analytics.ts` into focused modules under `backend/src/routes/analytics/` for query parsing, SQL construction, and response mapping
 - Refactored backend quota refresh orchestration into focused modules for interval parsing, service row mapping, per-service refresh execution, and quota persistence
 - Refactored provider error handling by introducing shared auth/rate-limit/network normalization utilities and applying them across provider services
+- Refactored backend query validation to use shared route helpers and schema-validated auth API key delete params, reducing duplicated parsing logic across analytics/history/logs routes
 
 ### Removed
 - Removed Google AI (Gemini) provider — was a stub returning hardcoded placeholder quotas

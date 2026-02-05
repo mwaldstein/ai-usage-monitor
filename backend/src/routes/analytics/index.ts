@@ -16,7 +16,8 @@ import {
   mapTimeSeriesRows,
   normalizeQuotaRows,
 } from "./mappers.ts";
-import { buildSinceTs, parseBoundedInt, parseInterval } from "./queryParsers.ts";
+import { buildSinceTs, parseInterval } from "./queryParsers.ts";
+import { optionalNonEmptyFieldError, parseBoundedInt } from "../queryValidation.ts";
 import {
   buildLatestQuotasQuery,
   buildProviderComparisonQuery,
@@ -39,8 +40,9 @@ router.get("/", async (req, res) => {
     }
 
     const { days, serviceId, interval, groupBy } = decodedQuery.right;
-    if (serviceId !== undefined && serviceId.trim().length === 0) {
-      return res.status(400).json(S.encodeSync(ApiError)({ error: "serviceId must be non-empty" }));
+    const serviceIdError = optionalNonEmptyFieldError(serviceId, "serviceId");
+    if (serviceIdError) {
+      return res.status(400).json(S.encodeSync(ApiError)({ error: serviceIdError }));
     }
 
     const daysResult = parseBoundedInt(days, 30, 1, 365, "days");
