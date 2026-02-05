@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.5.2] - 2026-02-05
+
 ### Fixed
 - Prevented analytics API responses from returning non-finite quota values (e.g. Infinity) that serialize to null and fail frontend schema validation
 - Reduced Recharts console warnings by enforcing minimum chart container dimensions
@@ -183,7 +185,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 - Added missing dependencies (uuid, sqlite) for Docker builds
 
-[Unreleased]: https://github.com/mwaldstein/ai-usage-monitor/compare/v0.5.1...HEAD
+[Unreleased]: https://github.com/mwaldstein/ai-usage-monitor/compare/v0.5.2...HEAD
+[0.5.2]: https://github.com/mwaldstein/ai-usage-monitor/compare/v0.5.1...v0.5.2
 [0.5.1]: https://github.com/mwaldstein/ai-usage-monitor/compare/v0.5.0...v0.5.1
 [0.5.0]: https://github.com/mwaldstein/ai-usage-monitor/compare/v0.4.2...v0.5.0
 [0.4.2]: https://github.com/mwaldstein/ai-usage-monitor/compare/v0.4.1...v0.4.2
