@@ -85,7 +85,6 @@ const baselineSchemaMigration = Effect.gen(function* () {
   `);
 
   yield* sql.unsafe(`CREATE INDEX IF NOT EXISTS idx_quotas_service ON quotas(service_id)`);
-  yield* sql.unsafe(`CREATE INDEX IF NOT EXISTS idx_usage_history_ts ON usage_history(ts)`);
   yield* sql.unsafe(`CREATE INDEX IF NOT EXISTS idx_sessions_user ON sessions(user_id)`);
   yield* sql.unsafe(`CREATE INDEX IF NOT EXISTS idx_sessions_expires ON sessions(expires_at)`);
   yield* sql.unsafe(`CREATE INDEX IF NOT EXISTS idx_api_keys_user ON api_keys(user_id)`);
