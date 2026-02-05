@@ -1,9 +1,15 @@
 import { BaseAIService } from "./base.ts";
 import type { UsageQuota } from "../types/index.ts";
 import { randomUUID } from "crypto";
+import { Either, Schema as S } from "effect";
 import { nowTs } from "../utils/dates.ts";
 import { logger } from "../utils/logger.ts";
 import { normalizeProviderError } from "./errorNormalization.ts";
+import {
+  AMPPaidBalanceResult,
+  AMPQuotaResultTuple,
+  AMPRemoteResultEnvelope,
+} from "../schemas/providerResponses.ts";
 
 interface AMPQuotaData {
   bucket: string;
@@ -19,57 +25,60 @@ interface AMPPaidBalanceData {
 }
 
 export class AMPService extends BaseAIService {
-  private parseQuotaResponse(data: any): AMPQuotaData | null {
+  private parseQuotaResponse(data: unknown): AMPQuotaData | null {
     try {
       // AMP uses SvelteKit remote commands with positional encoding
       // Format: {"type":"result","result":"[\"{\\\"bucket\\\":1,...},\\\"ubi\\\",2000,83,24,\\\"all\\\",0]"}
 
-      if (data?.type === "result" && data?.result) {
-        const resultArray = JSON.parse(data.result);
-
-        // Extract values by position based on schema
-        return {
-          bucket: resultArray[1],
-          quota: resultArray[2],
-          hourlyReplenishment: resultArray[3],
-          windowHours: resultArray[4],
-          validProviderModels: resultArray[5],
-          used: resultArray[6],
-        };
+      const envelope = S.decodeUnknownEither(AMPRemoteResultEnvelope)(data);
+      if (Either.isLeft(envelope)) {
+        return null;
       }
 
-      return null;
+      const parsedResult: unknown = JSON.parse(envelope.right.result);
+      const resultArray = S.decodeUnknownEither(AMPQuotaResultTuple)(parsedResult);
+      if (Either.isLeft(resultArray)) {
+        return null;
+      }
+
+      const [, bucket, quota, hourlyReplenishment, windowHours, validProviderModels, used] =
+        resultArray.right;
+      return {
+        bucket,
+        quota,
+        hourlyReplenishment,
+        windowHours,
+        validProviderModels,
+        used,
+      };
     } catch (error) {
       logger.error({ err: error }, "Error parsing AMP quota response");
       return null;
     }
   }
 
-  private parsePaidBalanceResponse(data: any): AMPPaidBalanceData | null {
+  private parsePaidBalanceResponse(data: unknown): AMPPaidBalanceData | null {
     try {
       // AMP uses SvelteKit remote commands with positional encoding for paid balance
       // Format: {"type":"result","result":"[2000]"} where value is credits in cents
 
-      if (data?.type === "result" && data?.result) {
-        const resultArray = JSON.parse(data.result);
+      const envelope = S.decodeUnknownEither(AMPRemoteResultEnvelope)(data);
+      if (Either.isLeft(envelope)) {
+        return null;
+      }
 
-        // Paid balance is typically just a number in cents
-        if (
-          Array.isArray(resultArray) &&
-          resultArray.length > 0 &&
-          typeof resultArray[0] === "number"
-        ) {
-          return {
-            credits: resultArray[0],
-          };
-        }
+      const parsedResult: unknown = JSON.parse(envelope.right.result);
+      const result = S.decodeUnknownEither(AMPPaidBalanceResult)(parsedResult);
+      if (Either.isLeft(result)) {
+        return null;
+      }
 
-        // Alternative format: direct number
-        if (typeof resultArray === "number") {
-          return {
-            credits: resultArray,
-          };
-        }
+      if (typeof result.right === "number") {
+        return { credits: result.right };
+      }
+
+      if (result.right.length > 0) {
+        return { credits: result.right[0] };
       }
 
       return null;

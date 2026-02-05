@@ -1,46 +1,16 @@
 import { logger } from "../../utils/logger.ts";
+import { Either, Schema as S } from "effect";
+import {
+  OpenCodeBilling as OpenCodeBillingSchema,
+  OpenCodeSubscription as OpenCodeSubscriptionSchema,
+  OpenCodeUsage as OpenCodeUsageSchema,
+} from "../../schemas/providerResponses.ts";
 
 // Types
-export interface OpenCodeBillingData {
-  customerID: string;
-  balance: number;
-  monthlyLimit: number | null;
-  monthlyUsage: number;
-  timeMonthlyUsageUpdated: string;
-  subscription: {
-    plan: string;
-    seats: number;
-    status: string;
-  };
-  subscriptionID: string;
-}
-
-export interface OpenCodeSubscriptionData {
-  plan: string;
-  useBalance: boolean;
-  rollingUsage: {
-    status: string;
-    resetInSec: number;
-    usagePercent: number;
-  } | null;
-  weeklyUsage: {
-    status: string;
-    resetInSec: number;
-    usagePercent: number;
-  } | null;
-}
-
-export interface OpenCodeRollingUsage {
-  status: string;
-  resetInSec: number;
-  usagePercent: number;
-}
-
-export interface OpenCodeWeeklyUsage {
-  status: string;
-  resetInSec: number;
-  usagePercent: number;
-}
+export type OpenCodeBillingData = S.Schema.Type<typeof OpenCodeBillingSchema>;
+export type OpenCodeSubscriptionData = S.Schema.Type<typeof OpenCodeSubscriptionSchema>;
+export type OpenCodeRollingUsage = S.Schema.Type<typeof OpenCodeUsageSchema>;
+export type OpenCodeWeeklyUsage = S.Schema.Type<typeof OpenCodeUsageSchema>;
 
 export interface ParsedHydrationData {
   billing?: OpenCodeBillingData;
@@ -58,6 +28,14 @@ interface StrategyResult {
 }
 
 type ParsingStrategy = (html: string) => StrategyResult;
+
+function decodeOrNull<T>(schema: S.Schema<T>, input: unknown): T | null {
+  const decoded = S.decodeUnknownEither(schema)(input);
+  if (Either.isLeft(decoded)) {
+    return null;
+  }
+  return decoded.right;
+}
 
 // Utility: Replace nested $R references with null or date strings
 function replaceNestedR(dataStr: string): string {
@@ -166,8 +144,9 @@ const strategySolidJsHydration: ParsingStrategy = (html) => {
 
           if (dataStr.includes("customerID")) {
             const parsed = parseObject(dataStr);
-            if (parsed) {
-              result.billing = parsed as OpenCodeBillingData;
+            const billing = decodeOrNull(OpenCodeBillingSchema, parsed);
+            if (billing) {
+              result.billing = billing;
             }
           }
 
@@ -177,8 +156,9 @@ const strategySolidJsHydration: ParsingStrategy = (html) => {
             dataStr.includes("plan")
           ) {
             const parsed = parseObject(dataStr);
-            if (parsed && (parsed as OpenCodeSubscriptionData).plan) {
-              result.subscription = parsed as OpenCodeSubscriptionData;
+            const subscription = decodeOrNull(OpenCodeSubscriptionSchema, parsed);
+            if (subscription) {
+              result.subscription = subscription;
             }
           }
         }
@@ -197,8 +177,9 @@ const strategyBillingPattern: ParsingStrategy = (html) => {
   if (billingObjects) {
     for (const obj of billingObjects) {
       const parsed = parseObject(obj);
-      if (parsed && (parsed as OpenCodeBillingData).customerID) {
-        result.billing = parsed as OpenCodeBillingData;
+      const billing = decodeOrNull(OpenCodeBillingSchema, parsed);
+      if (billing) {
+        result.billing = billing;
         break;
       }
     }
@@ -215,8 +196,9 @@ const strategySubscriptionPattern: ParsingStrategy = (html) => {
   if (subObjects) {
     for (const obj of subObjects) {
       const parsed = parseObject(obj);
-      if (parsed && (parsed as OpenCodeSubscriptionData).plan) {
-        result.subscription = parsed as OpenCodeSubscriptionData;
+      const subscription = decodeOrNull(OpenCodeSubscriptionSchema, parsed);
+      if (subscription) {
+        result.subscription = subscription;
         break;
       }
     }
@@ -239,16 +221,9 @@ const strategyUsageFromSubscription: ParsingStrategy = (html) => {
     if (rollingMatch) {
       const rollingStr = rollingMatch[1];
       const parsed = parseDirectObject(rollingStr);
-      if (
-        parsed &&
-        (parsed as OpenCodeRollingUsage).status &&
-        (parsed as OpenCodeRollingUsage).usagePercent !== undefined
-      ) {
-        result.rollingUsage = {
-          status: (parsed as OpenCodeRollingUsage).status,
-          resetInSec: parseInt(String((parsed as OpenCodeRollingUsage).resetInSec)),
-          usagePercent: parseInt(String((parsed as OpenCodeRollingUsage).usagePercent)),
-        };
+      const rollingUsage = decodeOrNull(OpenCodeUsageSchema, parsed);
+      if (rollingUsage) {
+        result.rollingUsage = rollingUsage;
       }
     }
 
@@ -258,16 +233,9 @@ const strategyUsageFromSubscription: ParsingStrategy = (html) => {
     if (weeklyMatch) {
       const weeklyStr = weeklyMatch[1];
       const parsed = parseDirectObject(weeklyStr);
-      if (
-        parsed &&
-        (parsed as OpenCodeWeeklyUsage).status &&
-        (parsed as OpenCodeWeeklyUsage).usagePercent !== undefined
-      ) {
-        result.weeklyUsage = {
-          status: (parsed as OpenCodeWeeklyUsage).status,
-          resetInSec: parseInt(String((parsed as OpenCodeWeeklyUsage).resetInSec)),
-          usagePercent: parseInt(String((parsed as OpenCodeWeeklyUsage).usagePercent)),
-        };
+      const weeklyUsage = decodeOrNull(OpenCodeUsageSchema, parsed);
+      if (weeklyUsage) {
+        result.weeklyUsage = weeklyUsage;
       }
     }
   }
@@ -283,26 +251,19 @@ const strategyStandaloneUsage: ParsingStrategy = (html) => {
   );
 
   for (const match of allUsageMatches) {
-    const type = match[1] as "rollingUsage" | "weeklyUsage";
+    const type = match[1];
     const dataStr = match[2];
     const parsed = parseDirectObject(dataStr);
+    const usage = decodeOrNull(OpenCodeUsageSchema, parsed);
 
-    if (
-      parsed &&
-      (parsed as OpenCodeRollingUsage).status &&
-      (parsed as OpenCodeRollingUsage).usagePercent !== undefined
-    ) {
-      const usageData = {
-        status: (parsed as OpenCodeRollingUsage).status,
-        resetInSec: parseInt(String((parsed as OpenCodeRollingUsage).resetInSec)),
-        usagePercent: parseInt(String((parsed as OpenCodeRollingUsage).usagePercent)),
-      };
+    if (!usage) {
+      continue;
+    }
 
-      if (type === "rollingUsage" && !result.rollingUsage) {
-        result.rollingUsage = usageData;
-      } else if (type === "weeklyUsage" && !result.weeklyUsage) {
-        result.weeklyUsage = usageData;
-      }
+    if (type === "rollingUsage" && !result.rollingUsage) {
+      result.rollingUsage = usage;
+    } else if (type === "weeklyUsage" && !result.weeklyUsage) {
+      result.weeklyUsage = usage;
     }
   }
 
