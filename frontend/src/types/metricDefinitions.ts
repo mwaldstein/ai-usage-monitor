@@ -87,18 +87,18 @@ export const OPENCODE_METRIC_DEFINITIONS: Record<string, MetricAnnotation> = {
     format: "percentage",
     displayName: "5-Hour Usage",
     priority: 10,
-    warnWhenLow: false,
-    warnThreshold: 70,
-    errorThreshold: 90,
+    warnWhenLow: true,
+    warnThreshold: 25,
+    errorThreshold: 10,
   },
   // Weekly usage (percentage)
   weekly_usage: {
     format: "percentage",
     displayName: "Weekly Usage",
     priority: 20,
-    warnWhenLow: false,
-    warnThreshold: 70,
-    errorThreshold: 90,
+    warnWhenLow: true,
+    warnThreshold: 25,
+    errorThreshold: 10,
   },
   // Monthly usage (percentage or actual value)
   monthly_usage: {

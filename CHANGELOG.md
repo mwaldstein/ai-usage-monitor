@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+- Fixed opencode zen rolling/weekly usage thresholds to warn when remaining is low instead of high
+
 ## [0.5.2] - 2026-02-05
 
 ### Fixed

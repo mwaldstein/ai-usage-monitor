@@ -50,15 +50,15 @@ export class OpenCodeService extends BaseAIService {
     now: number,
   ): UsageQuota {
     const pagePercent = usage.usagePercent;
-    const usedPercent = 100 - pagePercent;
+    const burnDownPercent = 100 - pagePercent;
 
     return {
       id: randomUUID(),
       serviceId: this.service.id,
       metric,
       limit: 100,
-      used: usedPercent,
-      remaining: pagePercent,
+      used: pagePercent,
+      remaining: burnDownPercent,
       resetAt: now + usage.resetInSec,
       createdAt: nowTs(),
       updatedAt: nowTs(),
