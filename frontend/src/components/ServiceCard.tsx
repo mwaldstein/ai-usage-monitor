@@ -104,12 +104,12 @@ export function ServiceCard({
       onClick={handleCardClick}
     >
       <div className="p-4">
-        <div className="flex items-start justify-between mb-2">
-          <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-start justify-between gap-2 mb-2">
+          <div className="flex items-center gap-2 min-w-0">
             <div className="w-1 h-8 rounded-full" style={{ backgroundColor: providerColor }} />
 
-            <div>
-              <div className="flex items-center gap-1.5">
+            <div className="min-w-0">
+              <div className="flex items-center gap-1.5 min-w-0">
                 <h3 className="text-sm font-semibold text-white truncate">{service.name}</h3>
                 {isHealthy ? (
                   <CheckCircle2 size={12} className="text-emerald-500" />
@@ -146,7 +146,7 @@ export function ServiceCard({
             </div>
           </div>
 
-          <div className="flex items-center gap-1.5">
+          <div className="flex items-center gap-1.5 w-full justify-end sm:w-auto">
             {viewMode !== "expanded" && (
               <MiniSparkline values={sparklineData.values} color={providerColor} />
             )}

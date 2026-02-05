@@ -99,7 +99,7 @@ export function CompactQuota({
   const displayLimit = formatMetricValue(limit, annotation);
 
   return (
-    <div className="flex items-center gap-3 p-3 rounded-lg bg-white/5 hover:bg-white/10 transition-colors">
+    <div className="flex flex-wrap items-center gap-3 p-3 rounded-lg bg-white/5 hover:bg-white/10 transition-colors">
       <RadialProgress percentage={percentage} size={44} strokeWidth={3.5} color={color}>
         <span className="text-sm font-bold text-white">{Math.round(percentage)}%</span>
       </RadialProgress>
@@ -146,7 +146,9 @@ export function CompactQuota({
       </div>
 
       {viewMode === "expanded" && sparklineData.length > 1 && (
-        <QuotaSparkline values={sparklineData} color={color} isBurnDown={isBurnDown} />
+        <div className="w-full sm:w-auto sm:ml-0 flex justify-end sm:justify-start">
+          <QuotaSparkline values={sparklineData} color={color} isBurnDown={isBurnDown} />
+        </div>
       )}
     </div>
   );
