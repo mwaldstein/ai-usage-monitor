@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 - Removed completed planning items from TODO list
+- Split analytics chart sections into focused subcomponents for readability
 
 ## [0.5.3] - 2026-02-05
 

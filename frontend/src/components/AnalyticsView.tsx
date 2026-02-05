@@ -6,6 +6,8 @@ import {
   useChartKeys,
   useSummaryStats,
   useProviderData,
+  type ChartDataPoint,
+  type ProviderComparisonData,
   type TimeRange,
   type ChartMetric,
   type GroupBy,
@@ -58,6 +60,211 @@ function formatNumber(num: number): string {
   if (num >= 1000000) return (num / 1000000).toFixed(1) + "M";
   if (num >= 1000) return (num / 1000).toFixed(1) + "K";
   return num.toFixed(0);
+}
+
+interface ChartControlsProps {
+  interval: Interval;
+  groupBy: GroupBy;
+  chartMetric: ChartMetric;
+  onIntervalChange: (interval: Interval) => void;
+  onGroupByChange: (groupBy: GroupBy) => void;
+  onChartMetricChange: (metric: ChartMetric) => void;
+}
+
+function ChartControls({
+  interval,
+  groupBy,
+  chartMetric,
+  onIntervalChange,
+  onGroupByChange,
+  onChartMetricChange,
+}: ChartControlsProps) {
+  return (
+    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4">
+      <div className="flex items-center gap-4">
+        <div className="flex items-center gap-2">
+          <span className="text-xs text-zinc-500">Interval:</span>
+          <div className="flex items-center bg-zinc-800/50 rounded-lg p-0.5 border border-white/5">
+            {[
+              { key: "5m", label: "5m" },
+              { key: "15m", label: "15m" },
+              { key: "1h", label: "1h" },
+              { key: "4h", label: "4h" },
+              { key: "1d", label: "1d" },
+            ].map((i) => (
+              <button
+                key={i.key}
+                onClick={() => onIntervalChange(i.key as Interval)}
+                className={`px-2.5 py-1.5 rounded-md text-xs font-medium transition-all ${
+                  interval === i.key ? "bg-zinc-700 text-white" : "text-zinc-400 hover:text-white"
+                }`}
+              >
+                {i.label}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div className="flex items-center gap-2">
+          <span className="text-xs text-zinc-500">Group by:</span>
+          <div className="flex items-center bg-zinc-800/50 rounded-lg p-0.5 border border-white/5">
+            {(["service", "provider", "metric"] as GroupBy[]).map((g) => (
+              <button
+                key={g}
+                onClick={() => onGroupByChange(g)}
+                className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all capitalize ${
+                  groupBy === g ? "bg-zinc-700 text-white" : "text-zinc-400 hover:text-white"
+                }`}
+              >
+                {g}
+              </button>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      <div className="flex items-center gap-2">
+        <span className="text-xs text-zinc-500">Metric:</span>
+        <div className="flex items-center bg-zinc-800/50 rounded-lg p-0.5 border border-white/5">
+          {[
+            { key: "used", label: "Used" },
+            { key: "remaining", label: "Remaining" },
+            { key: "utilization", label: "% Used" },
+            { key: "remaining_pct", label: "% Left" },
+          ].map((m) => (
+            <button
+              key={m.key}
+              onClick={() => onChartMetricChange(m.key as ChartMetric)}
+              className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all ${
+                chartMetric === m.key ? "bg-zinc-700 text-white" : "text-zinc-400 hover:text-white"
+              }`}
+            >
+              {m.label}
+            </button>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+interface TimeSeriesChartProps {
+  chartData: ChartDataPoint[];
+  chartKeys: string[];
+  timeRange: TimeRange;
+  interval: Interval;
+  groupBy: GroupBy;
+}
+
+function TimeSeriesChart({
+  chartData,
+  chartKeys,
+  timeRange,
+  interval,
+  groupBy,
+}: TimeSeriesChartProps) {
+  return (
+    <div className="glass rounded-xl p-4 border border-white/5 mb-6">
+      <div className="flex items-center justify-between mb-4">
+        <h3 className="text-sm font-semibold text-zinc-300">Usage Trends Over Time</h3>
+        <span className="text-xs text-zinc-500">
+          Last {timeRange} days • {interval} intervals • Grouped by {groupBy}
+        </span>
+      </div>
+
+      {chartData.length > 0 ? (
+        <div className="h-80">
+          <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={1}>
+            <LineChart data={chartData} margin={{ top: 5, right: 20, bottom: 5, left: 0 }}>
+              <CartesianGrid strokeDasharray="3 3" stroke="#27272a" />
+              <XAxis
+                dataKey="displayTime"
+                stroke="#71717a"
+                fontSize={10}
+                tickLine={false}
+                angle={interval === "5m" || interval === "15m" ? -45 : 0}
+                textAnchor={interval === "5m" || interval === "15m" ? "end" : "middle"}
+                height={interval === "5m" || interval === "15m" ? 60 : 30}
+              />
+              <YAxis
+                stroke="#71717a"
+                fontSize={10}
+                tickLine={false}
+                tickFormatter={(value) => formatNumber(value)}
+              />
+              <Tooltip
+                contentStyle={{
+                  backgroundColor: "#18181b",
+                  border: "1px solid #27272a",
+                  borderRadius: "8px",
+                  fontSize: "12px",
+                }}
+                labelStyle={{ color: "#a1a1aa" }}
+              />
+              <Legend wrapperStyle={{ fontSize: "11px", paddingTop: "10px" }} />
+              {chartKeys.map((key, index) => (
+                <Line
+                  key={key}
+                  type="monotone"
+                  dataKey={key}
+                  stroke={COLORS[index % COLORS.length]}
+                  strokeWidth={2}
+                  dot={false}
+                  activeDot={{ r: 4 }}
+                />
+              ))}
+            </LineChart>
+          </ResponsiveContainer>
+        </div>
+      ) : (
+        <div className="h-80 flex items-center justify-center text-zinc-500">
+          <div className="text-center">
+            <Activity size={32} className="mx-auto mb-2 opacity-50" />
+            <p className="text-sm">No trend data available for selected period</p>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+interface ProviderComparisonChartProps {
+  providerData: ProviderComparisonData[];
+}
+
+function ProviderComparisonChart({ providerData }: ProviderComparisonChartProps) {
+  return (
+    <div className="glass rounded-xl p-4 border border-white/5 mb-6">
+      <h3 className="text-sm font-semibold text-zinc-300 mb-4">Provider Comparison</h3>
+
+      <div className="h-64">
+        <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={1}>
+          <BarChart data={providerData} margin={{ top: 5, right: 20, bottom: 5, left: 0 }}>
+            <CartesianGrid strokeDasharray="3 3" stroke="#27272a" />
+            <XAxis dataKey="name" stroke="#71717a" fontSize={10} tickLine={false} />
+            <YAxis
+              stroke="#71717a"
+              fontSize={10}
+              tickLine={false}
+              tickFormatter={(value) => formatNumber(value)}
+            />
+            <Tooltip
+              contentStyle={{
+                backgroundColor: "#18181b",
+                border: "1px solid #27272a",
+                borderRadius: "8px",
+                fontSize: "12px",
+              }}
+              labelStyle={{ color: "#a1a1aa" }}
+            />
+            <Legend wrapperStyle={{ fontSize: "11px" }} />
+            <Bar dataKey="total" fill="#3B82F6" name="Total Usage" radius={[4, 4, 0, 0]} />
+            <Bar dataKey="average" fill="#10B981" name="Average" radius={[4, 4, 0, 0]} />
+          </BarChart>
+        </ResponsiveContainer>
+      </div>
+    </div>
+  );
 }
 
 export function AnalyticsView({ services, isConnected }: AnalyticsViewProps) {
@@ -263,172 +470,26 @@ export function AnalyticsView({ services, isConnected }: AnalyticsViewProps) {
         )}
 
         {/* Chart Controls */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4">
-          <div className="flex items-center gap-4">
-            <div className="flex items-center gap-2">
-              <span className="text-xs text-zinc-500">Interval:</span>
-              <div className="flex items-center bg-zinc-800/50 rounded-lg p-0.5 border border-white/5">
-                {[
-                  { key: "5m", label: "5m" },
-                  { key: "15m", label: "15m" },
-                  { key: "1h", label: "1h" },
-                  { key: "4h", label: "4h" },
-                  { key: "1d", label: "1d" },
-                ].map((i) => (
-                  <button
-                    key={i.key}
-                    onClick={() => setInterval(i.key as Interval)}
-                    className={`px-2.5 py-1.5 rounded-md text-xs font-medium transition-all ${
-                      interval === i.key
-                        ? "bg-zinc-700 text-white"
-                        : "text-zinc-400 hover:text-white"
-                    }`}
-                  >
-                    {i.label}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            <div className="flex items-center gap-2">
-              <span className="text-xs text-zinc-500">Group by:</span>
-              <div className="flex items-center bg-zinc-800/50 rounded-lg p-0.5 border border-white/5">
-                {(["service", "provider", "metric"] as GroupBy[]).map((g) => (
-                  <button
-                    key={g}
-                    onClick={() => setGroupBy(g)}
-                    className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all capitalize ${
-                      groupBy === g ? "bg-zinc-700 text-white" : "text-zinc-400 hover:text-white"
-                    }`}
-                  >
-                    {g}
-                  </button>
-                ))}
-              </div>
-            </div>
-          </div>
-
-          <div className="flex items-center gap-2">
-            <span className="text-xs text-zinc-500">Metric:</span>
-            <div className="flex items-center bg-zinc-800/50 rounded-lg p-0.5 border border-white/5">
-              {[
-                { key: "used", label: "Used" },
-                { key: "remaining", label: "Remaining" },
-                { key: "utilization", label: "% Used" },
-                { key: "remaining_pct", label: "% Left" },
-              ].map((m) => (
-                <button
-                  key={m.key}
-                  onClick={() => setChartMetric(m.key as ChartMetric)}
-                  className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all ${
-                    chartMetric === m.key
-                      ? "bg-zinc-700 text-white"
-                      : "text-zinc-400 hover:text-white"
-                  }`}
-                >
-                  {m.label}
-                </button>
-              ))}
-            </div>
-          </div>
-        </div>
+        <ChartControls
+          interval={interval}
+          groupBy={groupBy}
+          chartMetric={chartMetric}
+          onIntervalChange={setInterval}
+          onGroupByChange={setGroupBy}
+          onChartMetricChange={setChartMetric}
+        />
 
         {/* Time Series Chart */}
-        <div className="glass rounded-xl p-4 border border-white/5 mb-6">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-sm font-semibold text-zinc-300">Usage Trends Over Time</h3>
-            <span className="text-xs text-zinc-500">
-              Last {timeRange} days • {interval} intervals • Grouped by {groupBy}
-            </span>
-          </div>
-
-          {chartData.length > 0 ? (
-            <div className="h-80">
-              <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={1}>
-                <LineChart data={chartData} margin={{ top: 5, right: 20, bottom: 5, left: 0 }}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#27272a" />
-                  <XAxis
-                    dataKey="displayTime"
-                    stroke="#71717a"
-                    fontSize={10}
-                    tickLine={false}
-                    angle={interval === "5m" || interval === "15m" ? -45 : 0}
-                    textAnchor={interval === "5m" || interval === "15m" ? "end" : "middle"}
-                    height={interval === "5m" || interval === "15m" ? 60 : 30}
-                  />
-                  <YAxis
-                    stroke="#71717a"
-                    fontSize={10}
-                    tickLine={false}
-                    tickFormatter={(value) => formatNumber(value)}
-                  />
-                  <Tooltip
-                    contentStyle={{
-                      backgroundColor: "#18181b",
-                      border: "1px solid #27272a",
-                      borderRadius: "8px",
-                      fontSize: "12px",
-                    }}
-                    labelStyle={{ color: "#a1a1aa" }}
-                  />
-                  <Legend wrapperStyle={{ fontSize: "11px", paddingTop: "10px" }} />
-                  {chartKeys.map((key, index) => (
-                    <Line
-                      key={key}
-                      type="monotone"
-                      dataKey={key}
-                      stroke={COLORS[index % COLORS.length]}
-                      strokeWidth={2}
-                      dot={false}
-                      activeDot={{ r: 4 }}
-                    />
-                  ))}
-                </LineChart>
-              </ResponsiveContainer>
-            </div>
-          ) : (
-            <div className="h-80 flex items-center justify-center text-zinc-500">
-              <div className="text-center">
-                <Activity size={32} className="mx-auto mb-2 opacity-50" />
-                <p className="text-sm">No trend data available for selected period</p>
-              </div>
-            </div>
-          )}
-        </div>
+        <TimeSeriesChart
+          chartData={chartData}
+          chartKeys={chartKeys}
+          timeRange={timeRange}
+          interval={interval}
+          groupBy={groupBy}
+        />
 
         {/* Provider Comparison */}
-        {providerData.length > 0 && (
-          <div className="glass rounded-xl p-4 border border-white/5 mb-6">
-            <h3 className="text-sm font-semibold text-zinc-300 mb-4">Provider Comparison</h3>
-
-            <div className="h-64">
-              <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={1}>
-                <BarChart data={providerData} margin={{ top: 5, right: 20, bottom: 5, left: 0 }}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#27272a" />
-                  <XAxis dataKey="name" stroke="#71717a" fontSize={10} tickLine={false} />
-                  <YAxis
-                    stroke="#71717a"
-                    fontSize={10}
-                    tickLine={false}
-                    tickFormatter={(value) => formatNumber(value)}
-                  />
-                  <Tooltip
-                    contentStyle={{
-                      backgroundColor: "#18181b",
-                      border: "1px solid #27272a",
-                      borderRadius: "8px",
-                      fontSize: "12px",
-                    }}
-                    labelStyle={{ color: "#a1a1aa" }}
-                  />
-                  <Legend wrapperStyle={{ fontSize: "11px" }} />
-                  <Bar dataKey="total" fill="#3B82F6" name="Total Usage" radius={[4, 4, 0, 0]} />
-                  <Bar dataKey="average" fill="#10B981" name="Average" radius={[4, 4, 0, 0]} />
-                </BarChart>
-              </ResponsiveContainer>
-            </div>
-          </div>
-        )}
+        {providerData.length > 0 && <ProviderComparisonChart providerData={providerData} />}
 
         {/* Detailed Service Breakdown */}
         {analytics?.summary && analytics.summary.length > 0 && (

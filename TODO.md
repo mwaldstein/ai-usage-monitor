@@ -4,9 +4,6 @@
 
 ## Technical Debt / Refactoring
 
-### Frontend
-- Break down `frontend/src/components/AnalyticsView.tsx` into chart-specific sub-components
-
 ### Backend
 - Store raw quota values in DB; translate to burn-down/derived views in API (may require migration or old/new record handling)
 
