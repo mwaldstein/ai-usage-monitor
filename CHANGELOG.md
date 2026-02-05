@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+- Removed completed planning items from TODO list
+
 ## [0.5.3] - 2026-02-05
 
 ### Fixed

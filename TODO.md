@@ -8,8 +8,7 @@
 - Break down `frontend/src/components/AnalyticsView.tsx` into chart-specific sub-components
 
 ### Backend
-- [External Interface Schema Plan](docs/external-interface-schema-plan.md)
-- [Database Effect Safety Plan](docs/database-effect-plan.md)
+- Store raw quota values in DB; translate to burn-down/derived views in API (may require migration or old/new record handling)
 
 ## Features
 
