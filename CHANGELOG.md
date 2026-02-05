@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 - Prevented analytics API responses from returning non-finite quota values (e.g. Infinity) that serialize to null and fail frontend schema validation
 - Reduced Recharts console warnings by enforcing minimum chart container dimensions
+- Fixed opencode zen burn-down quotas to treat usage percent as remaining, avoiding incorrect critical UI states
 
 ## [0.5.1] - 2026-02-04
 
