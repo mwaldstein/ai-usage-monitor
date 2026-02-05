@@ -55,7 +55,7 @@ router.post("/", async (req, res) => {
     const db = getDatabase();
     const isEnabled = enabled ?? true;
 
-    const countResult = await db.get("SELECT COUNT(*) as count FROM services");
+    const countResult = await db.get<{ count: number }>("SELECT COUNT(*) as count FROM services");
     const displayOrder = (countResult?.count || 0) + 1;
 
     await db.run(

@@ -1,5 +1,4 @@
-import type { Database } from "sqlite";
-import type sqlite3 from "sqlite3";
+import type { DatabaseClient } from "./client.ts";
 
 export const SCHEMA_SQL = `
   CREATE TABLE IF NOT EXISTS services (
@@ -93,7 +92,7 @@ export const ADDITIVE_MIGRATIONS: Array<{ column: string; table: string; type: s
   { column: "display_order", table: "services", type: "INTEGER DEFAULT 0" },
 ];
 
-export async function applyAdditiveMigrations(db: Database<sqlite3.Database>): Promise<void> {
+export async function applyAdditiveMigrations(db: DatabaseClient): Promise<void> {
   for (const { column, table, type } of ADDITIVE_MIGRATIONS) {
     try {
       await db.exec(`ALTER TABLE ${table} ADD COLUMN ${column} ${type};`);

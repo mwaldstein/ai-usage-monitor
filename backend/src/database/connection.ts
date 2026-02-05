@@ -1,33 +1,33 @@
-import sqlite3 from "sqlite3";
-import { open, Database } from "sqlite";
 import path from "path";
 import fs from "fs";
+import * as SqlClient from "@effect/sql/SqlClient";
+import * as SqliteClient from "@effect/sql-sqlite-node/SqliteClient";
+import * as Effect from "effect/Effect";
+import * as ManagedRuntime from "effect/ManagedRuntime";
 import { SCHEMA_SQL, PRAGMA_SQL, applyAdditiveMigrations } from "./schema.ts";
 import {
   migrateServicesSchema,
   migrateQuotasSchema,
   migrateUsageHistorySchema,
 } from "./migrations.ts";
+import { makeDatabaseClient, type DatabaseClient } from "./client.ts";
 import { toDbError } from "./errors.ts";
 import { logger } from "../utils/logger.ts";
 import { getEnv } from "../schemas/env.ts";
 
-let db: Database<sqlite3.Database> | null = null;
+let runtime: ManagedRuntime.ManagedRuntime<SqlClient.SqlClient, unknown> | null = null;
+let db: DatabaseClient | null = null;
 
 function getDataDir(): string {
   const env = getEnv();
-  // Explicit DATA_DIR takes precedence
   if (env.dataDir) {
     return env.dataDir;
   }
 
-  // In production (Docker), use /app/data
   if (env.nodeEnv === "production") {
     return path.join(process.cwd(), "data");
   }
 
-  // In development, use backend/data relative to repo root
-  // Check if we're in the backend directory or repo root
   const cwdDataPath = path.join(process.cwd(), "data");
   const backendDataPath = path.join(process.cwd(), "backend", "data");
 
@@ -38,8 +38,10 @@ function getDataDir(): string {
   return cwdDataPath;
 }
 
-export async function initializeDatabase(): Promise<Database<sqlite3.Database>> {
-  if (db) return db;
+export async function initializeDatabase(): Promise<DatabaseClient> {
+  if (db) {
+    return db;
+  }
 
   const dataDir = getDataDir();
   const dbPath = path.join(dataDir, "ai-usage.db");
@@ -60,59 +62,50 @@ export async function initializeDatabase(): Promise<Database<sqlite3.Database>> 
 
   fs.mkdirSync(dataDir, { recursive: true });
 
-  let openedDb: Database<sqlite3.Database> | null = null;
+  const nextRuntime = ManagedRuntime.make(SqliteClient.layer({ filename: dbPath }));
 
   try {
-    openedDb = await open({
-      filename: dbPath,
-      driver: sqlite3.Database,
-    });
+    const sqlClient = await nextRuntime.runPromise(
+      Effect.flatMap(SqlClient.SqlClient, Effect.succeed),
+    );
+    const nextDb = makeDatabaseClient({ runtime: nextRuntime, sqlClient });
 
-    await openedDb.exec(PRAGMA_SQL);
+    await nextDb.exec(PRAGMA_SQL);
 
-    // Run migrations before creating tables
-    await migrateUsageHistorySchema(openedDb);
-    await migrateServicesSchema(openedDb);
-    await migrateQuotasSchema(openedDb);
+    await migrateUsageHistorySchema(nextDb);
+    await migrateServicesSchema(nextDb);
+    await migrateQuotasSchema(nextDb);
 
-    await openedDb.exec(SCHEMA_SQL);
+    await nextDb.exec(SCHEMA_SQL);
+    await applyAdditiveMigrations(nextDb);
 
-    // Apply additive migrations for columns added after initial schema
-    await applyAdditiveMigrations(openedDb);
+    runtime = nextRuntime;
+    db = nextDb;
   } catch (error) {
-    if (openedDb) {
-      await openedDb.close().catch(() => {
-        // Ignore close failures while surfacing initialization error.
-      });
-      throw toDbError(error, { operation: "query" });
-    }
-
+    await nextRuntime.dispose().catch(() => {
+      // Ignore dispose failures while surfacing initialization error.
+    });
     throw toDbError(error, { operation: "open" });
   }
-
-  if (!openedDb) {
-    throw toDbError(new Error("Database initialization completed without a connection"), {
-      operation: "open",
-    });
-  }
-
-  db = openedDb;
 
   logger.info({ dbPath }, "Database initialized successfully");
 
   return db;
 }
 
-export function getDatabase(): Database<sqlite3.Database> {
+export function getDatabase(): DatabaseClient {
   if (!db) {
     throw new Error("Database not initialized. Call initializeDatabase() first.");
   }
+
   return db;
 }
 
 export async function closeDatabase(): Promise<void> {
-  if (db) {
-    await db.close();
-    db = null;
+  if (runtime) {
+    await runtime.dispose();
+    runtime = null;
   }
+
+  db = null;
 }

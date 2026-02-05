@@ -24,15 +24,13 @@ router.get("/api-keys", requireAuth, async (req, res) => {
     }
 
     const db = getDatabase();
-    const rows = await db.all<
-      Array<{
-        id: string;
-        name: string;
-        key_prefix: string;
-        created_at: number;
-        last_used_at: number | null;
-      }>
-    >(
+    const rows = await db.all<{
+      id: string;
+      name: string;
+      key_prefix: string;
+      created_at: number;
+      last_used_at: number | null;
+    }>(
       "SELECT id, name, key_prefix, created_at, last_used_at FROM api_keys WHERE user_id = ? ORDER BY created_at DESC",
       [requestUser.id],
     );
@@ -113,15 +111,16 @@ router.delete("/api-keys/:id", requireAuth, async (req, res) => {
     }
 
     const db = getDatabase();
-    const result = await db.run("DELETE FROM api_keys WHERE id = ? AND user_id = ?", [
-      id,
-      requestUser.id,
-    ]);
-
-    if (!result.changes || result.changes === 0) {
+    const existing = await db.get<{ id: string }>(
+      "SELECT id FROM api_keys WHERE id = ? AND user_id = ?",
+      [id, requestUser.id],
+    );
+    if (!existing) {
       res.status(404).json({ error: "API key not found" });
       return;
     }
+
+    await db.run("DELETE FROM api_keys WHERE id = ? AND user_id = ?", [id, requestUser.id]);
 
     logger.info({ userId: requestUser.id, keyId: id }, "API key deleted");
     res.json({ ok: true });

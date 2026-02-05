@@ -66,7 +66,13 @@ router.get("/", async (req, res) => {
 
     query += " ORDER BY uh.ts DESC";
 
-    const history = await db.all(query, params);
+    const history = await db.all<{
+      serviceId: string;
+      metric: string;
+      value: number;
+      ts: number;
+      service_name: string;
+    }>(query, params);
     res.json(S.encodeSync(HistoryResponse)(history));
   } catch (error) {
     logger.error({ err: error }, "Error fetching usage history");

@@ -39,7 +39,8 @@ Goal: use `@effect/sql` with `@effect/sql-sqlite-node` for DB resource safety, e
 ## Progress (Current)
 - Added backend `DbError` tags and sqlite error-code mapping for DB open/query failures.
 - Added transaction-level busy-lock retry for `BEGIN IMMEDIATE` acquisition.
-- Remaining: migrate to `@effect/sql` `SqliteClient` layer and convert route/service call-sites.
+- Migrated DB lifecycle and route/service call-sites to an `@effect/sql` + `@effect/sql-sqlite-node` `SqliteClient`-backed database layer.
+- Removed legacy `sqlite` / `sqlite3` runtime dependencies from the backend.
 
 ## Unresolved Questions
 - none

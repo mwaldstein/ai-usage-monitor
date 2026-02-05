@@ -1,8 +1,7 @@
-import type { Database } from "sqlite";
-import type sqlite3 from "sqlite3";
+import type { DatabaseClient } from "./client.ts";
 import { isBusyDbError, toDbError } from "./errors.ts";
 
-type DbTransaction = Database<sqlite3.Database>;
+type DbTransaction = Pick<DatabaseClient, "exec">;
 
 const BUSY_RETRY_DELAYS_MS = [25, 75, 150] as const;
 

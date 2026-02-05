@@ -1,9 +1,8 @@
-import type { Database } from "sqlite";
-import type sqlite3 from "sqlite3";
+import type { DatabaseClient } from "./client.ts";
 import { logger } from "../utils/logger.ts";
 
-export async function migrateServicesSchema(db: Database<sqlite3.Database>): Promise<void> {
-  const tableInfo = await db.all(`PRAGMA table_info(services)`);
+export async function migrateServicesSchema(db: DatabaseClient): Promise<void> {
+  const tableInfo = await db.all<{ name: string; type: string }>(`PRAGMA table_info(services)`);
   if (tableInfo.length === 0) return;
 
   const createdAtCol = tableInfo.find(
@@ -44,8 +43,8 @@ export async function migrateServicesSchema(db: Database<sqlite3.Database>): Pro
   }
 }
 
-export async function migrateQuotasSchema(db: Database<sqlite3.Database>): Promise<void> {
-  const tableInfo = await db.all(`PRAGMA table_info(quotas)`);
+export async function migrateQuotasSchema(db: DatabaseClient): Promise<void> {
+  const tableInfo = await db.all<{ name: string; type: string }>(`PRAGMA table_info(quotas)`);
   if (tableInfo.length === 0) return;
 
   const createdAtCol = tableInfo.find(
@@ -95,8 +94,8 @@ export async function migrateQuotasSchema(db: Database<sqlite3.Database>): Promi
   }
 }
 
-export async function migrateUsageHistorySchema(db: Database<sqlite3.Database>): Promise<void> {
-  const tableInfo = await db.all(`PRAGMA table_info(usage_history)`);
+export async function migrateUsageHistorySchema(db: DatabaseClient): Promise<void> {
+  const tableInfo = await db.all<{ name: string }>(`PRAGMA table_info(usage_history)`);
   const hasIdColumn = tableInfo.some((col: { name: string }) => col.name === "id");
   const hasTimestampColumn = tableInfo.some((col: { name: string }) => col.name === "timestamp");
 

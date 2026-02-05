@@ -1,8 +1,7 @@
-import type { Database } from "sqlite";
-import type sqlite3 from "sqlite3";
+import type { DatabaseClient } from "./client.ts";
 import { logger } from "../utils/logger.ts";
 
-export async function runMaintenance(db: Database<sqlite3.Database>): Promise<void> {
+export async function runMaintenance(db: DatabaseClient): Promise<void> {
   try {
     await db.exec(`PRAGMA wal_checkpoint(TRUNCATE);`);
     await db.exec(`PRAGMA incremental_vacuum;`);

@@ -27,6 +27,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Refactored AMP, opencode, Codex, and z.ai provider response parsing to decode external payloads through backend schema contracts instead of ad-hoc casts
 - Refactored multi-step SQLite writes to use shared transaction helpers, applying atomic updates for service reordering and quota/history persistence across manual and scheduled refresh paths
 - Refactored backend DB safety primitives with typed `DbError` mapping for open/query failures and busy-lock retry handling for `BEGIN IMMEDIATE` transaction acquisition
+- Migrated backend database access to `@effect/sql` with `@effect/sql-sqlite-node` `SqliteClient`, including connection lifecycle management and SQL call-site execution through a shared Effect-backed DB client
 
 ### Removed
 - Removed Google AI (Gemini) provider — was a stub returning hardcoded placeholder quotas

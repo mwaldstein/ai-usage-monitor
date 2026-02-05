@@ -8,7 +8,12 @@ import cron from "node-cron";
 import path from "path";
 import fs from "fs";
 
-import { initializeDatabase, getDatabase, runMaintenance } from "../database/index.ts";
+import {
+  initializeDatabase,
+  getDatabase,
+  closeDatabase,
+  runMaintenance,
+} from "../database/index.ts";
 import { refreshQuotas } from "../services/quotas.ts";
 import { generateSetupCode } from "./auth.ts";
 import { logger } from "./logger.ts";
@@ -113,6 +118,7 @@ export async function gracefulShutdown(signal: string, options: LifecycleOptions
   }
 
   await shutdownTracing(tracingSdk);
+  await closeDatabase();
 
   setTimeout(() => {
     logger.info("Shutdown complete");
