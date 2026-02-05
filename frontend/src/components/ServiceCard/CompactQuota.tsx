@@ -30,13 +30,28 @@ export function CompactQuota({
 
   const quotaType = quota.type || "rate_limit";
   const isBurnDown = quotaType === "usage" || quotaType === "credits";
-  const percentage = limit > 0 ? (isBurnDown ? remaining / limit : used / limit) * 100 : 0;
+  const isBalanceMetric = quotaType === "credits" && annotation.format !== "percentage";
+  const percentage = !isBalanceMetric
+    ? limit > 0
+      ? (isBurnDown ? remaining / limit : used / limit) * 100
+      : 0
+    : limit > 0
+      ? 100
+      : 0;
 
   const warnThreshold = annotation.warnThreshold ?? (isBurnDown ? 25 : 70);
   const errorThreshold = annotation.errorThreshold ?? (isBurnDown ? 10 : 90);
 
-  const isCritical = isBurnDown ? percentage < errorThreshold : percentage > errorThreshold;
-  const isWarning = isBurnDown ? percentage < warnThreshold : percentage > warnThreshold;
+  const isCritical = isBalanceMetric
+    ? remaining <= errorThreshold
+    : isBurnDown
+      ? percentage < errorThreshold
+      : percentage > errorThreshold;
+  const isWarning = isBalanceMetric
+    ? remaining <= warnThreshold
+    : isBurnDown
+      ? percentage < warnThreshold
+      : percentage > warnThreshold;
 
   const [timeRemaining, setTimeRemaining] = useState<string>("");
 
@@ -97,11 +112,15 @@ export function CompactQuota({
   const displayRemaining = formatMetricValue(remaining, annotation);
   const displayUsed = formatMetricValue(used, annotation);
   const displayLimit = formatMetricValue(limit, annotation);
+  const radialLabel = isBalanceMetric ? displayRemaining : `${Math.round(percentage)}%`;
+  const radialLabelClass = isBalanceMetric
+    ? "text-[10px] font-semibold text-white"
+    : "text-sm font-bold text-white";
 
   return (
     <div className="flex flex-wrap items-center gap-3 p-3 rounded-lg bg-white/5 hover:bg-white/10 transition-colors">
       <RadialProgress percentage={percentage} size={44} strokeWidth={3.5} color={color}>
-        <span className="text-sm font-bold text-white">{Math.round(percentage)}%</span>
+        <span className={radialLabelClass}>{radialLabel}</span>
       </RadialProgress>
 
       <div className="flex-1 min-w-0">
@@ -133,7 +152,9 @@ export function CompactQuota({
           </div>
         </div>
         <div className="text-[10px] text-zinc-500">
-          {isBurnDown ? (
+          {isBalanceMetric ? (
+            <span>Balance: {displayRemaining}</span>
+          ) : isBurnDown ? (
             <span>
               {displayRemaining} / {displayLimit} remaining
             </span>

@@ -11,6 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Removed completed planning items from TODO list
 - Split analytics chart sections into focused subcomponents for readability
 - Improved ServiceCard layout on narrow screens by allowing header actions and quota sparklines to wrap
+- Displayed balance-style quotas as absolute values instead of percentages in ServiceCard
 
 ## [0.5.3] - 2026-02-05
 
