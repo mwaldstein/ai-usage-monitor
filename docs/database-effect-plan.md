@@ -1,6 +1,6 @@
 # Database Effect Safety Plan
 
-Goal: use `@effect/sql` with `@effect/sql-sqlite-node` for DB resource safety, errors, transactions, concurrency. Schema only for row decode.
+Goal: use `@effect/sql` with `@effect/sql-sqlite-node` for DB resource safety, errors, transactions, concurrency, and fully typed query boundaries.
 
 ## Current Gaps
 - DB access scattered in routes/services
@@ -70,8 +70,29 @@ Goal: use `@effect/sql` with `@effect/sql-sqlite-node` for DB resource safety, e
    - move SQL out of routes into focused data modules/repositories
    - export typed functions that accept domain input and return decoded domain rows
 6. Safety enforcement:
-   - lint/code-review rule: no direct `db.all/get/run` in routes after migration
-   - lint/code-review rule: no untyped query result without schema decode
+    - lint/code-review rule: no direct `db.all/get/run` in routes after migration
+    - lint/code-review rule: no untyped query result without schema decode
+
+## Fully Typed Query Safety Plan (Next Phase)
+1. Replace dynamic SQL string assembly with typed statement builders:
+   - prefer `sql\`...\`` and composable helpers for predicates (`sql.and`, `sql.or`, `sql.in`)
+   - eliminate ad-hoc `SET ${...}` and `WHERE ${...}` construction in repositories
+2. Introduce operation-specific command/query contracts per table:
+   - define `SelectRow`, `InsertInput`, `UpdateInput`, and `FilterInput` schemas for each core entity
+   - ensure every repository function accepts typed input and returns typed decoded output
+3. Enforce domain-safe scalar types:
+   - add branded schemas for IDs and time primitives (for example `ServiceId`, `UserId`, `UnixSeconds`)
+   - prevent cross-entity ID mixups at compile time
+4. Restrict `unsafe` usage to audited edge cases:
+   - allow only dynamic identifier/order-by scenarios with explicit whitelist validation
+   - require inline justification for any new `unsafe` statement
+5. Strengthen decode and schema-drift guarantees:
+   - add negative tests for enum drift, nullability mismatch, missing columns, and numeric coercion failures
+   - ensure decode failures propagate with stable API error contracts
+6. Add static enforcement and CI checks:
+   - lint rule: no raw SQL string literals in route/service modules
+   - lint rule: no repository return types as `Record<string, unknown>`
+   - CI check: fail if new direct `db.*` calls are added outside repository/query modules
 
 ## Progress (Current)
 - Added backend `DbError` tags and sqlite error-code mapping for DB open/query failures.
@@ -96,6 +117,14 @@ Goal: use `@effect/sql` with `@effect/sql-sqlite-node` for DB resource safety, e
 - [x] Migrate route-level SQL to repository/query modules using `SqlSchema` APIs.
 - [x] Add decode-error mapping (`ParseError` -> `DbError.DecodeError`) at DB boundary.
 - [x] Add in-memory sqlite tests for migrations, transactional behavior, retry policy, and decode guarantees.
+
+## Fully Typed Query Checklist
+- [ ] Replace remaining dynamic SQL assembly with typed statement builders in repositories.
+- [ ] Add operation-specific `SelectRow` / `InsertInput` / `UpdateInput` / `FilterInput` schemas for all core repository functions.
+- [ ] Introduce branded ID/time scalar schemas and adopt them in repository signatures.
+- [ ] Restrict and document all `unsafe` statements to audited edge cases only.
+- [ ] Add negative decode/schema-drift tests (enum/nullability/missing column/numeric coercion).
+- [ ] Add lint + CI enforcement for raw SQL and untyped repository outputs.
 
 ## Unresolved Questions
 - none
