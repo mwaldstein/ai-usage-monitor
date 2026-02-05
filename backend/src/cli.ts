@@ -13,7 +13,9 @@ interface CliOptions {
 function printHelp(): void {
   console.log("Usage: npm run cli -w backend -- [options]");
   console.log("\nOptions:");
-  console.log("  --url <url>           Full endpoint URL (default: http://localhost:3001/api/status/cached)");
+  console.log(
+    "  --url <url>           Full endpoint URL (default: http://localhost:3001/api/status/cached)",
+  );
   console.log("  --auth <user:pass>    Basic auth credentials");
   console.log("  --username <user>     Basic auth username (requires --password)");
   console.log("  --password <pass>     Basic auth password (requires --username)");
