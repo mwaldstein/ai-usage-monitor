@@ -2,42 +2,11 @@ import { BaseAIService } from "./base.ts";
 import type { UsageQuota } from "../types/index.ts";
 import { randomUUID } from "crypto";
 import axios from "axios";
+import { Either, Schema as S } from "effect";
 import { nowTs } from "../utils/dates.ts";
 import { logger } from "../utils/logger.ts";
 import { normalizeProviderError } from "./errorNormalization.ts";
-
-// Interfaces for Codex usage data from the API response
-interface CodexWindow {
-  used_percent: number;
-  limit_window_seconds: number;
-  reset_after_seconds: number;
-  reset_at: number;
-}
-
-interface CodexRateLimit {
-  allowed: boolean;
-  limit_reached: boolean;
-  primary_window: CodexWindow;
-  secondary_window: CodexWindow;
-}
-
-interface CodexUsageResponse {
-  plan_type: string;
-  rate_limit: CodexRateLimit;
-  code_review_rate_limit: {
-    allowed: boolean;
-    limit_reached: boolean;
-    primary_window: CodexWindow;
-    secondary_window: CodexWindow | null;
-  };
-  credits: {
-    has_credits: boolean;
-    unlimited: boolean;
-    balance: number | null;
-    approx_local_messages: number | null;
-    approx_cloud_messages: number | null;
-  };
-}
+import { CodexUsageResponse } from "../schemas/providerResponses.ts";
 
 /**
  * CodexService - Fetches usage limits for OpenAI Codex CLI
@@ -112,7 +81,12 @@ export class CodexService extends BaseAIService {
         headers: requestHeaders,
       });
 
-      const data: CodexUsageResponse = response.data;
+      const decoded = S.decodeUnknownEither(CodexUsageResponse)(response.data);
+      if (Either.isLeft(decoded)) {
+        logger.warn({ err: decoded.left }, `[Codex:${serviceName}] Invalid usage response payload`);
+        return quotas;
+      }
+      const data = decoded.right;
 
       // Add rolling 5-hour quota (primary_window - 18000 seconds)
       if (data.rate_limit?.primary_window) {

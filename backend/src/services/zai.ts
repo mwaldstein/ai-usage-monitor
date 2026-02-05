@@ -1,55 +1,11 @@
 import { BaseAIService } from "./base.ts";
 import type { UsageQuota } from "../types/index.ts";
 import { randomUUID } from "crypto";
+import { Either, Schema as S } from "effect";
 import { nowTs, dateToTs } from "../utils/dates.ts";
 import { logger } from "../utils/logger.ts";
 import { normalizeProviderError } from "./errorNormalization.ts";
-
-interface ZAISubscription {
-  id: string;
-  customerId: string;
-  agreementNo: string;
-  productId: string;
-  productName: string;
-  description: string;
-  status: string;
-  purchaseTime: string;
-  valid: string;
-  autoRenew: number;
-  initialPrice: number;
-  standardPrice: number;
-  billingCycle: string;
-  paymentChannel: string;
-}
-
-interface ZAIQuotaLimit {
-  type: string;
-  unit: number;
-  number: number;
-  usage: number;
-  currentValue: number;
-  remaining: number;
-  percentage: number;
-  nextResetTime?: number;
-  usageDetails?: Array<{
-    modelCode: string;
-    usage: number;
-  }>;
-}
-
-interface ZAIQuotaResponse {
-  code: number;
-  msg: string;
-  data: {
-    limits: ZAIQuotaLimit[];
-  };
-}
-
-interface ZAISubscriptionResponse {
-  code: number;
-  msg: string;
-  data: ZAISubscription[];
-}
+import { ZAIQuotaResponse, ZAISubscriptionResponse } from "../schemas/providerResponses.ts";
 
 export class ZAIService extends BaseAIService {
   async fetchQuotas(): Promise<UsageQuota[]> {
@@ -66,18 +22,22 @@ export class ZAIService extends BaseAIService {
       const now = nowTs();
 
       // Fetch quota limits
-      const quotaResponse = await this.client.get<ZAIQuotaResponse>(
-        "/api/monitor/usage/quota/limit",
-        {
-          headers: {
-            Authorization: `Bearer ${this.service.apiKey}`,
-            Accept: "application/json",
-          },
+      const quotaResponse = await this.client.get("/api/monitor/usage/quota/limit", {
+        headers: {
+          Authorization: `Bearer ${this.service.apiKey}`,
+          Accept: "application/json",
         },
-      );
+      });
 
-      if (quotaResponse.data?.code === 200 && quotaResponse.data?.data?.limits) {
-        for (const limit of quotaResponse.data.data.limits) {
+      const decodedQuota = S.decodeUnknownEither(ZAIQuotaResponse)(quotaResponse.data);
+      if (Either.isLeft(decodedQuota)) {
+        logger.warn({ err: decodedQuota.left }, "Invalid z.ai quota response payload");
+        return [];
+      }
+      const quotaData = decodedQuota.right;
+
+      if (quotaData.code === 200 && quotaData.data.limits.length > 0) {
+        for (const limit of quotaData.data.limits) {
           const quotaId = randomUUID();
 
           // Create a descriptive metric name based on type
@@ -134,18 +94,27 @@ export class ZAIService extends BaseAIService {
 
       // Fetch subscription info
       try {
-        const subscriptionResponse = await this.client.get<ZAISubscriptionResponse>(
-          "/api/biz/subscription/list",
-          {
-            headers: {
-              Authorization: `Bearer ${this.service.apiKey}`,
-              Accept: "application/json",
-            },
+        const subscriptionResponse = await this.client.get("/api/biz/subscription/list", {
+          headers: {
+            Authorization: `Bearer ${this.service.apiKey}`,
+            Accept: "application/json",
           },
-        );
+        });
 
-        if (subscriptionResponse.data?.code === 200 && subscriptionResponse.data?.data) {
-          for (const sub of subscriptionResponse.data.data) {
+        const decodedSubscription = S.decodeUnknownEither(ZAISubscriptionResponse)(
+          subscriptionResponse.data,
+        );
+        if (Either.isLeft(decodedSubscription)) {
+          logger.warn(
+            { err: decodedSubscription.left },
+            "Invalid z.ai subscription response payload",
+          );
+          return quotas;
+        }
+        const subscriptionData = decodedSubscription.right;
+
+        if (subscriptionData.code === 200) {
+          for (const sub of subscriptionData.data) {
             quotas.push({
               id: randomUUID(),
               serviceId: this.service.id,
