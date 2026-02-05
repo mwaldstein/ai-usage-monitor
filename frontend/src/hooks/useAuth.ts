@@ -29,6 +29,8 @@ export interface AuthState {
   register: (username: string, password: string, setupCode: string) => Promise<string | null>;
   /** Log out and clear session */
   logout: () => Promise<void>;
+  /** Change password for the current user */
+  changePassword: (currentPassword: string, newPassword: string) => Promise<string | null>;
 }
 
 function loadToken(): string | null {
@@ -205,6 +207,35 @@ export function useAuth(): AuthState {
     setUser(null);
   }, [token]);
 
+  const changePassword = useCallback(
+    async (currentPassword: string, newPassword: string): Promise<string | null> => {
+      if (!token) {
+        return "Not authenticated";
+      }
+
+      try {
+        const response = await fetch(`${API_URL}/auth/change-password`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({ currentPassword, newPassword }),
+        });
+
+        if (!response.ok) {
+          const body = (await response.json()) as { error?: string };
+          return body.error ?? "Password change failed";
+        }
+
+        return null;
+      } catch {
+        return "Network error";
+      }
+    },
+    [token],
+  );
+
   return {
     authEnabled,
     hasUsers,
@@ -214,5 +245,6 @@ export function useAuth(): AuthState {
     login,
     register,
     logout,
+    changePassword,
   };
 }

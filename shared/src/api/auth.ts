@@ -15,6 +15,13 @@ export const LoginRequest = S.Struct({
 });
 export type LoginRequest = S.Schema.Type<typeof LoginRequest>;
 
+// POST /api/auth/change-password
+export const ChangePasswordRequest = S.Struct({
+  currentPassword: S.String,
+  newPassword: S.String.pipe(S.minLength(8), S.maxLength(128)),
+});
+export type ChangePasswordRequest = S.Schema.Type<typeof ChangePasswordRequest>;
+
 // Response for login/register
 export const AuthResponse = S.Struct({
   token: S.String,

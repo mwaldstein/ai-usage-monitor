@@ -1,4 +1,4 @@
-import { useCallback, useEffect } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useWebSocket } from "./hooks/useWebSocket";
 import { useUsageHistory, useVersion } from "./hooks/useApi";
 import { useServiceManagement } from "./hooks/useServiceManagement";
@@ -8,28 +8,25 @@ import { ServiceCard } from "./components/ServiceCard";
 import { AddServiceModal } from "./components/AddServiceModal";
 import { AnalyticsView } from "./components/AnalyticsView";
 import { LoginPage } from "./components/LoginPage";
-import { LogViewer } from "./components/LogViewer";
+import { ChangePasswordModal } from "./components/ChangePasswordModal";
+import { SettingsView } from "./components/SettingsView";
 import {
-  Plus,
   RefreshCw,
   Wifi,
   WifiOff,
   Settings,
-  Trash2,
-  Edit2,
   LayoutGrid,
   List,
-  ChevronUp,
   Activity,
-  ArrowUp,
-  ArrowDown,
   AlertCircle,
   BarChart3,
   LogOut,
+  KeyRound,
 } from "lucide-react";
 
 function App() {
   const auth = useAuth();
+  const [isPasswordModalOpen, setIsPasswordModalOpen] = useState(false);
   const {
     statuses,
     isConnected,
@@ -53,14 +50,11 @@ function App() {
   } = useServiceManagement({ reloadCached });
 
   const {
-    showSettings,
     viewMode,
     selectedService,
     currentView,
     setViewMode,
     setCurrentView,
-    toggleSettings,
-    closeSettings,
     toggleServiceSelection,
   } = useViewState();
 
@@ -183,9 +177,9 @@ function App() {
                   </button>
 
                   <button
-                    onClick={() => toggleSettings(isConnected)}
+                    onClick={() => setCurrentView("settings")}
                     disabled={!isConnected}
-                    className={`btn-icon tooltip ${showSettings && isConnected ? "bg-zinc-700 text-white" : ""} ${!isConnected ? "opacity-40 cursor-not-allowed" : ""}`}
+                    className={`btn-icon tooltip ${!isConnected ? "opacity-40 cursor-not-allowed" : ""}`}
                     data-tooltip={isConnected ? "Settings" : "Offline - settings unavailable"}
                   >
                     <Settings size={14} />
@@ -194,13 +188,22 @@ function App() {
               )}
 
               {auth.authEnabled && auth.user && (
-                <button
-                  onClick={auth.logout}
-                  className="btn-icon tooltip"
-                  data-tooltip={`Logout (${auth.user.username})`}
-                >
-                  <LogOut size={14} />
-                </button>
+                <>
+                  <button
+                    onClick={() => setIsPasswordModalOpen(true)}
+                    className="btn-icon tooltip"
+                    data-tooltip={`Change password (${auth.user.username})`}
+                  >
+                    <KeyRound size={14} />
+                  </button>
+                  <button
+                    onClick={auth.logout}
+                    className="btn-icon tooltip"
+                    data-tooltip={`Logout (${auth.user.username})`}
+                  >
+                    <LogOut size={14} />
+                  </button>
+                </>
               )}
             </div>
 
@@ -230,6 +233,18 @@ function App() {
                 <BarChart3 size={16} />
                 <span className="hidden sm:inline">Analytics</span>
               </button>
+              <button
+                onClick={() => setCurrentView("settings")}
+                disabled={!isConnected}
+                className={`flex items-center gap-2 px-2 sm:px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+                  currentView === "settings"
+                    ? "bg-zinc-800 text-white border border-white/10"
+                    : "text-zinc-400 hover:text-white hover:bg-zinc-800/50"
+                } ${!isConnected ? "opacity-40 cursor-not-allowed" : ""}`}
+              >
+                <Settings size={16} />
+                <span className="hidden sm:inline">Settings</span>
+              </button>
             </div>
           </div>
         </div>
@@ -237,101 +252,6 @@ function App() {
 
       {/* Main Content */}
       <main className="max-w-7xl mx-auto px-3 py-3">
-        {/* Settings Panel - Only on Dashboard */}
-        {showSettings && isConnected && currentView === "dashboard" && (
-          <div className="mb-3 glass rounded-xl p-3 slide-in">
-            <div className="flex items-center justify-between mb-2">
-              <h3 className="text-xs font-semibold text-zinc-400 uppercase tracking-wider">
-                Services
-              </h3>
-              <button onClick={closeSettings} className="text-zinc-500 hover:text-white">
-                <ChevronUp size={16} />
-              </button>
-            </div>
-            <div className="space-y-1">
-              {services.map((service) => (
-                <div
-                  key={service.id}
-                  className="flex items-center justify-between p-2 rounded-lg bg-zinc-800/30 border border-white/5 hover:border-white/10 transition-colors"
-                >
-                  <div className="flex items-center gap-2">
-                    <div
-                      className={`w-1.5 h-1.5 rounded-full ${
-                        statuses.find((s) => s.service.id === service.id)?.isHealthy
-                          ? "bg-emerald-500"
-                          : "bg-red-500"
-                      }`}
-                    />
-                    <span className="text-sm font-medium">{service.name}</span>
-                    <span className="text-xs text-zinc-500">{service.provider}</span>
-                    {(() => {
-                      const tokenExp = statuses.find(
-                        (s) => s.service.id === service.id,
-                      )?.tokenExpiration;
-                      if (!tokenExp) return null;
-                      const now = Date.now() / 1000;
-                      const hoursLeft = (tokenExp - now) / 3600;
-                      if (hoursLeft <= 0) {
-                        return (
-                          <span className="text-xs text-red-400 font-medium">Token expired</span>
-                        );
-                      }
-                      if (hoursLeft <= 24) {
-                        return (
-                          <span className="text-xs text-amber-400">
-                            Exp {Math.ceil(hoursLeft)}h
-                          </span>
-                        );
-                      }
-                      return (
-                        <span className="text-xs text-zinc-500">
-                          Exp {new Date(tokenExp * 1000).toLocaleDateString()}
-                        </span>
-                      );
-                    })()}
-                  </div>
-                  <div className="flex gap-1">
-                    <button
-                      onClick={() => handleReorderService(service.id, "up")}
-                      disabled={services.indexOf(service) === 0}
-                      className="p-1.5 text-zinc-400 hover:text-zinc-300 hover:bg-zinc-700/50 rounded-md transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
-                    >
-                      <ArrowUp size={12} />
-                    </button>
-                    <button
-                      onClick={() => handleReorderService(service.id, "down")}
-                      disabled={services.indexOf(service) === services.length - 1}
-                      className="p-1.5 text-zinc-400 hover:text-zinc-300 hover:bg-zinc-700/50 rounded-md transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
-                    >
-                      <ArrowDown size={12} />
-                    </button>
-                    <button
-                      onClick={() => handleEditService(service)}
-                      className="p-1.5 text-zinc-400 hover:text-violet-400 hover:bg-violet-500/10 rounded-md transition-colors"
-                    >
-                      <Edit2 size={12} />
-                    </button>
-                    <button
-                      onClick={() => handleDeleteService(service.id)}
-                      className="p-1.5 text-zinc-400 hover:text-red-400 hover:bg-red-500/10 rounded-md transition-colors"
-                    >
-                      <Trash2 size={12} />
-                    </button>
-                  </div>
-                </div>
-              ))}
-            </div>
-            <button
-              onClick={openModal}
-              className="mt-3 w-full flex items-center justify-center gap-2 px-3 py-2 bg-violet-600 hover:bg-violet-500 text-white text-sm font-medium rounded-lg transition-colors"
-            >
-              <Plus size={14} />
-              Add Service
-            </button>
-            <LogViewer enabled={isConnected} />
-          </div>
-        )}
-
         {/* Disconnection Banner */}
         {!isConnected && (
           <div className="mb-3 glass rounded-xl p-3 border border-red-500/30 bg-red-950/20">
@@ -348,6 +268,16 @@ function App() {
 
         {currentView === "analytics" ? (
           <AnalyticsView services={services} statuses={statuses} isConnected={isConnected} />
+        ) : currentView === "settings" ? (
+          <SettingsView
+            services={services}
+            statuses={statuses}
+            isConnected={isConnected}
+            onOpenAddServiceModal={openModal}
+            onEditService={handleEditService}
+            onDeleteService={handleDeleteService}
+            onReorderService={handleReorderService}
+          />
         ) : (
           <>
             {/* Service Grid */}
@@ -432,6 +362,12 @@ function App() {
         onSubmit={handleModalSubmit}
         editingService={editingService}
         disabled={!isConnected}
+      />
+
+      <ChangePasswordModal
+        isOpen={isPasswordModalOpen}
+        onClose={() => setIsPasswordModalOpen(false)}
+        onSubmit={auth.changePassword}
       />
     </div>
   );

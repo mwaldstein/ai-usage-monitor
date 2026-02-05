@@ -10,6 +10,7 @@ import {
   generateSessionToken,
   getSessionExpiryTs,
   generateApiKey,
+  isApiKey,
   validateSetupCode,
   hasActiveSetupCode,
   generateSetupCode,
@@ -21,6 +22,7 @@ import {
   AuthResponse,
   MeResponse,
   AuthStatusResponse,
+  ChangePasswordRequest,
   CreateApiKeyRequest,
   CreateApiKeyResponse,
   ListApiKeysResponse,
@@ -221,6 +223,65 @@ router.get("/me", requireAuth, async (req, res) => {
     );
   } catch (err) {
     logger.error({ err }, "Error fetching user info");
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+// POST /api/auth/change-password
+router.post("/change-password", requireAuth, async (req, res) => {
+  try {
+    if (!req.user) {
+      res.status(401).json({ error: "Not authenticated" });
+      return;
+    }
+
+    const token = req.headers.authorization?.slice(7);
+    if (!token || isApiKey(token)) {
+      res.status(403).json({ error: "Password changes require a logged-in session" });
+      return;
+    }
+
+    const decoded = S.decodeUnknownEither(ChangePasswordRequest)(req.body);
+    if (Either.isLeft(decoded)) {
+      res.status(400).json({ error: "Invalid request", details: decoded.left.message });
+      return;
+    }
+
+    const { currentPassword, newPassword } = decoded.right;
+    const db = getDatabase();
+
+    const user = await db.get<{ password_hash: string }>(
+      "SELECT password_hash FROM users WHERE id = ?",
+      [req.user.id],
+    );
+
+    if (!user) {
+      res.status(404).json({ error: "User not found" });
+      return;
+    }
+
+    const valid = await verifyPassword(currentPassword, user.password_hash);
+    if (!valid) {
+      res.status(401).json({ error: "Current password is incorrect" });
+      return;
+    }
+
+    const now = nowTs();
+    const passwordHash = await hashPassword(newPassword);
+
+    await db.run("UPDATE users SET password_hash = ?, updated_at = ? WHERE id = ?", [
+      passwordHash,
+      now,
+      req.user.id,
+    ]);
+
+    // Revoke other sessions so the password update takes effect everywhere else.
+    await db.run("DELETE FROM sessions WHERE user_id = ? AND id != ?", [req.user.id, token]);
+
+    logger.info({ userId: req.user.id }, "User changed password");
+    res.json({ ok: true });
+  } catch (err) {
+    logger.error({ err }, "Error changing password");
     res.status(500).json({ error: "Internal server error" });
   }
 });

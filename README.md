@@ -217,6 +217,7 @@ To configure:
 - `POST /api/auth/login` - Log in with username/password
 - `POST /api/auth/logout` - Invalidate current session
 - `GET /api/auth/me` - Get current user info
+- `POST /api/auth/change-password` - Change password for current user (session token required)
 - `GET /api/auth/api-keys` - List API keys
 - `POST /api/auth/api-keys` - Create an API key
 - `DELETE /api/auth/api-keys/:id` - Delete an API key
