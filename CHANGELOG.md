@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - Added in-app password management with a new header action and change-password modal for authenticated users
 - Added `POST /api/auth/change-password` endpoint with current-password verification and session-token-only enforcement
+- Added shared WebSocket schema tests covering client/server message decode and server message encode paths
 
 ### Security
 - Revoked other active sessions after password changes so old logins are invalidated

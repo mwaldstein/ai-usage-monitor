@@ -9,7 +9,8 @@
     "./ws": "./src/ws/index.ts"
   },
   "scripts": {
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "test": "node --experimental-strip-types --test src/ws/messages.test.ts"
   },
   "dependencies": {
     "effect": "^3.12.7"
