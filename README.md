@@ -97,6 +97,20 @@ ai-usage-quota/
 6. **Open the Dashboard**
    Navigate to http://localhost:3000 in your browser
 
+### CLI
+
+The backend includes a minimal CLI for fetching cached quota status and printing formatted output.
+
+```bash
+npm run cli -w backend -- --url http://localhost:3001/api/status/cached
+```
+
+Options:
+- `--url <url>`: Full endpoint URL (defaults to `http://localhost:3001/api/status/cached`)
+- `--auth <user:pass>`: Basic auth credentials
+- `--username <user>` + `--password <pass>`: Basic auth credentials (alternative to `--auth`)
+- `--json`: Print raw JSON output
+
 ### Adding AI Services
 
 1. Click "Add Service" in the dashboard
