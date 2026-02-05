@@ -1,7 +1,7 @@
 import { Router } from "express";
 import { randomUUID } from "crypto";
 import { Schema as S, Either } from "effect";
-import { getDatabase } from "../database/index.ts";
+import { getDatabase, runInTransaction } from "../database/index.ts";
 import { mapServiceRow } from "./mappers.ts";
 import { nowTs } from "../utils/dates.ts";
 import { logger } from "../utils/logger.ts";
@@ -194,13 +194,15 @@ router.post("/reorder", async (req, res) => {
     const db = getDatabase();
     const now = nowTs();
 
-    for (let i = 0; i < serviceIds.length; i++) {
-      await db.run("UPDATE services SET display_order = ?, updated_at = ? WHERE id = ?", [
-        i + 1,
-        now,
-        serviceIds[i],
-      ]);
-    }
+    await runInTransaction(db, async () => {
+      for (let i = 0; i < serviceIds.length; i++) {
+        await db.run("UPDATE services SET display_order = ?, updated_at = ? WHERE id = ?", [
+          i + 1,
+          now,
+          serviceIds[i],
+        ]);
+      }
+    });
 
     const rows = await db.all(
       "SELECT * FROM services WHERE enabled = 1 ORDER BY display_order ASC, created_at ASC",

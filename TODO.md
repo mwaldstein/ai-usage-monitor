@@ -6,7 +6,7 @@
 
 ### Backend
 
-- **Database Effect safety rollout**: Implement the staged DB resource/error/transaction migration plan in `docs/database-effect-plan.md`
+- **Database Effect safety rollout**: Add `@effect/sql` + `@effect/sql-sqlite-node` and migrate DB lifecycle to a `SqliteClient` layer with typed DB error mapping (`docs/database-effect-plan.md`)
 
 ## Testing
 

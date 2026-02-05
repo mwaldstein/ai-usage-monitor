@@ -25,6 +25,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Refactored backend query validation to use shared route helpers and schema-validated auth API key delete params, reducing duplicated parsing logic across analytics/history/logs routes
 - Refactored frontend API hooks to decode shared `ApiError` responses consistently and removed ad-hoc auth error parsing/type assertions in `useAuth`
 - Refactored AMP, opencode, Codex, and z.ai provider response parsing to decode external payloads through backend schema contracts instead of ad-hoc casts
+- Refactored multi-step SQLite writes to use shared transaction helpers, applying atomic updates for service reordering and quota/history persistence across manual and scheduled refresh paths
 
 ### Removed
 - Removed Google AI (Gemini) provider — was a stub returning hardcoded placeholder quotas
