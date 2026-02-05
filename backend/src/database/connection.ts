@@ -4,16 +4,16 @@ import * as SqlClient from "@effect/sql/SqlClient";
 import * as SqliteClient from "@effect/sql-sqlite-node/SqliteClient";
 import * as Effect from "effect/Effect";
 import * as ManagedRuntime from "effect/ManagedRuntime";
-import { SCHEMA_SQL, PRAGMA_SQL, applyAdditiveMigrations } from "./schema.ts";
-import {
-  migrateServicesSchema,
-  migrateQuotasSchema,
-  migrateUsageHistorySchema,
-} from "./migrations.ts";
+import { runDatabaseMigrations } from "./migrator.ts";
 import { makeDatabaseClient, type DatabaseClient } from "./client.ts";
 import { toDbError } from "./errors.ts";
 import { logger } from "../utils/logger.ts";
 import { getEnv } from "../schemas/env.ts";
+
+const PRAGMA_SQL = `
+  PRAGMA journal_mode = WAL;
+  PRAGMA auto_vacuum = INCREMENTAL;
+`;
 
 let runtime: ManagedRuntime.ManagedRuntime<SqlClient.SqlClient, unknown> | null = null;
 let db: DatabaseClient | null = null;
@@ -71,13 +71,7 @@ export async function initializeDatabase(): Promise<DatabaseClient> {
     const nextDb = makeDatabaseClient({ runtime: nextRuntime, sqlClient });
 
     await nextDb.exec(PRAGMA_SQL);
-
-    await migrateUsageHistorySchema(nextDb);
-    await migrateServicesSchema(nextDb);
-    await migrateQuotasSchema(nextDb);
-
-    await nextDb.exec(SCHEMA_SQL);
-    await applyAdditiveMigrations(nextDb);
+    await runDatabaseMigrations(nextRuntime);
 
     runtime = nextRuntime;
     db = nextDb;
