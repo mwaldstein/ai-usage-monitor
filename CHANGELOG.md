@@ -13,6 +13,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Security
 - Revoked other active sessions after password changes so old logins are invalidated
+- Added IP-based rate limiting for `/api/auth/login` and `/api/auth/register` to reduce brute-force attempts
 
 ### Removed
 - Removed Google AI (Gemini) provider — was a stub returning hardcoded placeholder quotas

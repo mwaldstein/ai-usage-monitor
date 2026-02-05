@@ -16,6 +16,7 @@ import {
   generateSetupCode,
 } from "../utils/auth.ts";
 import { requireAuth, hasAnyUsers } from "../middleware/auth.ts";
+import { createRateLimitMiddleware } from "../middleware/rateLimit.ts";
 import {
   RegisterRequest,
   LoginRequest,
@@ -30,6 +31,20 @@ import {
 
 const router = Router();
 
+const registerRateLimit = createRateLimitMiddleware({
+  windowMs: 60 * 60 * 1000,
+  maxRequests: 5,
+  keyPrefix: "auth-register",
+  message: "Too many registration attempts. Please try again later.",
+});
+
+const loginRateLimit = createRateLimitMiddleware({
+  windowMs: 15 * 60 * 1000,
+  maxRequests: 10,
+  keyPrefix: "auth-login",
+  message: "Too many login attempts. Please try again later.",
+});
+
 // GET /api/auth/status - public: check if setup is needed
 router.get("/status", async (_req, res) => {
   try {
@@ -42,7 +57,7 @@ router.get("/status", async (_req, res) => {
 });
 
 // POST /api/auth/register
-router.post("/register", async (req, res) => {
+router.post("/register", registerRateLimit, async (req, res) => {
   try {
     const decoded = S.decodeUnknownEither(RegisterRequest)(req.body);
     if (Either.isLeft(decoded)) {
@@ -124,7 +139,7 @@ router.post("/register", async (req, res) => {
 });
 
 // POST /api/auth/login
-router.post("/login", async (req, res) => {
+router.post("/login", loginRateLimit, async (req, res) => {
   try {
     const decoded = S.decodeUnknownEither(LoginRequest)(req.body);
     if (Either.isLeft(decoded)) {

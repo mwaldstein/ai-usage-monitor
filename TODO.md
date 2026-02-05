@@ -6,7 +6,6 @@
 
 ### Backend
 - Store raw quota values in DB; translate to burn-down/derived views in API (may require migration or old/new record handling)
-- **Rate limiting on auth endpoints**: Add rate limiting to `/api/auth/login` and `/api/auth/register` to prevent brute-force attacks
 
 ## Testing
 
