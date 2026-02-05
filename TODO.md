@@ -6,6 +6,8 @@
 
 ### Backend
 
+- **Provider error normalization**: Extract shared auth/rate-limit/network error mapping from provider services into reusable utilities to reduce duplicated status handling logic
+
 ## Testing
 
 - **End-to-end tests**: Add e2e test suite covering critical user flows

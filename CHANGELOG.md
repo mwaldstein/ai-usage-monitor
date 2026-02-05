@@ -19,6 +19,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Refactored quota persistence to store raw quota values in the database and read API-facing quota values from raw fields with backward-compatible fallbacks for existing rows
 - Refactored `backend/src/routes/auth.ts` into focused modules under `backend/src/routes/auth/` (status, register, sessions, password, api keys) with shared auth-route helpers
 - Refactored `backend/src/routes/analytics.ts` into focused modules under `backend/src/routes/analytics/` for query parsing, SQL construction, and response mapping
+- Refactored backend quota refresh orchestration into focused modules for interval parsing, service row mapping, per-service refresh execution, and quota persistence
 
 ### Removed
 - Removed Google AI (Gemini) provider — was a stub returning hardcoded placeholder quotas
