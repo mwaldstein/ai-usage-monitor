@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- Added a CLI script to fetch cached service status and print formatted quota output with optional basic auth
+
 ### Changed
 - Removed completed planning items from TODO list
 - Split analytics chart sections into focused subcomponents for readability
