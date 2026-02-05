@@ -6,8 +6,6 @@
 
 ### Backend
 
-- **Analytics route extraction**: Split `backend/src/routes/analytics.ts` into smaller query/mapping modules similar to other route refactors
-
 ## Testing
 
 - **End-to-end tests**: Add e2e test suite covering critical user flows

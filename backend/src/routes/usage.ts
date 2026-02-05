@@ -1,6 +1,6 @@
 import { Router } from "express";
 import historyRouter from "./history.ts";
-import analyticsRouter from "./analytics.ts";
+import analyticsRouter from "./analytics/index.ts";
 
 const router = Router();
 
