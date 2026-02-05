@@ -4,7 +4,7 @@ import quotasRouter from "./quotas.ts";
 import statusRouter from "./status.ts";
 import usageRouter from "./usage.ts";
 import logsRouter from "./logs.ts";
-import authRouter from "./auth.ts";
+import authRouter from "./auth/index.ts";
 import { requireAuth } from "../middleware/auth.ts";
 
 const router = Router();
