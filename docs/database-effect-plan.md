@@ -81,14 +81,21 @@ Goal: use `@effect/sql` with `@effect/sql-sqlite-node` for DB resource safety, e
 - Added startup Effect migrator execution (`effect_sql_migrations`) with initial migration directory scaffolding.
 - Migrated startup schema evolution to migrator-managed baseline + legacy reconciliation migrations for pre-migrator databases.
 - Removed legacy `sqlite` / `sqlite3` runtime dependencies from the backend.
+- Added initial `SqlSchema`-backed service query module with shared request/result schemas and `services` table row decoding.
+- Migrated service reads/writes in `routes/services.ts` and service lookup paths in `routes/quotas.ts` to the new query module.
+- Added `SqlSchema` query modules + table/request/response schemas for auth (`users`, `sessions`, `api_keys`) and usage/history/analytics query surfaces.
+- Migrated remaining DB call-sites (routes, middleware, websocket bootstrap, quota refresh service, lifecycle user-count check) to repository/query modules; direct `db.*` calls now live in query modules only.
+- Added shared query runtime error mapping that converts `ParseError` decode failures into `DbError` with `DecodeError` tag at repository boundaries.
+- Added backend in-memory sqlite tests for migrator bootstrapping, transaction rollback semantics, busy-lock retry policy, and decode failure behavior.
+- Hardened legacy reconciliation migration dedupe step to skip `rowid` logic on `WITHOUT ROWID` tables.
 
 ## Remaining Work Checklist
 - [x] Add migrator startup path and migration directory structure.
 - [x] Convert startup schema/migration logic to migrator-managed workflow.
-- [ ] Introduce table model schemas and shared request/result schemas for query modules.
-- [ ] Migrate route-level SQL to repository/query modules using `SqlSchema` APIs.
-- [ ] Add decode-error mapping (`ParseError` -> `DbError.DecodeError`) at DB boundary.
-- [ ] Add in-memory sqlite tests for migrations, transactional behavior, retry policy, and decode guarantees.
+- [x] Introduce table model schemas and shared request/result schemas for query modules across services/auth/usage surfaces.
+- [x] Migrate route-level SQL to repository/query modules using `SqlSchema` APIs.
+- [x] Add decode-error mapping (`ParseError` -> `DbError.DecodeError`) at DB boundary.
+- [x] Add in-memory sqlite tests for migrations, transactional behavior, retry policy, and decode guarantees.
 
 ## Unresolved Questions
 - none

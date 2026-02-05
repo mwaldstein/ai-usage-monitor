@@ -14,6 +14,7 @@ import {
   closeDatabase,
   runMaintenance,
 } from "../database/index.ts";
+import { countUsers } from "../database/queries/auth.ts";
 import { refreshQuotas } from "../services/quotas.ts";
 import { generateSetupCode } from "./auth.ts";
 import { logger } from "./logger.ts";
@@ -53,8 +54,7 @@ export async function startServer(options: LifecycleOptions): Promise<void> {
 
     // Check if first-run setup is needed
     const db0 = getDatabase();
-    const userCount = await db0.get<{ count: number }>("SELECT COUNT(*) AS count FROM users");
-    if ((userCount?.count ?? 0) === 0) {
+    if ((await countUsers(db0)) === 0) {
       const setupCode = generateSetupCode();
       logger.info("==========================================================");
       logger.info("  FIRST-RUN SETUP");

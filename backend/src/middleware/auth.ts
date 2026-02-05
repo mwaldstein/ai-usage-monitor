@@ -1,5 +1,11 @@
 import type { Request, Response, NextFunction } from "express";
 import { getDatabase } from "../database/index.ts";
+import {
+  countUsers,
+  findApiKeyUser,
+  findSessionUser,
+  touchApiKeyLastUsed,
+} from "../database/queries/auth.ts";
 import { hashApiKey, isApiKey } from "../utils/auth.ts";
 import { nowTs } from "../utils/dates.ts";
 import { logger } from "../utils/logger.ts";
@@ -29,38 +35,23 @@ function extractToken(req: Request): string | undefined {
 async function resolveSession(token: string): Promise<AuthenticatedUser | null> {
   const db = getDatabase();
   const now = nowTs();
-
-  const row = await db.get<{ user_id: string; username: string }>(
-    `SELECT s.user_id, u.username
-     FROM sessions s
-     JOIN users u ON u.id = s.user_id
-     WHERE s.id = ? AND s.expires_at > ?`,
-    [token, now],
-  );
-
-  return row ? { id: row.user_id, username: row.username } : null;
+  const user = await findSessionUser(db, { sessionId: token, now });
+  return user ? { id: user.userId, username: user.username } : null;
 }
 
 async function resolveApiKey(key: string): Promise<AuthenticatedUser | null> {
   const db = getDatabase();
   const keyHash = hashApiKey(key);
+  const user = await findApiKeyUser(db, keyHash);
 
-  const row = await db.get<{ user_id: string; username: string; key_id: string }>(
-    `SELECT ak.id AS key_id, ak.user_id, u.username
-     FROM api_keys ak
-     JOIN users u ON u.id = ak.user_id
-     WHERE ak.key_hash = ?`,
-    [keyHash],
-  );
-
-  if (!row) return null;
+  if (!user) return null;
 
   // Update last_used_at asynchronously (don't block the request)
-  db.run("UPDATE api_keys SET last_used_at = ? WHERE id = ?", [nowTs(), row.key_id]).catch(
-    (err: unknown) => logger.warn({ err }, "Failed to update api_key last_used_at"),
+  touchApiKeyLastUsed(db, { apiKeyId: user.apiKeyId, lastUsedAt: nowTs() }).catch((err: unknown) =>
+    logger.warn({ err }, "Failed to update api_key last_used_at"),
   );
 
-  return { id: row.user_id, username: row.username };
+  return { id: user.userId, username: user.username };
 }
 
 /**
@@ -118,6 +109,5 @@ export async function validateToken(token: string): Promise<AuthenticatedUser | 
  */
 export async function hasAnyUsers(): Promise<boolean> {
   const db = getDatabase();
-  const row = await db.get<{ count: number }>("SELECT COUNT(*) AS count FROM users");
-  return (row?.count ?? 0) > 0;
+  return (await countUsers(db)) > 0;
 }

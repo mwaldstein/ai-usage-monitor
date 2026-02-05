@@ -1,8 +1,10 @@
 import { Router } from "express";
 import { Schema as S } from "effect";
 import { getDatabase } from "../database/index.ts";
+import { listEnabledServices } from "../database/queries/services.ts";
+import { listLatestQuotasForEnabledServices } from "../database/queries/usage.ts";
 import { ServiceFactory } from "../services/factory.ts";
-import { mapServiceRow, mapQuotaRow } from "./mappers.ts";
+import { mapQuotaRow } from "./mappers.ts";
 import type { AIService, ServiceStatus, UsageQuota } from "../types/index.ts";
 import { nowTs } from "../utils/dates.ts";
 import { logger } from "../utils/logger.ts";
@@ -31,22 +33,9 @@ function extractTokenExpiration(service: AIService): number | undefined {
 router.get("/cached", async (req, res) => {
   try {
     const db = getDatabase();
-    const serviceRows = await db.all("SELECT * FROM services WHERE enabled = 1");
-    const services: AIService[] = serviceRows.map(mapServiceRow);
+    const services: readonly AIService[] = await listEnabledServices(db);
 
-    const quotaRows = await db.all(`
-      SELECT * FROM (
-        SELECT q.*,
-               ROW_NUMBER() OVER (
-                  PARTITION BY q.service_id, q.metric
-                  ORDER BY q.rowid DESC
-                ) AS rn
-        FROM quotas q
-        JOIN services s ON s.id = q.service_id
-        WHERE s.enabled = 1
-      )
-      WHERE rn = 1
-    `);
+    const quotaRows = await listLatestQuotasForEnabledServices(db);
 
     const quotasByService = new Map<string, UsageQuota[]>();
     for (const row of quotaRows) {
@@ -84,8 +73,7 @@ router.get("/cached", async (req, res) => {
 router.get("/", async (req, res) => {
   try {
     const db = getDatabase();
-    const rows = await db.all("SELECT * FROM services WHERE enabled = 1");
-    const services: AIService[] = rows.map(mapServiceRow);
+    const services: readonly AIService[] = await listEnabledServices(db);
     const statuses: ServiceStatus[] = [];
 
     for (const service of services) {

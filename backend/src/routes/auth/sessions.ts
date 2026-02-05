@@ -1,6 +1,13 @@
 import { Router } from "express";
 import { Schema as S, Either } from "effect";
 import { getDatabase } from "../../database/index.ts";
+import {
+  deleteExpiredSessionsForUser,
+  deleteSessionById,
+  findUserCredentialsByUsername,
+  findUserProfileById,
+  insertSession,
+} from "../../database/queries/auth.ts";
 import { requireAuth } from "../../middleware/auth.ts";
 import { nowTs } from "../../utils/dates.ts";
 import { logger } from "../../utils/logger.ts";
@@ -22,18 +29,14 @@ router.post("/login", loginRateLimit, async (req, res) => {
     const { username, password } = decoded.right;
     const db = getDatabase();
 
-    const user = await db.get<{
-      id: string;
-      username: string;
-      password_hash: string;
-    }>("SELECT id, username, password_hash FROM users WHERE username = ?", [username]);
+    const user = await findUserCredentialsByUsername(db, username);
 
     if (!user) {
       res.status(401).json({ error: "Invalid credentials" });
       return;
     }
 
-    const valid = await verifyPassword(password, user.password_hash);
+    const valid = await verifyPassword(password, user.passwordHash);
     if (!valid) {
       res.status(401).json({ error: "Invalid credentials" });
       return;
@@ -43,14 +46,9 @@ router.post("/login", loginRateLimit, async (req, res) => {
     const token = generateSessionToken();
     const expiresAt = getSessionExpiryTs();
 
-    await db.run("INSERT INTO sessions (id, user_id, expires_at, created_at) VALUES (?, ?, ?, ?)", [
-      token,
-      user.id,
-      expiresAt,
-      now,
-    ]);
+    await insertSession(db, { id: token, userId: user.id, expiresAt, createdAt: now });
 
-    await db.run("DELETE FROM sessions WHERE user_id = ? AND expires_at <= ?", [user.id, now]);
+    await deleteExpiredSessionsForUser(db, { userId: user.id, now });
 
     logger.info({ username }, "User logged in");
 
@@ -71,7 +69,7 @@ router.post("/logout", requireAuth, async (req, res) => {
     const token = getBearerToken(req);
     if (token) {
       const db = getDatabase();
-      await db.run("DELETE FROM sessions WHERE id = ?", [token]);
+      await deleteSessionById(db, token);
     }
     res.json({ ok: true });
   } catch (err) {
@@ -88,10 +86,7 @@ router.get("/me", requireAuth, async (req, res) => {
     }
 
     const db = getDatabase();
-    const user = await db.get<{ id: string; username: string; created_at: number }>(
-      "SELECT id, username, created_at FROM users WHERE id = ?",
-      [requestUser.id],
-    );
+    const user = await findUserProfileById(db, requestUser.id);
 
     if (!user) {
       res.status(404).json({ error: "User not found" });
@@ -102,7 +97,7 @@ router.get("/me", requireAuth, async (req, res) => {
       S.encodeSync(MeResponse)({
         id: user.id,
         username: user.username,
-        createdAt: user.created_at,
+        createdAt: user.createdAt,
       }),
     );
   } catch (err) {

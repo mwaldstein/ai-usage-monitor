@@ -2,6 +2,7 @@ import { Router } from "express";
 import crypto from "crypto";
 import { Schema as S, Either } from "effect";
 import { getDatabase } from "../../database/index.ts";
+import { findUserIdByUsername, insertSession, insertUser } from "../../database/queries/auth.ts";
 import { hasAnyUsers } from "../../middleware/auth.ts";
 import { nowTs } from "../../utils/dates.ts";
 import { logger } from "../../utils/logger.ts";
@@ -54,7 +55,7 @@ router.post("/register", registerRateLimit, async (req, res) => {
     }
 
     const db = getDatabase();
-    const existing = await db.get("SELECT id FROM users WHERE username = ?", [username]);
+    const existing = await findUserIdByUsername(db, username);
     if (existing) {
       res.status(409).json({ error: "Username already taken" });
       return;
@@ -64,20 +65,12 @@ router.post("/register", registerRateLimit, async (req, res) => {
     const passwordHash = await hashPassword(password);
     const now = nowTs();
 
-    await db.run(
-      "INSERT INTO users (id, username, password_hash, created_at, updated_at) VALUES (?, ?, ?, ?, ?)",
-      [id, username, passwordHash, now, now],
-    );
+    await insertUser(db, { id, username, passwordHash, createdAt: now, updatedAt: now });
 
     const token = generateSessionToken();
     const expiresAt = getSessionExpiryTs();
 
-    await db.run("INSERT INTO sessions (id, user_id, expires_at, created_at) VALUES (?, ?, ?, ?)", [
-      token,
-      id,
-      expiresAt,
-      now,
-    ]);
+    await insertSession(db, { id: token, userId: id, expiresAt, createdAt: now });
 
     logger.info({ username }, "First user registered successfully");
 

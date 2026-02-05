@@ -6,12 +6,17 @@ interface TableInfoRow {
   readonly type: string;
 }
 
+interface TableDefinitionRow {
+  readonly sql: string | null;
+}
+
 const legacyReconcileMigration = Effect.gen(function* () {
   const sql = yield* SqlClient.SqlClient;
 
   const servicesTableInfo = yield* tableInfo(sql, "services");
   const quotasTableInfo = yield* tableInfo(sql, "quotas");
   const usageHistoryTableInfo = yield* tableInfo(sql, "usage_history");
+  const usageHistoryDefinition = yield* tableDefinition(sql, "usage_history");
 
   yield* addColumnIfMissing(sql, "services", "bearer_token", "TEXT");
   yield* addColumnIfMissing(sql, "services", "display_order", "INTEGER DEFAULT 0");
@@ -91,14 +96,16 @@ const legacyReconcileMigration = Effect.gen(function* () {
     hasColumn(usageHistoryTableInfo, "ts") ||
     (hasColumn(usageHistoryTableInfo, "timestamp") && !hasColumn(usageHistoryTableInfo, "ts"))
   ) {
-    yield* sql.unsafe(
-      `DELETE FROM usage_history
-       WHERE rowid NOT IN (
-         SELECT MAX(rowid)
-         FROM usage_history
-         GROUP BY service_id, metric, ts
-       )`,
-    );
+    if (tableSupportsRowId(usageHistoryDefinition)) {
+      yield* sql.unsafe(
+        `DELETE FROM usage_history
+         WHERE rowid NOT IN (
+           SELECT MAX(rowid)
+           FROM usage_history
+           GROUP BY service_id, metric, ts
+         )`,
+      );
+    }
   }
 
   yield* sql.unsafe(
@@ -129,6 +136,19 @@ function addColumnIfMissing(
   );
 }
 
+function tableDefinition(
+  sql: SqlClient.SqlClient,
+  tableName: "usage_history",
+): Effect.Effect<string | undefined, unknown> {
+  return Effect.map(
+    sql.unsafe<TableDefinitionRow>(
+      "SELECT sql FROM sqlite_master WHERE type = 'table' AND name = ?",
+      [tableName],
+    ),
+    (rows) => rows[0]?.sql ?? undefined,
+  );
+}
+
 function hasColumn(tableInfo: ReadonlyArray<TableInfoRow>, columnName: string): boolean {
   return tableInfo.some((col) => col.name === columnName);
 }
@@ -136,6 +156,14 @@ function hasColumn(tableInfo: ReadonlyArray<TableInfoRow>, columnName: string): 
 function isIntegerColumn(tableInfo: ReadonlyArray<TableInfoRow>, columnName: string): boolean {
   const column = tableInfo.find((col) => col.name === columnName);
   return column?.type === "INTEGER";
+}
+
+function tableSupportsRowId(tableSql: string | undefined): boolean {
+  if (!tableSql) {
+    return true;
+  }
+
+  return !tableSql.toUpperCase().includes("WITHOUT ROWID");
 }
 
 export default legacyReconcileMigration;

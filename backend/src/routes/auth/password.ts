@@ -1,6 +1,11 @@
 import { Router } from "express";
 import { Schema as S, Either } from "effect";
 import { getDatabase } from "../../database/index.ts";
+import {
+  deleteOtherSessionsForUser,
+  findUserPasswordHashById,
+  updateUserPasswordHash,
+} from "../../database/queries/auth.ts";
 import { requireAuth } from "../../middleware/auth.ts";
 import { nowTs } from "../../utils/dates.ts";
 import { logger } from "../../utils/logger.ts";
@@ -32,32 +37,29 @@ router.post("/change-password", requireAuth, async (req, res) => {
     const { currentPassword, newPassword } = decoded.right;
     const db = getDatabase();
 
-    const user = await db.get<{ password_hash: string }>(
-      "SELECT password_hash FROM users WHERE id = ?",
-      [requestUser.id],
-    );
+    const passwordHash = await findUserPasswordHashById(db, requestUser.id);
 
-    if (!user) {
+    if (!passwordHash) {
       res.status(404).json({ error: "User not found" });
       return;
     }
 
-    const valid = await verifyPassword(currentPassword, user.password_hash);
+    const valid = await verifyPassword(currentPassword, passwordHash);
     if (!valid) {
       res.status(401).json({ error: "Current password is incorrect" });
       return;
     }
 
     const now = nowTs();
-    const passwordHash = await hashPassword(newPassword);
+    const nextPasswordHash = await hashPassword(newPassword);
 
-    await db.run("UPDATE users SET password_hash = ?, updated_at = ? WHERE id = ?", [
-      passwordHash,
-      now,
-      requestUser.id,
-    ]);
+    await updateUserPasswordHash(db, {
+      userId: requestUser.id,
+      passwordHash: nextPasswordHash,
+      updatedAt: now,
+    });
 
-    await db.run("DELETE FROM sessions WHERE user_id = ? AND id != ?", [requestUser.id, token]);
+    await deleteOtherSessionsForUser(db, { userId: requestUser.id, keepSessionId: token });
 
     logger.info({ userId: requestUser.id }, "User changed password");
     res.json({ ok: true });

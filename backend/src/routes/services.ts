@@ -2,7 +2,14 @@ import { Router } from "express";
 import { randomUUID } from "crypto";
 import { Schema as S, Either, Effect } from "effect";
 import { getDatabase, runInTransaction } from "../database/index.ts";
-import { mapServiceRow } from "./mappers.ts";
+import {
+  countServices,
+  deleteServiceById,
+  findServiceById,
+  insertService,
+  listEnabledServices,
+  runServiceUpdate,
+} from "../database/queries/services.ts";
 import { nowTs } from "../utils/dates.ts";
 import { logger } from "../utils/logger.ts";
 import {
@@ -22,10 +29,7 @@ const router = Router();
 router.get("/", async (req, res) => {
   try {
     const db = getDatabase();
-    const rows = await db.all(
-      "SELECT * FROM services WHERE enabled = 1 ORDER BY display_order ASC, created_at ASC",
-    );
-    const services = rows.map(mapServiceRow);
+    const services = await listEnabledServices(db);
     res.json(S.encodeSync(ListServicesResponse)(services));
   } catch (error) {
     logger.error({ err: error }, "Error fetching services");
@@ -55,27 +59,28 @@ router.post("/", async (req, res) => {
     const db = getDatabase();
     const isEnabled = enabled ?? true;
 
-    const countResult = await db.get<{ count: number }>("SELECT COUNT(*) as count FROM services");
-    const displayOrder = (countResult?.count || 0) + 1;
+    const displayOrder = (await countServices(db)) + 1;
 
-    await db.run(
-      "INSERT INTO services (id, name, provider, api_key, bearer_token, base_url, enabled, display_order, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
-      [
-        id,
-        name,
-        provider,
-        apiKey || null,
-        bearerToken || null,
-        baseUrl || null,
-        isEnabled ? 1 : 0,
-        displayOrder,
-        now,
-        now,
-      ],
-    );
+    await insertService(db, {
+      id,
+      name,
+      provider,
+      apiKey: apiKey || null,
+      bearerToken: bearerToken || null,
+      baseUrl: baseUrl || null,
+      enabled: isEnabled ? 1 : 0,
+      displayOrder,
+      createdAt: now,
+      updatedAt: now,
+    });
 
-    const service = await db.get("SELECT * FROM services WHERE id = ?", [id]);
-    res.status(201).json(S.encodeSync(CreateServiceResponse)(mapServiceRow(service)));
+    const service = await findServiceById(db, id);
+    if (!service) {
+      logger.error({ serviceId: id }, "Inserted service was not found");
+      return res.status(500).json(S.encodeSync(ApiError)({ error: "Failed to add service" }));
+    }
+
+    res.status(201).json(S.encodeSync(CreateServiceResponse)(service));
   } catch (error) {
     logger.error({ err: error }, "Error adding service");
     res.status(500).json(S.encodeSync(ApiError)({ error: "Failed to add service" }));
@@ -146,10 +151,17 @@ router.put("/:id", async (req, res) => {
 
     updates.push("updated_at = ?");
     params.push(nowTs());
-    await db.run(`UPDATE services SET ${updates.join(", ")} WHERE id = ?`, [...params, id]);
+    await runServiceUpdate(db, {
+      statement: `UPDATE services SET ${updates.join(", ")} WHERE id = ?`,
+      params: [...params, id],
+    });
 
-    const service = await db.get("SELECT * FROM services WHERE id = ?", [id]);
-    res.json(S.encodeSync(UpdateServiceResponse)(mapServiceRow(service)));
+    const service = await findServiceById(db, id);
+    if (!service) {
+      return res.status(404).json(S.encodeSync(ApiError)({ error: "Service not found" }));
+    }
+
+    res.json(S.encodeSync(UpdateServiceResponse)(service));
   } catch (error) {
     logger.error({ err: error }, "Error updating service");
     res.status(500).json(S.encodeSync(ApiError)({ error: "Failed to update service" }));
@@ -172,7 +184,7 @@ router.delete("/:id", async (req, res) => {
 
     const db = getDatabase();
 
-    await db.run("DELETE FROM services WHERE id = ?", [id]);
+    await deleteServiceById(db, id);
     res.status(204).send();
   } catch (error) {
     logger.error({ err: error }, "Error deleting service");
@@ -207,10 +219,7 @@ router.post("/reorder", async (req, res) => {
       ),
     );
 
-    const rows = await db.all(
-      "SELECT * FROM services WHERE enabled = 1 ORDER BY display_order ASC, created_at ASC",
-    );
-    const services = rows.map(mapServiceRow);
+    const services = await listEnabledServices(db);
 
     res.json(S.encodeSync(ReorderServicesResponse)(services));
   } catch (error) {

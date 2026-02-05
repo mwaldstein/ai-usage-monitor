@@ -1,10 +1,12 @@
 import { Router } from "express";
 import { Schema as S, Either } from "effect";
 import { getDatabase } from "../database/index.ts";
+import { findEnabledServiceById, listEnabledServices } from "../database/queries/services.ts";
+import { listQuotasWithEnabledServices } from "../database/queries/usage.ts";
 import { ServiceFactory } from "../services/factory.ts";
 import { saveQuotasToDb } from "../services/quotas/persistence.ts";
-import { mapQuotaRow, mapServiceRow } from "./mappers.ts";
-import type { AIService, ServiceStatus } from "../types/index.ts";
+import { mapQuotaRow } from "./mappers.ts";
+import type { ServiceStatus } from "../types/index.ts";
 import { nowTs } from "../utils/dates.ts";
 import { logger } from "../utils/logger.ts";
 import { ApiError, QuotasResponse, RefreshQuotasParams, RefreshQuotasResponse } from "shared/api";
@@ -17,13 +19,7 @@ const SERVICE_TIMEOUT = 15000;
 router.get("/", async (req, res) => {
   try {
     const db = getDatabase();
-    const rows = await db.all(`
-      SELECT q.*, s.name as service_name, s.provider
-      FROM quotas q
-      JOIN services s ON q.service_id = s.id
-      WHERE s.enabled = 1
-      ORDER BY s.name, q.metric
-    `);
+    const rows = await listQuotasWithEnabledServices(db);
     const quotas = rows.map(mapQuotaRow);
     res.json(S.encodeSync(QuotasResponse)(quotas));
   } catch (error) {
@@ -35,8 +31,7 @@ router.get("/", async (req, res) => {
 router.post("/refresh", async (req, res) => {
   try {
     const db = getDatabase();
-    const rows = await db.all("SELECT * FROM services WHERE enabled = 1");
-    const services: AIService[] = rows.map(mapServiceRow);
+    const services = await listEnabledServices(db);
     const results: ServiceStatus[] = [];
 
     for (const service of services) {
@@ -92,13 +87,11 @@ router.post("/refresh/:serviceId", async (req, res) => {
     }
 
     const db = getDatabase();
-    const row = await db.get("SELECT * FROM services WHERE id = ? AND enabled = 1", [serviceId]);
+    const service = await findEnabledServiceById(db, serviceId);
 
-    if (!row) {
+    if (!service) {
       return res.status(404).json(S.encodeSync(ApiError)({ error: "Service not found" }));
     }
-
-    const service = mapServiceRow(row);
 
     const status = await Promise.race([
       ServiceFactory.getServiceStatus(service),

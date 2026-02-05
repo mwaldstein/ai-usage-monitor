@@ -3,10 +3,12 @@ import type { Server, IncomingMessage } from "http";
 import { Schema as S, Either } from "effect";
 import type { AIService, ServiceStatus, UsageQuota } from "../types/index.ts";
 import { getDatabase } from "../database/index.ts";
+import { listEnabledServices } from "../database/queries/services.ts";
+import { listLatestQuotasForEnabledServices } from "../database/queries/usage.ts";
 import { nowTs } from "./dates.ts";
 import { getJWTExpiration } from "./jwt.ts";
 import { logger } from "./logger.ts";
-import { mapQuotaRow, mapServiceRow } from "../routes/mappers.ts";
+import { mapQuotaRow } from "../routes/mappers.ts";
 import { validateToken, hasAnyUsers } from "../middleware/auth.ts";
 import { ClientMessage, ErrorMessage, ServerMessage, StatusMessage } from "shared/ws";
 import type {
@@ -116,25 +118,9 @@ async function sendStatusToClient(ws: WebSocket) {
     const db = getDatabase();
 
     // Read-only initial payload: use cached quotas from the DB (no upstream fetch).
-    const serviceRows = await db.all("SELECT * FROM services WHERE enabled = 1");
-    const services: AIService[] = serviceRows.map(mapServiceRow);
+    const services: readonly AIService[] = await listEnabledServices(db);
 
-    const quotaRows = await db.all(`
-      SELECT * FROM (
-        SELECT q.*,
-               ROW_NUMBER() OVER (
-                  PARTITION BY q.service_id, q.metric
-                  -- Prefer insertion order over timestamps.
-                  -- Some historical DB rows may have clock-skewed timestamps,
-                  -- which makes cached views appear in the wrong timezone.
-                  ORDER BY q.rowid DESC
-                ) AS rn
-        FROM quotas q
-        JOIN services s ON s.id = q.service_id
-        WHERE s.enabled = 1
-      )
-      WHERE rn = 1
-    `);
+    const quotaRows = await listLatestQuotasForEnabledServices(db);
 
     const quotasByService = new Map<string, UsageQuota[]>();
     for (const row of quotaRows) {

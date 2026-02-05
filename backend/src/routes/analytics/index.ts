@@ -1,6 +1,12 @@
 import { Router } from "express";
 import { Schema as S, Either } from "effect";
 import { getDatabase } from "../../database/index.ts";
+import {
+  runAnalyticsLatestQuotasQuery,
+  runAnalyticsProviderComparisonQuery,
+  runAnalyticsSummaryQuery,
+  runAnalyticsTimeSeriesQuery,
+} from "../../database/queries/usage.ts";
 import { nowTs } from "../../utils/dates.ts";
 import { logger } from "../../utils/logger.ts";
 import {
@@ -71,15 +77,15 @@ router.get("/", async (req, res) => {
       groupBy: groupByValue,
       intervalSeconds: intervalResult.intervalSeconds,
     });
-    const timeSeriesRaw = await db.all(timeSeriesSpec.query, timeSeriesSpec.params);
+    const timeSeriesRaw = await runAnalyticsTimeSeriesQuery(db, timeSeriesSpec);
     const timeSeries = mapTimeSeriesRows(timeSeriesRaw);
 
     const quotasSpec = buildLatestQuotasQuery(serviceId);
-    const quotasRaw = await db.all(quotasSpec.query, quotasSpec.params);
+    const quotasRaw = await runAnalyticsLatestQuotasQuery(db, quotasSpec);
     const quotas = normalizeQuotaRows(quotasRaw, logger);
 
     const summarySpec = buildSummaryQuery({ sinceTs, serviceId });
-    const summaryRaw = await db.all(summarySpec.query, summarySpec.params);
+    const summaryRaw = await runAnalyticsSummaryQuery(db, summarySpec);
     const summary = mapSummaryRows(summaryRaw);
 
     res.json(
@@ -119,7 +125,7 @@ router.get("/providers", async (req, res) => {
     const db = getDatabase();
 
     const providerComparisonSpec = buildProviderComparisonQuery(sinceTs);
-    const providersRaw = await db.all(providerComparisonSpec.query, providerComparisonSpec.params);
+    const providersRaw = await runAnalyticsProviderComparisonQuery(db, providerComparisonSpec);
     const providers = mapProviderComparisonRows(providersRaw);
 
     res.json(

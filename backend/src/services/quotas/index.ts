@@ -1,12 +1,12 @@
 import type { ServerMessage as ServerMessageType } from "shared/ws";
 import type { AIService, ServiceStatus } from "../../types/index.ts";
 import { getDatabase } from "../../database/index.ts";
+import { listEnabledServices } from "../../database/queries/services.ts";
 import { logger } from "../../utils/logger.ts";
 import { nowTs } from "../../utils/dates.ts";
 import { getRefreshIntervalMinutes } from "./interval.ts";
 import { saveQuotasToDb } from "./persistence.ts";
 import { refreshService } from "./refreshService.ts";
-import { mapServiceRow } from "./serviceMapper.ts";
 
 let refreshInProgress = false;
 
@@ -29,10 +29,7 @@ export async function refreshQuotas(
   try {
     logger.info("Refreshing quotas...");
     const db = getDatabase();
-    const rows = await db.all("SELECT * FROM services WHERE enabled = 1");
-    const services: AIService[] = rows
-      .map(mapServiceRow)
-      .filter((service): service is AIService => service !== null);
+    const services: readonly AIService[] = await listEnabledServices(db);
 
     const results: ServiceStatus[] = [];
     const intervalMinutes = getRefreshIntervalMinutes(refreshInterval);
