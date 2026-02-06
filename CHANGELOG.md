@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.7.0] - 2026-02-06
+
 ### Added
 - Added quota persistence tests covering stale metric zeroing, reappearance, history recording, and cross-service isolation
 - Added in-app password management with a new header action and change-password modal for authenticated users
@@ -268,7 +270,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 - Added missing dependencies (uuid, sqlite) for Docker builds
 
-[Unreleased]: https://github.com/mwaldstein/ai-usage-monitor/compare/v0.6.1...HEAD
+[Unreleased]: https://github.com/mwaldstein/ai-usage-monitor/compare/v0.7.0...HEAD
+[0.7.0]: https://github.com/mwaldstein/ai-usage-monitor/compare/v0.6.1...v0.7.0
 [0.6.1]: https://github.com/mwaldstein/ai-usage-monitor/compare/v0.6.0...v0.6.1
 [0.6.0]: https://github.com/mwaldstein/ai-usage-monitor/compare/v0.5.3...v0.6.0
 [0.5.3]: https://github.com/mwaldstein/ai-usage-monitor/compare/v0.5.2...v0.5.3
