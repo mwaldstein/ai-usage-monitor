@@ -2,6 +2,7 @@
 FROM node:24-alpine AS frontend-builder
 
 WORKDIR /app
+ENV PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1
 
 # Copy workspace configuration
 COPY package*.json ./
@@ -23,6 +24,7 @@ FROM node:24-alpine AS backend-prep
 
 ARG GIT_COMMIT_SHA=unknown
 ENV GIT_COMMIT_SHA=${GIT_COMMIT_SHA}
+ENV PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1
 
 WORKDIR /app
 
