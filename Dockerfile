@@ -1,82 +1,65 @@
-# Build stage for frontend
+# Build stage for frontend assets only
 FROM node:24-alpine AS frontend-builder
 
 WORKDIR /app
 ENV PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1
 
-# Install build tools for native dependencies (better-sqlite3)
-RUN apk add --no-cache python3 make g++ gcc
-
-# Copy workspace configuration
+# Copy workspace configuration for frontend/shared only
 COPY package*.json ./
 COPY frontend/package*.json ./frontend/
 COPY shared/package*.json ./shared/
 
-# Install dependencies
-RUN npm ci
+# Install frontend build dependencies without backend workspace deps
+RUN npm ci --workspace frontend --workspace shared
 
-# Copy shared package first (frontend depends on it)
+# Copy frontend sources and build
 COPY shared/ ./shared/
-
-# Copy and build frontend
 COPY frontend/ ./frontend/
 RUN npm run build -w frontend
 
-# Backend preparation stage (generates version file)
+# Generate backend version file without installing dependencies
 FROM node:24-alpine AS backend-prep
 
 ARG GIT_COMMIT_SHA=unknown
 ENV GIT_COMMIT_SHA=${GIT_COMMIT_SHA}
-ENV PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1
 
 WORKDIR /app
 
-# Install build tools for native dependencies (better-sqlite3)
+COPY backend/package*.json ./backend/
+COPY backend/scripts ./backend/scripts
+COPY backend/src ./backend/src
+RUN node --experimental-strip-types backend/scripts/generate-version.ts
+
+# Build runtime dependencies (includes native sqlite bindings)
+FROM node:24-alpine AS runtime-deps
+
+WORKDIR /app
+ENV PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1
+
 RUN apk add --no-cache python3 make g++ gcc
 
-# Copy workspace configuration
 COPY package*.json ./
 COPY backend/package*.json ./backend/
 COPY shared/package*.json ./shared/
+RUN npm ci --omit=dev --workspace backend --workspace shared
 
-# Install dependencies
-RUN npm ci
-
-# Copy shared package first (backend depends on it)
-COPY shared/ ./shared/
-
-# Copy backend and generate version
-COPY backend/ ./backend/
-RUN npm run generate-version -w backend
-
-# Production stage
+# Production stage (minimal runtime image)
 FROM node:24-alpine
 
 WORKDIR /app
 
-# Install build tools for native dependencies (better-sqlite3)
-RUN apk add --no-cache python3 make g++ gcc
-
-# Copy workspace configuration and install production deps
 COPY package*.json ./
 COPY backend/package*.json ./backend/
 COPY shared/package*.json ./shared/
-RUN npm ci --omit=dev
+COPY --from=runtime-deps /app/node_modules ./node_modules
 
-# Copy shared package source
 COPY shared/src ./shared/src
-
-# Copy backend source (with generated version.ts)
 COPY --from=backend-prep /app/backend/src ./backend/src
 COPY --from=backend-prep /app/backend/scripts ./backend/scripts
-
-# Copy frontend build to serve static files
 COPY --from=frontend-builder /app/frontend/dist ./backend/frontend-dist
 
-# Create data directory
 RUN mkdir -p data
 
-# Set environment
 ENV NODE_ENV=production
 ENV PORT=3001
 

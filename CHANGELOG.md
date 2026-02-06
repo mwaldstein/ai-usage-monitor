@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+- Optimized CI lint/typecheck workflow to skip Playwright browser binary downloads when end-to-end tests are not running
+- Optimized Docker multi-stage builds to compile native SQLite bindings in a dedicated dependency stage and keep the final runtime image free of build toolchain packages
+- Optimized frontend build stage dependency install scope to frontend/shared workspaces only
+
 ## [0.7.0] - 2026-02-06
 
 ### Added
