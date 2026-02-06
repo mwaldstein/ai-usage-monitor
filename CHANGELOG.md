@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.7.1] - 2026-02-06
+
 ### Changed
 - Optimized CI lint/typecheck workflow to skip Playwright browser binary downloads when end-to-end tests are not running
 - Optimized Docker multi-stage builds to compile native SQLite bindings in a dedicated dependency stage and keep the final runtime image free of build toolchain packages
@@ -275,7 +277,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 - Added missing dependencies (uuid, sqlite) for Docker builds
 
-[Unreleased]: https://github.com/mwaldstein/ai-usage-monitor/compare/v0.7.0...HEAD
+[Unreleased]: https://github.com/mwaldstein/ai-usage-monitor/compare/v0.7.1...HEAD
+[0.7.1]: https://github.com/mwaldstein/ai-usage-monitor/compare/v0.7.0...v0.7.1
 [0.7.0]: https://github.com/mwaldstein/ai-usage-monitor/compare/v0.6.1...v0.7.0
 [0.6.1]: https://github.com/mwaldstein/ai-usage-monitor/compare/v0.6.0...v0.6.1
 [0.6.0]: https://github.com/mwaldstein/ai-usage-monitor/compare/v0.5.3...v0.6.0
