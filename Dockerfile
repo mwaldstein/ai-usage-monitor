@@ -4,6 +4,9 @@ FROM node:24-alpine AS frontend-builder
 WORKDIR /app
 ENV PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1
 
+# Install build tools for native dependencies (better-sqlite3)
+RUN apk add --no-cache python3 make g++ gcc
+
 # Copy workspace configuration
 COPY package*.json ./
 COPY frontend/package*.json ./frontend/
@@ -28,6 +31,9 @@ ENV PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1
 
 WORKDIR /app
 
+# Install build tools for native dependencies (better-sqlite3)
+RUN apk add --no-cache python3 make g++ gcc
+
 # Copy workspace configuration
 COPY package*.json ./
 COPY backend/package*.json ./backend/
@@ -48,11 +54,14 @@ FROM node:24-alpine
 
 WORKDIR /app
 
+# Install build tools for native dependencies (better-sqlite3)
+RUN apk add --no-cache python3 make g++ gcc
+
 # Copy workspace configuration and install production deps
 COPY package*.json ./
 COPY backend/package*.json ./backend/
 COPY shared/package*.json ./shared/
-RUN npm ci --production
+RUN npm ci --omit=dev
 
 # Copy shared package source
 COPY shared/src ./shared/src
