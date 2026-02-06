@@ -28,6 +28,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 - Updated README to reflect current provider list, workspace install, and backend technology stack
+- Consolidated implementation plan docs: summarized completed work, retained remaining items, added newly discovered gaps to TODO
 - Removed completed e2e test items from TODO
 - Fixed backend test script to discover test files in subdirectories using bash globstar
 - Refactored quota persistence to store raw quota values in the database and read API-facing quota values from raw fields with backward-compatible fallbacks for existing rows

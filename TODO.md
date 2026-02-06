@@ -4,6 +4,9 @@
 
 ## Technical Debt / Refactoring
 
+- **OpenAI/Anthropic provider schema decode**: OpenAI and Anthropic services access response bodies via untyped `response.data` / manual `parseInt` without Effect Schema validation (unlike AMP, opencode, Codex, z.ai)
+- **E2e CI gate**: P0 Playwright suite runs locally but has no CI job to gate PRs
+
 ## Testing
 
 - **End-to-end tests**: Add e2e test suite covering critical user flows
