@@ -1,4 +1,5 @@
 import * as Effect from "effect/Effect";
+import { randomUUID } from "crypto";
 import type { getDatabase } from "../../database/index.ts";
 import { runInTransaction } from "../../database/index.ts";
 import type { AIService, UsageQuota } from "../../types/index.ts";
@@ -80,6 +81,27 @@ export async function saveQuotasToDb(
           "INSERT OR REPLACE INTO usage_history (service_id, metric, ts, value) VALUES (?, ?, ?, ?)",
           [quota.serviceId, quota.metric, now, quota.used],
         );
+      }
+
+      const currentMetrics = new Set(persistedQuotas.map((q) => q.metric));
+      if (currentMetrics.size > 0) {
+        const placeholders = [...currentMetrics].map(() => "?").join(", ");
+        const staleRows = yield* txDb.all<{ metric: string; type: string | null }>(
+          `SELECT DISTINCT metric, type FROM quotas WHERE service_id = ? AND metric NOT IN (${placeholders})`,
+          [service.id, ...currentMetrics],
+        );
+
+        for (const row of staleRows) {
+          yield* txDb.run(
+            `INSERT INTO quotas (id, service_id, metric, raw_limit_value, raw_used_value, raw_remaining_value, limit_value, used_value, remaining_value, type, replenishment_amount, replenishment_period, reset_at, created_at, updated_at)
+             VALUES (?, ?, ?, 0, 0, 0, 0, 0, 0, ?, NULL, NULL, 0, ?, ?)`,
+            [randomUUID(), service.id, row.metric, row.type, now, now],
+          );
+          yield* txDb.run(
+            "INSERT OR REPLACE INTO usage_history (service_id, metric, ts, value) VALUES (?, ?, ?, 0)",
+            [service.id, row.metric, now],
+          );
+        }
       }
     }),
   );

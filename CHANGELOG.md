@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- Added quota persistence tests covering stale metric zeroing, reappearance, history recording, and cross-service isolation
 - Added in-app password management with a new header action and change-password modal for authenticated users
 - Added `POST /api/auth/change-password` endpoint with current-password verification and session-token-only enforcement
 - Added shared WebSocket schema tests covering client/server message decode and server message encode paths
@@ -18,11 +19,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Added a database migration safety test that validates legacy-schema reconciliation (timestamp conversion, raw quota backfill, and usage-history deduplication)
 - Added a production smoke script (`npm run smoke:prod`) and release readiness checklist (`docs/release-readiness-checklist.md`)
 
+### Fixed
+- Fixed phantom AMP billing balance on first page load by recording a zeroed-out quota row when a metric disappears from a provider refresh
+
 ### Security
 - Revoked other active sessions after password changes so old logins are invalidated
 - Added IP-based rate limiting for `/api/auth/login` and `/api/auth/register` to reduce brute-force attempts
 
 ### Changed
+- Updated README to reflect current provider list, workspace install, and backend technology stack
+- Removed completed e2e test items from TODO
+- Fixed backend test script to discover test files in subdirectories using bash globstar
 - Refactored quota persistence to store raw quota values in the database and read API-facing quota values from raw fields with backward-compatible fallbacks for existing rows
 - Refactored `backend/src/routes/auth.ts` into focused modules under `backend/src/routes/auth/` (status, register, sessions, password, api keys) with shared auth-route helpers
 - Refactored `backend/src/routes/analytics.ts` into focused modules under `backend/src/routes/analytics/` for query parsing, SQL construction, and response mapping

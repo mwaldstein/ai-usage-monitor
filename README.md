@@ -30,7 +30,7 @@ Track usage trends and analyze consumption patterns across all your services.
 
 ## Features
 
-- **Multi-Provider Support**: Monitor OpenAI, Anthropic, Google AI, Azure OpenAI, AWS Bedrock, opencode zen, AMP, z.ai, and more
+- **Multi-Provider Support**: Monitor OpenAI, Anthropic, opencode zen, AMP, Codex, and z.ai
 - **Real-Time Updates**: WebSocket-powered live updates with automatic refresh every 5 minutes
 - **Visual Dashboard**: Progress bars, pie charts, and health indicators for all services
 - **Usage History**: Track quota usage over time
@@ -67,9 +67,8 @@ ai-usage-quota/
 
 ### Setup
 
-1. **Install Backend Dependencies**
+1. **Install Dependencies**
    ```bash
-   cd backend
    npm install
    ```
 
@@ -81,26 +80,20 @@ ai-usage-quota/
 
 3. **Start the Backend**
    ```bash
-   npm run dev
+   npm run dev -w backend
    ```
    The backend will start on http://localhost:3001
 
-4. **Install Frontend Dependencies** (in a new terminal)
+4. **Start the Frontend** (in a new terminal)
    ```bash
-   cd frontend
-   npm install
-   ```
-
-5. **Start the Frontend**
-   ```bash
-   npm run dev
+   npm run dev -w frontend
    ```
    The frontend will start on http://localhost:3000
 
-6. **Open the Dashboard**
+5. **Open the Dashboard**
    Navigate to http://localhost:3000 in your browser
 
-7. **Create your admin account**
+6. **Create your admin account**
    On first run, a setup code is printed to the backend logs. Enter it in the web UI along with a username and password to create the first (admin) account. Registration closes after the first account is created.
 
 ### CLI
@@ -139,15 +132,6 @@ The dashboard will automatically fetch and display your quotas.
 ### Anthropic
 - Rate limits (requests/minute, tokens/minute)
 - Real-time quota extraction from headers
-
-### Google AI (Gemini)
-- Request quotas
-- Token quotas
-- Daily limits
-
-### AWS Bedrock
-- Model-specific quotas
-- Regional limits
 
 ### opencode zen
 **Special Configuration Required**: opencode zen uses SolidJS SSR, so the usage data is embedded in the HTML page rather than exposed via a REST API. **Authentication is required** via session cookies.
@@ -188,6 +172,25 @@ To configure:
 - Hourly replenishment rate (default: 83 credits/hour)
 - 24-hour window tracking
 - Remaining credits
+
+### Codex (OpenAI Codex CLI)
+**Special Configuration Required**: Codex is a separate product from the OpenAI API with its own authentication and rate limits. Data is fetched from chatgpt.com.
+
+To configure:
+1. **Bearer Token (Recommended)**: Extract your JWT token:
+   - Open https://chatgpt.com in your browser
+   - Log in to your account
+   - Open DevTools (F12) → Network tab
+   - Navigate to https://chatgpt.com/codex/settings/usage
+   - Look for the request to `/backend-api/wham/usage`
+   - Copy the `Authorization: Bearer` header value
+   - Paste it in the Bearer Token field
+2. **Session Cookie (Alternative)**: Copy the session cookie from chatgpt.com as a fallback
+
+**Monitored Quotas:**
+- Primary and secondary rate limit windows (usage percent and reset time)
+- Code review rate limits
+- Credit balance and estimated remaining messages
 
 ### z.ai
 **REST API with Bearer Token Authentication**: z.ai uses a standard REST API architecture with Bearer token authentication.
@@ -262,8 +265,8 @@ npm run dev
 ```
 
 The backend uses:
-- TypeScript with hot reload (nodemon)
-- SQLite with better-sqlite3
+- TypeScript with native `--experimental-strip-types`
+- SQLite with `@effect/sql-sqlite-node`
 - Express for REST API
 - WebSocket for real-time updates
 - node-cron for scheduled tasks
@@ -318,9 +321,7 @@ npm run hooks:install
 
 **Backend:**
 ```bash
-cd backend
-npm run build
-npm start
+npm start -w backend
 ```
 
 **Frontend:**

@@ -7,10 +7,7 @@
 ## Testing
 
 - **End-to-end tests**: Add e2e test suite covering critical user flows
-  - Auth flow: setup code entry, first-user registration, login, logout, session expiry
   - API key lifecycle: create, use for API/CLI access, delete
-  - Service management: add, edit, reorder, delete services
-  - Quota refresh: manual refresh triggers update and WebSocket broadcast
   - WebSocket: authenticated connection, unauthenticated rejection, reconnection after token expiry
   - CLI: `--token` flag authenticates and returns cached status
 
