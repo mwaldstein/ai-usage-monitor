@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Removed
+- Removed settings button from dashboard header (redundant with main nav)
+
 ## [0.7.1] - 2026-02-06
 
 ### Changed

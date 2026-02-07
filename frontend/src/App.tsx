@@ -176,16 +176,6 @@ function App() {
                   >
                     <RefreshCw size={14} />
                   </button>
-
-                  <button
-                    onClick={() => setCurrentView("settings")}
-                    disabled={!isConnected}
-                    className={`btn-icon tooltip ${!isConnected ? "opacity-40 cursor-not-allowed" : ""}`}
-                    data-tooltip={isConnected ? "Settings" : "Offline - settings unavailable"}
-                    data-testid="open-settings-icon"
-                  >
-                    <Settings size={14} />
-                  </button>
                 </>
               )}
 
