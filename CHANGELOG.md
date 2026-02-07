@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+- Moved auth buttons (change password, logout) to far right of header for consistent placement
+
 ### Removed
 - Removed settings button from dashboard header (redundant with main nav)
 

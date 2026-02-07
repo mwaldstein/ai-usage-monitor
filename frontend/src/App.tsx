@@ -146,10 +146,54 @@ function App() {
               </div>
             </div>
 
+            {/* Main Navigation Tabs */}
+            <div className="flex items-center gap-1">
+              <button
+                onClick={() => setCurrentView("dashboard")}
+                disabled={!isConnected}
+                className={`flex items-center gap-2 px-2 sm:px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+                  currentView === "dashboard"
+                    ? "bg-zinc-800 text-white border border-white/10"
+                    : "text-zinc-400 hover:text-white hover:bg-zinc-800/50"
+                } ${!isConnected ? "opacity-40 cursor-not-allowed" : ""}`}
+                data-testid="nav-dashboard"
+              >
+                <LayoutGrid size={16} />
+                <span className="hidden sm:inline">Dashboard</span>
+              </button>
+              <button
+                onClick={() => setCurrentView("analytics")}
+                disabled={!isConnected}
+                className={`flex items-center gap-2 px-2 sm:px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+                  currentView === "analytics"
+                    ? "bg-zinc-800 text-white border border-white/10"
+                    : "text-zinc-400 hover:text-white hover:bg-zinc-800/50"
+                } ${!isConnected ? "opacity-40 cursor-not-allowed" : ""}`}
+                data-testid="nav-analytics"
+              >
+                <BarChart3 size={16} />
+                <span className="hidden sm:inline">Analytics</span>
+              </button>
+              <button
+                onClick={() => setCurrentView("settings")}
+                disabled={!isConnected}
+                className={`flex items-center gap-2 px-2 sm:px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+                  currentView === "settings"
+                    ? "bg-zinc-800 text-white border border-white/10"
+                    : "text-zinc-400 hover:text-white hover:bg-zinc-800/50"
+                } ${!isConnected ? "opacity-40 cursor-not-allowed" : ""}`}
+                data-testid="nav-settings"
+              >
+                <Settings size={16} />
+                <span className="hidden sm:inline">Settings</span>
+              </button>
+            </div>
+
+            {/* Right: Dashboard controls + Auth */}
             <div className="flex items-center gap-1">
               {currentView === "dashboard" && (
                 <>
-                  {/* View Toggle - Dashboard only */}
+                  {/* View Toggle */}
                   <div className="flex items-center bg-zinc-800/50 rounded-lg p-0.5 border border-white/5">
                     <button
                       onClick={() => setViewMode("compact")}
@@ -199,49 +243,6 @@ function App() {
                   </button>
                 </>
               )}
-            </div>
-
-            {/* Main Navigation Tabs */}
-            <div className="flex items-center gap-1">
-              <button
-                onClick={() => setCurrentView("dashboard")}
-                disabled={!isConnected}
-                className={`flex items-center gap-2 px-2 sm:px-4 py-2 rounded-lg text-sm font-medium transition-all ${
-                  currentView === "dashboard"
-                    ? "bg-zinc-800 text-white border border-white/10"
-                    : "text-zinc-400 hover:text-white hover:bg-zinc-800/50"
-                } ${!isConnected ? "opacity-40 cursor-not-allowed" : ""}`}
-                data-testid="nav-dashboard"
-              >
-                <LayoutGrid size={16} />
-                <span className="hidden sm:inline">Dashboard</span>
-              </button>
-              <button
-                onClick={() => setCurrentView("analytics")}
-                disabled={!isConnected}
-                className={`flex items-center gap-2 px-2 sm:px-4 py-2 rounded-lg text-sm font-medium transition-all ${
-                  currentView === "analytics"
-                    ? "bg-zinc-800 text-white border border-white/10"
-                    : "text-zinc-400 hover:text-white hover:bg-zinc-800/50"
-                } ${!isConnected ? "opacity-40 cursor-not-allowed" : ""}`}
-                data-testid="nav-analytics"
-              >
-                <BarChart3 size={16} />
-                <span className="hidden sm:inline">Analytics</span>
-              </button>
-              <button
-                onClick={() => setCurrentView("settings")}
-                disabled={!isConnected}
-                className={`flex items-center gap-2 px-2 sm:px-4 py-2 rounded-lg text-sm font-medium transition-all ${
-                  currentView === "settings"
-                    ? "bg-zinc-800 text-white border border-white/10"
-                    : "text-zinc-400 hover:text-white hover:bg-zinc-800/50"
-                } ${!isConnected ? "opacity-40 cursor-not-allowed" : ""}`}
-                data-testid="nav-settings"
-              >
-                <Settings size={16} />
-                <span className="hidden sm:inline">Settings</span>
-              </button>
             </div>
           </div>
         </div>
