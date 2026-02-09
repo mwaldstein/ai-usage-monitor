@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.7.3] - 2026-02-08
+
 ### Fixed
 - Fixed provider refresh failures (Codex, AMP, opencode, z.ai) being treated as healthy by re-throwing fetch errors so status/error indicators and online counts reflect auth/network failures
 
@@ -291,7 +293,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 - Added missing dependencies (uuid, sqlite) for Docker builds
 
-[Unreleased]: https://github.com/mwaldstein/ai-usage-monitor/compare/v0.7.2...HEAD
+[Unreleased]: https://github.com/mwaldstein/ai-usage-monitor/compare/v0.7.3...HEAD
+[0.7.3]: https://github.com/mwaldstein/ai-usage-monitor/compare/v0.7.2...v0.7.3
 [0.7.2]: https://github.com/mwaldstein/ai-usage-monitor/compare/v0.7.1...v0.7.2
 [0.7.1]: https://github.com/mwaldstein/ai-usage-monitor/compare/v0.7.0...v0.7.1
 [0.7.0]: https://github.com/mwaldstein/ai-usage-monitor/compare/v0.6.1...v0.7.0
