@@ -13,6 +13,8 @@ export const ServiceRowSchema = S.Struct({
   display_order: S.Number,
   created_at: S.Number,
   updated_at: S.Number,
+  last_error: S.NullOr(S.String),
+  last_error_kind: S.NullOr(S.String),
 });
 
 export type ServiceRow = S.Schema.Type<typeof ServiceRowSchema>;
@@ -62,5 +64,7 @@ export function mapServiceRowToDomain(row: ServiceRow): AIService {
     displayOrder: row.display_order,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
+    lastError: row.last_error ?? undefined,
+    lastErrorKind: row.last_error_kind ?? undefined,
   };
 }

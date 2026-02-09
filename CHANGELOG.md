@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+- Fixed failed/offline services showing as healthy in cached status views (initial page load, WebSocket initial payload) by persisting last error state to the database
+
 ### Changed
 - Moved auth buttons (change password, logout) to far right of header for consistent placement
 

@@ -7,6 +7,7 @@ import { nowTs } from "../../utils/dates.ts";
 import { getRefreshIntervalMinutes } from "./interval.ts";
 import { saveQuotasToDb } from "./persistence.ts";
 import { refreshService } from "./refreshService.ts";
+import { updateServiceHealth } from "../../database/queries/services.ts";
 
 let refreshInProgress = false;
 
@@ -49,6 +50,16 @@ export async function refreshQuotas(
 
       const status = await refreshService(service);
       results.push(status);
+
+      try {
+        const errorKind = status.authError ? "auth" : status.error ? "fetch" : null;
+        await updateServiceHealth(db, service.id, status.error ?? null, errorKind);
+      } catch (healthError) {
+        logger.error(
+          { err: healthError, service: service.name },
+          "Failed to persist service health status",
+        );
+      }
 
       if (status.quotas && status.quotas.length > 0) {
         try {

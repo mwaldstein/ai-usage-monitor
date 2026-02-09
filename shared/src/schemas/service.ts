@@ -14,5 +14,7 @@ export const AIService = S.Struct({
   displayOrder: S.Number,
   createdAt: S.Number, // unix seconds
   updatedAt: S.Number, // unix seconds
+  lastError: S.optional(S.String),
+  lastErrorKind: S.optional(S.String),
 });
 export type AIService = S.Schema.Type<typeof AIService>;

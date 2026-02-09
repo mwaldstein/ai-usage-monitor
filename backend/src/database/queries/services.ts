@@ -142,6 +142,19 @@ export async function deleteServiceById(db: DatabaseClient, id: string): Promise
   await runDbQueryEffect(command({ id }));
 }
 
+export async function updateServiceHealth(
+  db: DatabaseClient,
+  serviceId: string,
+  error: string | null,
+  errorKind: string | null,
+): Promise<void> {
+  await db.run("UPDATE services SET last_error = ?, last_error_kind = ? WHERE id = ?", [
+    error,
+    errorKind,
+    serviceId,
+  ]);
+}
+
 export async function runServiceUpdate(
   db: DatabaseClient,
   request: { statement: string; params: Array<string | number | null> },

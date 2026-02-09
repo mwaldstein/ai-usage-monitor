@@ -51,14 +51,16 @@ router.get("/cached", async (req, res) => {
         (max, q) => (q.updatedAt > max ? q.updatedAt : max),
         0,
       );
+      const hasError = !!service.lastError;
+      const isHealthy = hasError ? false : quotas.length > 0;
 
       return {
         service,
         quotas,
         lastUpdated: lastUpdated > 0 ? lastUpdated : service.updatedAt,
-        isHealthy: quotas.length > 0,
-        authError: false,
-        error: quotas.length > 0 ? undefined : "No cached quota data yet",
+        isHealthy,
+        authError: service.lastErrorKind === "auth",
+        error: service.lastError ?? (quotas.length > 0 ? undefined : "No cached quota data yet"),
         tokenExpiration: extractTokenExpiration(service),
       };
     });

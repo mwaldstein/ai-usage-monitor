@@ -1,7 +1,11 @@
 import { Router } from "express";
 import { Schema as S, Either } from "effect";
 import { getDatabase } from "../database/index.ts";
-import { findEnabledServiceById, listEnabledServices } from "../database/queries/services.ts";
+import {
+  findEnabledServiceById,
+  listEnabledServices,
+  updateServiceHealth,
+} from "../database/queries/services.ts";
 import { listQuotasWithEnabledServices } from "../database/queries/usage.ts";
 import { ServiceFactory } from "../services/factory.ts";
 import { saveQuotasToDb } from "../services/quotas/persistence.ts";
@@ -51,16 +55,20 @@ router.post("/refresh", async (req, res) => {
           }
         }
 
+        const errorKind = status.authError ? "auth" : status.error ? "fetch" : null;
+        await updateServiceHealth(db, service.id, status.error ?? null, errorKind);
         results.push(status);
       } catch (error) {
         logger.error({ err: error }, `Error refreshing quotas for ${service.name}`);
+        const errorMsg = error instanceof Error ? error.message : "Unknown error";
+        await updateServiceHealth(db, service.id, errorMsg, "fetch");
         results.push({
           service,
           quotas: [],
           lastUpdated: nowTs(),
           isHealthy: false,
           authError: false,
-          error: error instanceof Error ? error.message : "Unknown error",
+          error: errorMsg,
         });
       }
     }
@@ -107,6 +115,9 @@ router.post("/refresh/:serviceId", async (req, res) => {
         logger.error({ err: dbError }, `Database error saving quotas for ${service.name}`);
       }
     }
+
+    const errorKind = status.authError ? "auth" : status.error ? "fetch" : null;
+    await updateServiceHealth(db, service.id, status.error ?? null, errorKind);
 
     res.json(S.encodeSync(ServiceStatusSchema)(status));
   } catch (error) {
