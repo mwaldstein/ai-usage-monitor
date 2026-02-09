@@ -174,6 +174,7 @@ export class CodexService extends BaseAIService {
         },
         `[Codex:${serviceName}] ERROR during fetch: ${normalizedError.message}`,
       );
+      throw error;
     }
 
     return quotas;

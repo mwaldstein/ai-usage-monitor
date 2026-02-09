@@ -228,7 +228,7 @@ export class AMPService extends BaseAIService {
         },
         `Error fetching AMP quotas for ${this.service.name}: ${normalizedError.message}`,
       );
-      return [];
+      throw error;
     }
   }
 }

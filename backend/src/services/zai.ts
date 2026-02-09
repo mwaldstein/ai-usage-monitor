@@ -144,7 +144,7 @@ export class ZAIService extends BaseAIService {
         },
         `Error fetching z.ai quotas for ${this.service.name}: ${normalizedError.message}`,
       );
-      return [];
+      throw error;
     }
   }
 }

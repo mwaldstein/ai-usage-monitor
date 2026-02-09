@@ -214,7 +214,7 @@ export class OpenCodeService extends BaseAIService {
         },
         `Error fetching opencode quotas for ${this.service.name}: ${normalizedError.message}`,
       );
-      return [];
+      throw error;
     }
   }
 }

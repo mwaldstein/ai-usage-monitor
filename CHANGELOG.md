@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+- Fixed provider refresh failures (Codex, AMP, opencode, z.ai) being treated as healthy by re-throwing fetch errors so status/error indicators and online counts reflect auth/network failures
+
 ## [0.7.2] - 2026-02-08
 
 ### Fixed
