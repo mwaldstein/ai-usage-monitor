@@ -97,6 +97,27 @@ export const ZAIUsageDetail = S.Struct({
 });
 export type ZAIUsageDetail = S.Schema.Type<typeof ZAIUsageDetail>;
 
+/**
+ * Z.ai quota limit response structure.
+ *
+ * Field semantics (reverse-engineered from frontend code):
+ * - `type`: "TOKENS_LIMIT" or "TIME_LIMIT" - determines which quota category
+ * - `unit`: Enum identifier (3, 5, 6) used with `type` to match quota definitions:
+ *   - unit: 3 + TOKENS_LIMIT = "5 Hours Quota" (tokens for GLM models)
+ *   - unit: 6 + TOKENS_LIMIT = "Weekly Quota" (weekly token limit)
+ *   - unit: 5 + TIME_LIMIT = "Monthly Web Search/Reader/Zread Quota"
+ * - `number`: Redundant matching key that mirrors `unit` value. Not used in display
+ *   logic by the frontend - appears to be legacy or internal identifier.
+ * - `usage`, `currentValue`, `remaining`: Only populated for TIME_LIMIT (actual
+ *   request counts). For TOKENS_LIMIT, these are undefined.
+ * - `percentage`: Primary value for TOKENS_LIMIT (0-100). For TIME_LIMIT, also
+ *   available but absolute values are preferred.
+ * - `nextResetTime`: Unix timestamp (ms) for when quota resets.
+ * - `usageDetails`: Model breakdown for TIME_LIMIT (e.g., search-prime, web-reader).
+ *
+ * Important: The z.ai API intentionally only exposes percentage for token usage,
+ * not absolute numbers. The actual token limits are not retrievable via this API.
+ */
 export const ZAIQuotaLimit = S.Struct({
   type: S.String,
   unit: S.Number,

@@ -75,20 +75,38 @@ export class ZAIService extends BaseAIService {
       if (quotaData.code === 200 && quotaData.data.limits.length > 0) {
         for (const limit of quotaData.data.limits) {
           const quotaId = randomUUID();
-          const maxLimit = limit.usage ?? limit.number;
-          const used =
-            limit.currentValue ??
-            (limit.remaining !== undefined ? Math.max(0, maxLimit - limit.remaining) : undefined) ??
-            (limit.percentage !== undefined
-              ? Math.max(0, Math.round((maxLimit * limit.percentage) / 100))
-              : undefined) ??
-            0;
-          const remaining =
-            limit.remaining ??
-            (limit.currentValue !== undefined
-              ? Math.max(0, maxLimit - limit.currentValue)
-              : undefined) ??
-            Math.max(0, maxLimit - used);
+
+          // TOKENS_LIMIT only provides percentage (no absolute values)
+          // Treat as 100-point scale: used = percentage, remaining = 100 - percentage
+          const isTokensLimit = limit.type === "TOKENS_LIMIT";
+          const hasPercentage = limit.percentage !== undefined;
+
+          let maxLimit: number;
+          let used: number;
+          let remaining: number;
+
+          if (isTokensLimit && hasPercentage) {
+            maxLimit = 100;
+            used = limit.percentage;
+            remaining = Math.max(0, 100 - used);
+          } else {
+            maxLimit = limit.usage ?? limit.number;
+            used =
+              limit.currentValue ??
+              (limit.remaining !== undefined
+                ? Math.max(0, maxLimit - limit.remaining)
+                : undefined) ??
+              (limit.percentage !== undefined
+                ? Math.max(0, Math.round((maxLimit * limit.percentage) / 100))
+                : undefined) ??
+              0;
+            remaining =
+              limit.remaining ??
+              (limit.currentValue !== undefined
+                ? Math.max(0, maxLimit - limit.currentValue)
+                : undefined) ??
+              Math.max(0, maxLimit - used);
+          }
 
           // Create a descriptive metric name based on type
           let metricName = limit.type.toLowerCase();
