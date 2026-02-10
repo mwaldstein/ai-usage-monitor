@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.7.5] - 2026-02-10
+
 ### Fixed
 - Fixed provider payload parse failures being treated as healthy by throwing decode/parse errors in z.ai, AMP, and Codex services so failed refreshes show as offline with error state
 
@@ -304,7 +306,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 - Added missing dependencies (uuid, sqlite) for Docker builds
 
-[Unreleased]: https://github.com/mwaldstein/ai-usage-monitor/compare/v0.7.4...HEAD
+[Unreleased]: https://github.com/mwaldstein/ai-usage-monitor/compare/v0.7.5...HEAD
+[0.7.5]: https://github.com/mwaldstein/ai-usage-monitor/compare/v0.7.4...v0.7.5
 [0.7.4]: https://github.com/mwaldstein/ai-usage-monitor/compare/v0.7.3...v0.7.4
 [0.7.3]: https://github.com/mwaldstein/ai-usage-monitor/compare/v0.7.2...v0.7.3
 [0.7.2]: https://github.com/mwaldstein/ai-usage-monitor/compare/v0.7.1...v0.7.2
