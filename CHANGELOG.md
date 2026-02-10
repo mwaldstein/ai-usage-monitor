@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+- Fixed z.ai quota parsing for responses that omit `limits[].usage` by accepting the field as optional and falling back to `number`
+
 ## [0.7.6] - 2026-02-10
 
 ### Fixed

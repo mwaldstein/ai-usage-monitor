@@ -149,7 +149,8 @@ test("service status marks parse failures unhealthy across providers", async () 
 
     assert.equal(byProvider.get("opencode")?.isHealthy, false);
     assert.equal(byProvider.get("amp")?.isHealthy, false);
-    assert.equal(byProvider.get("zai")?.isHealthy, false);
+    assert.equal(byProvider.get("zai")?.isHealthy, true);
+    assert.equal((byProvider.get("zai")?.quotas.length ?? 0) > 0, true);
     assert.equal(byProvider.get("codex")?.isHealthy, false);
 
     assert.equal(byProvider.get("opencode")?.error === undefined, false);
@@ -157,10 +158,7 @@ test("service status marks parse failures unhealthy across providers", async () 
       byProvider.get("amp")?.error?.includes("Invalid AMP quota response payload"),
       true,
     );
-    assert.equal(
-      byProvider.get("zai")?.error?.includes("Invalid z.ai quota response payload"),
-      true,
-    );
+    assert.equal(byProvider.get("zai")?.error, undefined);
     assert.equal(
       byProvider.get("codex")?.error?.includes("Invalid Codex usage response payload"),
       true,

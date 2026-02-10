@@ -101,7 +101,7 @@ export const ZAIQuotaLimit = S.Struct({
   type: S.String,
   unit: S.Number,
   number: S.Number,
-  usage: S.Number,
+  usage: S.optional(S.Number),
   currentValue: S.Number,
   remaining: S.Number,
   percentage: S.Number,
