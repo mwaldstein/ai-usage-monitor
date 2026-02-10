@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.7.7] - 2026-02-10
+
 ### Fixed
 - Fixed z.ai quota parsing for responses that omit `limits[].usage` by accepting the field as optional and falling back to `number`
 - Fixed JWT expiration extraction for bearer-prefixed tokens so z.ai token expiry is shown when token value includes `Bearer `
@@ -319,7 +321,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 - Added missing dependencies (uuid, sqlite) for Docker builds
 
-[Unreleased]: https://github.com/mwaldstein/ai-usage-monitor/compare/v0.7.6...HEAD
+[Unreleased]: https://github.com/mwaldstein/ai-usage-monitor/compare/v0.7.7...HEAD
+[0.7.7]: https://github.com/mwaldstein/ai-usage-monitor/compare/v0.7.6...v0.7.7
 [0.7.6]: https://github.com/mwaldstein/ai-usage-monitor/compare/v0.7.5...v0.7.6
 [0.7.5]: https://github.com/mwaldstein/ai-usage-monitor/compare/v0.7.4...v0.7.5
 [0.7.4]: https://github.com/mwaldstein/ai-usage-monitor/compare/v0.7.3...v0.7.4
