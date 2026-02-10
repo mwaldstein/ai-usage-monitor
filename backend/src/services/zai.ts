@@ -8,6 +8,27 @@ import { normalizeProviderError, ProviderServiceError } from "./errorNormalizati
 import { ZAIQuotaResponse, ZAISubscriptionResponse } from "../schemas/providerResponses.ts";
 import { normalizeBearerToken } from "../utils/jwt.ts";
 
+const ZAI_QUOTA_ENDPOINT = "/api/monitor/usage/quota/limit";
+
+function getResponseCode(payload: unknown): number | undefined {
+  if (payload === null || typeof payload !== "object") {
+    return undefined;
+  }
+  if (!("code" in payload)) {
+    return undefined;
+  }
+  const code = payload.code;
+  return typeof code === "number" ? code : undefined;
+}
+
+function toPayloadSample(payload: unknown): string {
+  const serialized = JSON.stringify(payload);
+  if (!serialized) {
+    return "unserializable";
+  }
+  return serialized.length > 600 ? `${serialized.slice(0, 600)}...` : serialized;
+}
+
 export class ZAIService extends BaseAIService {
   async fetchQuotas(): Promise<UsageQuota[]> {
     try {
@@ -25,7 +46,7 @@ export class ZAIService extends BaseAIService {
       const now = nowTs();
 
       // Fetch quota limits
-      const quotaResponse = await this.client.get("/api/monitor/usage/quota/limit", {
+      const quotaResponse = await this.client.get(ZAI_QUOTA_ENDPOINT, {
         headers: {
           Authorization: `Bearer ${authToken}`,
           Accept: "application/json",
@@ -34,7 +55,19 @@ export class ZAIService extends BaseAIService {
 
       const decodedQuota = S.decodeUnknownEither(ZAIQuotaResponse)(quotaResponse.data);
       if (Either.isLeft(decodedQuota)) {
-        logger.warn({ err: decodedQuota.left }, "Invalid z.ai quota response payload");
+        logger.warn(
+          {
+            err: decodedQuota.left,
+            provider: "zai",
+            serviceId: this.service.id,
+            serviceName: this.service.name,
+            endpoint: ZAI_QUOTA_ENDPOINT,
+            httpStatus: quotaResponse.status,
+            responseCode: getResponseCode(quotaResponse.data),
+            payloadSample: toPayloadSample(quotaResponse.data),
+          },
+          "Invalid z.ai quota response payload",
+        );
         throw new ProviderServiceError("Invalid z.ai quota response payload", "INVALID_PAYLOAD");
       }
       const quotaData = decodedQuota.right;
