@@ -32,15 +32,15 @@ export const AMP_METRIC_DEFINITIONS: Record<string, MetricAnnotation> = {
  * Tokens are large integers that need special formatting
  */
 export const ZAI_METRIC_DEFINITIONS: Record<string, MetricAnnotation> = {
-  // Primary metric: token consumption (very large numbers)
+  // Primary metric: token consumption (percentage-based)
+  // z.ai API only exposes percentage, not absolute token values
   tokens_consumption: {
-    format: "integer",
+    format: "percentage",
     displayName: "Token Consumption",
     priority: 10,
     warnWhenLow: true,
     warnThreshold: 25,
     errorThreshold: 10,
-    notation: "compact", // Use compact notation (K, M, B) for readability
   },
   // Rate limits for requests
   requests_per_1min_window: {
