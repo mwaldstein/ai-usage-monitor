@@ -9,6 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 - Added CLI subcommand support for `status` and `logs`, including `logs --limit <n>` and human-readable log output from `/api/logs`
+- Added CLI token env fallback support via `AUM_TOKEN` or `AI_USAGE_MONITOR_TOKEN` when `--token` is not passed
+- Added Settings UI support for managing auth API keys (list/create/delete) and one-time display/copy flow for newly generated keys
 
 ### Fixed
 - Fixed z.ai quota parsing for limit entries that omit `currentValue`/`remaining` by accepting partial payloads and deriving safe fallback usage values

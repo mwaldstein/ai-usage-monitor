@@ -34,9 +34,14 @@ function printHelp(): void {
   console.log("  --username <user>     Basic auth username (requires --password)");
   console.log("  --password <pass>     Basic auth password (requires --username)");
   console.log("  --token <token>       API key or session token (Bearer auth)");
+  console.log("                         Fallback env vars: AUM_TOKEN, AI_USAGE_MONITOR_TOKEN");
   console.log("  --limit <n>           Log entries to fetch (logs command only)");
   console.log("  --json                Print raw JSON output");
   console.log("  --help                Show this help message");
+}
+
+function resolveToken(flagToken: string | undefined): string | undefined {
+  return flagToken ?? process.env.AUM_TOKEN ?? process.env.AI_USAGE_MONITOR_TOKEN;
 }
 
 function requireValue(args: string[], index: number, flag: string): string {
@@ -218,9 +223,10 @@ function withLimit(url: string, limit: number | undefined): string {
 async function run(): Promise<void> {
   const options = parseArgs(process.argv.slice(2));
   const headers: Record<string, string> = {};
+  const token = resolveToken(options.token);
 
-  if (options.token) {
-    headers.Authorization = `Bearer ${normalizeBearerToken(options.token)}`;
+  if (token) {
+    headers.Authorization = `Bearer ${normalizeBearerToken(token)}`;
   } else if (options.auth) {
     headers.Authorization = `Basic ${Buffer.from(options.auth, "utf8").toString("base64")}`;
   }

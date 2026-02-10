@@ -1,4 +1,5 @@
 import { ArrowDown, ArrowUp, Edit2, Plus, Trash2 } from "lucide-react";
+import { ApiKeysPanel } from "./ApiKeysPanel";
 import { LogViewer } from "./LogViewer";
 import type { AIService, ServiceStatus } from "../types";
 
@@ -10,6 +11,7 @@ interface SettingsViewProps {
   onEditService: (service: AIService) => void;
   onDeleteService: (serviceId: string) => void;
   onReorderService: (serviceId: string, direction: "up" | "down") => void;
+  showApiKeys: boolean;
 }
 
 export function SettingsView({
@@ -20,6 +22,7 @@ export function SettingsView({
   onEditService,
   onDeleteService,
   onReorderService,
+  showApiKeys,
 }: SettingsViewProps) {
   return (
     <div className="glass rounded-xl p-4 sm:p-5">
@@ -122,6 +125,8 @@ export function SettingsView({
       {services.length === 0 && (
         <p className="text-xs text-zinc-500 mt-4">No services configured yet.</p>
       )}
+
+      {showApiKeys && <ApiKeysPanel enabled={isConnected} />}
 
       <div className="mt-4">
         <LogViewer enabled={isConnected} />

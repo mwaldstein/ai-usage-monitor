@@ -275,6 +275,7 @@ function App() {
             onEditService={handleEditService}
             onDeleteService={handleDeleteService}
             onReorderService={handleReorderService}
+            showApiKeys={auth.authEnabled && auth.user !== null}
           />
         ) : (
           <>
