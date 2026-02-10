@@ -59,6 +59,7 @@ frontend/src/
 - Prefer `interface` over `type` for object shapes
 - Never use `any`; use `unknown` with type guards instead. Type assertions (`as`) only as last resort with justifying comment
 - Run `npm run fmt` before finishing
+- Before every commit, run `npm run check` from repo root (required). Do not commit if lint/format checks fail.
 
 ### Naming
 - Components/Classes/Interfaces: PascalCase
