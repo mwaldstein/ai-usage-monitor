@@ -102,9 +102,9 @@ export const ZAIQuotaLimit = S.Struct({
   unit: S.Number,
   number: S.Number,
   usage: S.optional(S.Number),
-  currentValue: S.Number,
-  remaining: S.Number,
-  percentage: S.Number,
+  currentValue: S.optional(S.Number),
+  remaining: S.optional(S.Number),
+  percentage: S.optional(S.Number),
   nextResetTime: S.optional(S.Number),
   usageDetails: S.optional(S.Array(ZAIUsageDetail)),
 });

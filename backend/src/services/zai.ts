@@ -43,6 +43,19 @@ export class ZAIService extends BaseAIService {
         for (const limit of quotaData.data.limits) {
           const quotaId = randomUUID();
           const maxLimit = limit.usage ?? limit.number;
+          const used =
+            limit.currentValue ??
+            (limit.remaining !== undefined ? Math.max(0, maxLimit - limit.remaining) : undefined) ??
+            (limit.percentage !== undefined
+              ? Math.max(0, Math.round((maxLimit * limit.percentage) / 100))
+              : undefined) ??
+            0;
+          const remaining =
+            limit.remaining ??
+            (limit.currentValue !== undefined
+              ? Math.max(0, maxLimit - limit.currentValue)
+              : undefined) ??
+            Math.max(0, maxLimit - used);
 
           // Create a descriptive metric name based on type
           let metricName = limit.type.toLowerCase();
@@ -57,8 +70,8 @@ export class ZAIService extends BaseAIService {
             serviceId: this.service.id,
             metric: metricName,
             limit: maxLimit,
-            used: limit.currentValue,
-            remaining: limit.remaining,
+            used,
+            remaining,
             resetAt: limit.nextResetTime
               ? Math.floor(limit.nextResetTime / 1000)
               : now + 24 * 60 * 60,

@@ -134,21 +134,18 @@ test("service status marks parse failures unhealthy across providers", async () 
         data: {
           limits: [
             {
-              type: "TOKENS_LIMIT",
-              unit: 60,
-              number: 1000,
-              usage: 1000,
-              currentValue: 250,
-              remaining: 750,
-              percentage: 25,
-            },
-            {
               type: "TIME_LIMIT",
               unit: 60,
               number: 100,
               currentValue: 1,
               remaining: 99,
               percentage: 1,
+            },
+            {
+              type: "TOKENS_LIMIT",
+              unit: 3,
+              number: 5,
+              percentage: 0,
             },
           ],
         },
@@ -180,6 +177,11 @@ test("service status marks parse failures unhealthy across providers", async () 
     assert.equal(byProvider.get("amp")?.isHealthy, false);
     assert.equal(byProvider.get("zai")?.isHealthy, true);
     assert.equal((byProvider.get("zai")?.quotas.length ?? 0) > 0, true);
+    const zaiQuotas = byProvider.get("zai")?.quotas ?? [];
+    const tokenQuota = zaiQuotas.find((quota) => quota.metric === "tokens_consumption");
+    assert.equal(tokenQuota?.limit, 5);
+    assert.equal(tokenQuota?.used, 0);
+    assert.equal(tokenQuota?.remaining, 5);
     assert.equal(byProvider.get("codex")?.isHealthy, false);
 
     assert.equal(byProvider.get("opencode")?.error === undefined, false);
