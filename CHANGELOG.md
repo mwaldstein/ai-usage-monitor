@@ -7,14 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+- Fixed z.ai token quotas missing % symbol by changing `tokens_consumption` metric format from `integer` to `percentage`
+
 ## [0.7.9] - 2026-02-10
 
 ### Changed
 - Updated z.ai token quota display to show percentage remaining (matching UI behavior) since z.ai API only exposes percentage, not absolute token values
 - Added documentation for z.ai quota response schema fields (`unit`, `number`, `percentage`, `usage`, `currentValue`, `remaining`) based on reverse-engineered frontend behavior
-
-### Fixed
-- Fixed z.ai token quotas missing % symbol by changing `tokens_consumption` metric format from `integer` to `percentage`
 
 ## [0.7.8] - 2026-02-10
 
