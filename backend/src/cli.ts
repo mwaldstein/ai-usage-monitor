@@ -1,27 +1,40 @@
 import { Schema as S, Either } from "effect";
-import { CachedStatusResponse } from "shared/api";
+import { CachedStatusResponse, LogsResponse } from "shared/api";
 import type { CachedStatusResponse as CachedStatusResponseType } from "shared/api";
+import type { LogsResponse as LogsResponseType } from "shared/api";
 import { normalizeBearerToken } from "./utils/jwt.ts";
 
-const DEFAULT_URL = "http://localhost:3001/api/status/cached";
+const DEFAULT_STATUS_URL = "http://localhost:3001/api/status/cached";
+const DEFAULT_LOGS_URL = "http://localhost:3001/api/logs";
+const LOGS_DEFAULT_LIMIT = 200;
+
+type CliCommand = "status" | "logs";
 
 interface CliOptions {
+  command: CliCommand;
   url: string;
   auth?: string;
   token?: string;
   json: boolean;
+  limit?: number;
 }
 
 function printHelp(): void {
-  console.log("Usage: npm run cli -w backend -- [options]");
-  console.log("\nOptions:");
+  console.log("Usage: npm run cli -w backend -- [command] [options]");
+  console.log("\nCommands:");
   console.log(
-    "  --url <url>           Full endpoint URL (default: http://localhost:3001/api/status/cached)",
+    "  status               Fetch service status (default, endpoint: http://localhost:3001/api/status/cached)",
   );
+  console.log(
+    "  logs                 Fetch backend logs (endpoint: http://localhost:3001/api/logs)",
+  );
+  console.log("\nOptions:");
+  console.log("  --url <url>           Full endpoint URL (overrides command default)");
   console.log("  --auth <user:pass>    Basic auth credentials");
   console.log("  --username <user>     Basic auth username (requires --password)");
   console.log("  --password <pass>     Basic auth password (requires --username)");
   console.log("  --token <token>       API key or session token (Bearer auth)");
+  console.log("  --limit <n>           Log entries to fetch (logs command only)");
   console.log("  --json                Print raw JSON output");
   console.log("  --help                Show this help message");
 }
@@ -34,14 +47,29 @@ function requireValue(args: string[], index: number, flag: string): string {
 }
 
 function parseArgs(args: string[]): CliOptions {
-  let url = DEFAULT_URL;
+  let command: CliCommand = "status";
+  let offset = 0;
+
+  const possibleCommand = args[0];
+  if (possibleCommand === "status" || possibleCommand === "logs") {
+    command = possibleCommand;
+    offset = 1;
+  } else if (possibleCommand === "help") {
+    printHelp();
+    process.exit(0);
+  } else if (possibleCommand && !possibleCommand.startsWith("--")) {
+    throw new Error(`Unknown command: ${possibleCommand}`);
+  }
+
+  let url = command === "logs" ? DEFAULT_LOGS_URL : DEFAULT_STATUS_URL;
   let auth: string | undefined;
   let token: string | undefined;
   let username: string | undefined;
   let password: string | undefined;
+  let limit: number | undefined = command === "logs" ? LOGS_DEFAULT_LIMIT : undefined;
   let json = false;
 
-  for (let i = 0; i < args.length; i += 1) {
+  for (let i = offset; i < args.length; i += 1) {
     const arg = args[i];
     switch (arg) {
       case "--url":
@@ -64,6 +92,16 @@ function parseArgs(args: string[]): CliOptions {
         password = requireValue(args, i + 1, "--password");
         i += 1;
         break;
+      case "--limit": {
+        const rawLimit = requireValue(args, i + 1, "--limit");
+        const parsed = Number.parseInt(rawLimit, 10);
+        if (!Number.isInteger(parsed) || parsed < 1) {
+          throw new Error("--limit must be a positive integer");
+        }
+        limit = parsed;
+        i += 1;
+        break;
+      }
       case "--json":
         json = true;
         break;
@@ -86,7 +124,11 @@ function parseArgs(args: string[]): CliOptions {
     auth = `${username}:${password}`;
   }
 
-  return { url, auth, token, json };
+  if (command !== "logs" && limit !== undefined) {
+    throw new Error("--limit can only be used with the logs command");
+  }
+
+  return { command, url, auth, token, json, limit };
 }
 
 function formatTimestamp(value: number): string {
@@ -139,6 +181,40 @@ function printStatus(statuses: CachedStatusResponseType): void {
   }
 }
 
+function formatLogTimestamp(value: number): string {
+  if (!Number.isFinite(value) || value <= 0) {
+    return "unknown";
+  }
+  return new Date(value).toISOString();
+}
+
+function printLogs(logs: LogsResponseType): void {
+  if (logs.entries.length === 0) {
+    console.log("No log entries found.");
+    return;
+  }
+
+  for (const entry of logs.entries) {
+    console.log(`${formatLogTimestamp(entry.ts)} [${entry.level}] ${entry.message}`);
+    if (entry.details) {
+      console.log(`  ${entry.details}`);
+    }
+  }
+}
+
+function withLimit(url: string, limit: number | undefined): string {
+  if (limit === undefined) {
+    return url;
+  }
+  try {
+    const parsed = new URL(url);
+    parsed.searchParams.set("limit", String(limit));
+    return parsed.toString();
+  } catch {
+    return `${url}${url.includes("?") ? "&" : "?"}limit=${limit}`;
+  }
+}
+
 async function run(): Promise<void> {
   const options = parseArgs(process.argv.slice(2));
   const headers: Record<string, string> = {};
@@ -149,25 +225,38 @@ async function run(): Promise<void> {
     headers.Authorization = `Basic ${Buffer.from(options.auth, "utf8").toString("base64")}`;
   }
 
-  const response = await fetch(options.url, { headers });
+  const targetUrl =
+    options.command === "logs" ? withLimit(options.url, options.limit) : options.url;
+  const response = await fetch(targetUrl, { headers });
   if (!response.ok) {
     const body = await response.text();
     throw new Error(`Request failed (${response.status}): ${body}`);
   }
 
-  const payload = (await response.json()) as unknown;
-  const decoded = S.decodeUnknownEither(CachedStatusResponse)(payload);
-
-  if (Either.isLeft(decoded)) {
-    throw new Error(`Unexpected response format: ${JSON.stringify(decoded.left)}`);
-  }
-
-  if (options.json) {
-    console.log(JSON.stringify(decoded.right, null, 2));
+  if (options.command === "logs") {
+    const payload = (await response.json()) as unknown;
+    const decodedLogs = S.decodeUnknownEither(LogsResponse)(payload);
+    if (Either.isLeft(decodedLogs)) {
+      throw new Error(`Unexpected response format: ${JSON.stringify(decodedLogs.left)}`);
+    }
+    if (options.json) {
+      console.log(JSON.stringify(decodedLogs.right, null, 2));
+      return;
+    }
+    printLogs(decodedLogs.right);
     return;
   }
 
-  printStatus(decoded.right);
+  const payload = (await response.json()) as unknown;
+  const decodedStatus = S.decodeUnknownEither(CachedStatusResponse)(payload);
+  if (Either.isLeft(decodedStatus)) {
+    throw new Error(`Unexpected response format: ${JSON.stringify(decodedStatus.left)}`);
+  }
+  if (options.json) {
+    console.log(JSON.stringify(decodedStatus.right, null, 2));
+    return;
+  }
+  printStatus(decodedStatus.right);
 }
 
 run().catch((error) => {

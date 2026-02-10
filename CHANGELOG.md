@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- Added CLI subcommand support for `status` and `logs`, including `logs --limit <n>` and human-readable log output from `/api/logs`
+
 ### Fixed
 - Fixed z.ai quota parsing for limit entries that omit `currentValue`/`remaining` by accepting partial payloads and deriving safe fallback usage values
 - Added structured z.ai quota parse-failure logs with service context, endpoint, HTTP/response codes, and capped payload sample for remote diagnosis
