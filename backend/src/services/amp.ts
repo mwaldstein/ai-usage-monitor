@@ -4,7 +4,7 @@ import { randomUUID } from "crypto";
 import { Either, Schema as S } from "effect";
 import { nowTs } from "../utils/dates.ts";
 import { logger } from "../utils/logger.ts";
-import { normalizeProviderError } from "./errorNormalization.ts";
+import { normalizeProviderError, ProviderServiceError } from "./errorNormalization.ts";
 import {
   AMPPaidBalanceResult,
   AMPQuotaResultTuple,
@@ -171,7 +171,7 @@ export class AMPService extends BaseAIService {
 
       if (!quotaData) {
         logger.warn("Could not parse AMP quota data");
-        return [];
+        throw new ProviderServiceError("Invalid AMP quota response payload", "INVALID_PAYLOAD");
       }
 
       // AMP quota values are in cents/credits - convert to dollars (divide by 100)

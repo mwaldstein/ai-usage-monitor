@@ -4,7 +4,7 @@ import { randomUUID } from "crypto";
 import { Either, Schema as S } from "effect";
 import { nowTs, dateToTs } from "../utils/dates.ts";
 import { logger } from "../utils/logger.ts";
-import { normalizeProviderError } from "./errorNormalization.ts";
+import { normalizeProviderError, ProviderServiceError } from "./errorNormalization.ts";
 import { ZAIQuotaResponse, ZAISubscriptionResponse } from "../schemas/providerResponses.ts";
 
 export class ZAIService extends BaseAIService {
@@ -32,7 +32,7 @@ export class ZAIService extends BaseAIService {
       const decodedQuota = S.decodeUnknownEither(ZAIQuotaResponse)(quotaResponse.data);
       if (Either.isLeft(decodedQuota)) {
         logger.warn({ err: decodedQuota.left }, "Invalid z.ai quota response payload");
-        return [];
+        throw new ProviderServiceError("Invalid z.ai quota response payload", "INVALID_PAYLOAD");
       }
       const quotaData = decodedQuota.right;
 

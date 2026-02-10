@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+- Fixed provider payload parse failures being treated as healthy by throwing decode/parse errors in z.ai, AMP, and Codex services so failed refreshes show as offline with error state
+
+### Added
+- Added focused backend status tests covering all providers to verify parse failures are surfaced as unhealthy while valid providers remain healthy
+
 ## [0.7.4] - 2026-02-10
 
 ### Changed

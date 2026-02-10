@@ -5,7 +5,7 @@ import axios from "axios";
 import { Either, Schema as S } from "effect";
 import { nowTs } from "../utils/dates.ts";
 import { logger } from "../utils/logger.ts";
-import { normalizeProviderError } from "./errorNormalization.ts";
+import { normalizeProviderError, ProviderServiceError } from "./errorNormalization.ts";
 import { CodexUsageResponse } from "../schemas/providerResponses.ts";
 
 /**
@@ -84,7 +84,7 @@ export class CodexService extends BaseAIService {
       const decoded = S.decodeUnknownEither(CodexUsageResponse)(response.data);
       if (Either.isLeft(decoded)) {
         logger.warn({ err: decoded.left }, `[Codex:${serviceName}] Invalid usage response payload`);
-        return quotas;
+        throw new ProviderServiceError("Invalid Codex usage response payload", "INVALID_PAYLOAD");
       }
       const data = decoded.right;
 
