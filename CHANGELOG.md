@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+- Updated frontend browser branding with a project-specific tab title and custom favicon
+
 ## [0.7.3] - 2026-02-08
 
 ### Fixed
