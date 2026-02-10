@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 - Fixed z.ai quota parsing for responses that omit `limits[].usage` by accepting the field as optional and falling back to `number`
 - Fixed JWT expiration extraction for bearer-prefixed tokens so z.ai token expiry is shown when token value includes `Bearer `
+- Fixed bearer-token handling across providers by normalizing optional `Bearer ` prefixes before building Authorization headers (z.ai, Codex, OpenAI-style templates, and CLI token auth)
 
 ## [0.7.6] - 2026-02-10
 
