@@ -20,8 +20,10 @@ export interface JWTClaims {
  */
 export function parseJWT(token: string): JWTClaims | null {
   try {
+    const normalizedToken = normalizeJWTToken(token);
+
     // JWT tokens have 3 parts: header.payload.signature
-    const parts = token.split(".");
+    const parts = normalizedToken.split(".");
     if (parts.length !== 3) {
       return null;
     }
@@ -42,6 +44,11 @@ export function parseJWT(token: string): JWTClaims | null {
   } catch {
     return null;
   }
+}
+
+function normalizeJWTToken(token: string): string {
+  const trimmed = token.trim();
+  return trimmed.replace(/^Bearer\s+/i, "");
 }
 
 /**
