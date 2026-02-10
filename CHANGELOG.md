@@ -7,8 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.7.6] - 2026-02-10
+
 ### Fixed
 - Fixed backend test formatting to unblock release CI format checks
+
+### Changed
+- Clarified AGENTS commit workflow to require running `npm run check` before every commit
 
 ## [0.7.5] - 2026-02-10
 
@@ -309,7 +314,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 - Added missing dependencies (uuid, sqlite) for Docker builds
 
-[Unreleased]: https://github.com/mwaldstein/ai-usage-monitor/compare/v0.7.5...HEAD
+[Unreleased]: https://github.com/mwaldstein/ai-usage-monitor/compare/v0.7.6...HEAD
+[0.7.6]: https://github.com/mwaldstein/ai-usage-monitor/compare/v0.7.5...v0.7.6
 [0.7.5]: https://github.com/mwaldstein/ai-usage-monitor/compare/v0.7.4...v0.7.5
 [0.7.4]: https://github.com/mwaldstein/ai-usage-monitor/compare/v0.7.3...v0.7.4
 [0.7.3]: https://github.com/mwaldstein/ai-usage-monitor/compare/v0.7.2...v0.7.3
