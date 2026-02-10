@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+- Fixed backend test formatting to unblock release CI format checks
+
 ## [0.7.5] - 2026-02-10
 
 ### Fixed

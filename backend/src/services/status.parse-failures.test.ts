@@ -70,21 +70,28 @@ test("service status marks parse failures unhealthy across providers", async () 
     }
 
     if (requestPath.includes("api.anthropic.com") && url.includes("/models")) {
-      return okResponse(config, {}, {
-        "anthropic-ratelimit-requests-limit": "100",
-        "anthropic-ratelimit-requests-remaining": "80",
-        "anthropic-ratelimit-requests-reset": "1700003600",
-        "anthropic-ratelimit-tokens-limit": "1000",
-        "anthropic-ratelimit-tokens-remaining": "900",
-        "anthropic-ratelimit-tokens-reset": "1700003600",
-      });
+      return okResponse(
+        config,
+        {},
+        {
+          "anthropic-ratelimit-requests-limit": "100",
+          "anthropic-ratelimit-requests-remaining": "80",
+          "anthropic-ratelimit-requests-reset": "1700003600",
+          "anthropic-ratelimit-tokens-limit": "1000",
+          "anthropic-ratelimit-tokens-remaining": "900",
+          "anthropic-ratelimit-tokens-reset": "1700003600",
+        },
+      );
     }
 
     if (requestPath.includes("opencode.ai") && url.includes("/billing")) {
       return okResponse(config, "<html><body>no hydration data</body></html>");
     }
 
-    if (requestPath.includes("ampcode.com") && url.includes("/_app/remote/w6b2h6/getFreeTierUsage")) {
+    if (
+      requestPath.includes("ampcode.com") &&
+      url.includes("/_app/remote/w6b2h6/getFreeTierUsage")
+    ) {
       return okResponse(config, { type: "result", result: "{}" });
     }
 
@@ -146,9 +153,18 @@ test("service status marks parse failures unhealthy across providers", async () 
     assert.equal(byProvider.get("codex")?.isHealthy, false);
 
     assert.equal(byProvider.get("opencode")?.error === undefined, false);
-    assert.equal(byProvider.get("amp")?.error?.includes("Invalid AMP quota response payload"), true);
-    assert.equal(byProvider.get("zai")?.error?.includes("Invalid z.ai quota response payload"), true);
-    assert.equal(byProvider.get("codex")?.error?.includes("Invalid Codex usage response payload"), true);
+    assert.equal(
+      byProvider.get("amp")?.error?.includes("Invalid AMP quota response payload"),
+      true,
+    );
+    assert.equal(
+      byProvider.get("zai")?.error?.includes("Invalid z.ai quota response payload"),
+      true,
+    );
+    assert.equal(
+      byProvider.get("codex")?.error?.includes("Invalid Codex usage response payload"),
+      true,
+    );
   } finally {
     axios.defaults.adapter = originalAdapter;
   }
