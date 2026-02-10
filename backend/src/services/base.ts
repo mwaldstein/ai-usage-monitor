@@ -4,7 +4,7 @@ import type { AIService, UsageQuota, ServiceStatus } from "../types/index.ts";
 import { providerConfigs } from "./providers.ts";
 import { isProviderAuthError } from "./errorNormalization.ts";
 import { nowTs } from "../utils/dates.ts";
-import { getJWTExpiration } from "../utils/jwt.ts";
+import { getJWTExpiration, normalizeBearerToken } from "../utils/jwt.ts";
 
 export abstract class BaseAIService {
   protected client: AxiosInstance;
@@ -28,6 +28,10 @@ export abstract class BaseAIService {
   private buildHeaders(template: Record<string, string>, apiKey: string): Record<string, string> {
     const headers: Record<string, string> = {};
     for (const [key, value] of Object.entries(template)) {
+      if (key.toLowerCase() === "authorization" && value.includes("Bearer {apiKey}")) {
+        headers[key] = value.replace("{apiKey}", normalizeBearerToken(apiKey));
+        continue;
+      }
       headers[key] = value.replace("{apiKey}", apiKey);
     }
     return headers;

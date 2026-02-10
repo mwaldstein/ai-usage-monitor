@@ -6,17 +6,20 @@ import { nowTs, dateToTs } from "../utils/dates.ts";
 import { logger } from "../utils/logger.ts";
 import { normalizeProviderError, ProviderServiceError } from "./errorNormalization.ts";
 import { ZAIQuotaResponse, ZAISubscriptionResponse } from "../schemas/providerResponses.ts";
+import { normalizeBearerToken } from "../utils/jwt.ts";
 
 export class ZAIService extends BaseAIService {
   async fetchQuotas(): Promise<UsageQuota[]> {
     try {
-      // Check if API key (Bearer token) is provided
-      if (!this.service.apiKey) {
+      const rawToken = this.service.bearerToken || this.service.apiKey;
+
+      if (!rawToken) {
         logger.warn(
           "No API token provided for z.ai service. Please provide your Bearer token from localStorage (z-ai-open-platform-token-production or z-ai-website-token).",
         );
         return [];
       }
+      const authToken = normalizeBearerToken(rawToken);
 
       const quotas: UsageQuota[] = [];
       const now = nowTs();
@@ -24,7 +27,7 @@ export class ZAIService extends BaseAIService {
       // Fetch quota limits
       const quotaResponse = await this.client.get("/api/monitor/usage/quota/limit", {
         headers: {
-          Authorization: `Bearer ${this.service.apiKey}`,
+          Authorization: `Bearer ${authToken}`,
           Accept: "application/json",
         },
       });
@@ -97,7 +100,7 @@ export class ZAIService extends BaseAIService {
       try {
         const subscriptionResponse = await this.client.get("/api/biz/subscription/list", {
           headers: {
-            Authorization: `Bearer ${this.service.apiKey}`,
+            Authorization: `Bearer ${authToken}`,
             Accept: "application/json",
           },
         });

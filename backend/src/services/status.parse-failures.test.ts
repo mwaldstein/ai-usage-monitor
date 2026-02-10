@@ -17,6 +17,20 @@ function makeService(provider: AIProvider): AIService {
     updatedAt: now,
   };
 
+  if (provider === "openai") {
+    return {
+      ...common,
+      apiKey: "Bearer openai-token",
+    };
+  }
+
+  if (provider === "zai") {
+    return {
+      ...common,
+      bearerToken: "Bearer zai-token",
+    };
+  }
+
   if (provider === "opencode") {
     return {
       ...common,
@@ -28,7 +42,7 @@ function makeService(provider: AIProvider): AIService {
   if (provider === "codex") {
     return {
       ...common,
-      bearerToken: "bearer-token",
+      bearerToken: "Bearer codex-token",
     };
   }
 
@@ -36,6 +50,17 @@ function makeService(provider: AIProvider): AIService {
     ...common,
     apiKey: "token-value",
   };
+}
+
+function hasAuthorizationHeader(
+  config: InternalAxiosRequestConfig,
+  expectedValue: string,
+): boolean {
+  const headersJson = JSON.stringify(config.headers ?? {});
+  return (
+    headersJson.includes(`"Authorization":"${expectedValue}"`) ||
+    headersJson.includes(`"authorization":"${expectedValue}"`)
+  );
 }
 
 function okResponse<T>(
@@ -62,10 +87,12 @@ test("service status marks parse failures unhealthy across providers", async () 
     const requestPath = `${baseUrl}${url}`;
 
     if (requestPath.includes("api.openai.com") && url.includes("/dashboard/billing/usage")) {
+      assert.equal(hasAuthorizationHeader(config, "Bearer openai-token"), true);
       return okResponse(config, { total_usage: 2500 });
     }
 
     if (requestPath.includes("api.openai.com") && url.includes("/dashboard/billing/subscription")) {
+      assert.equal(hasAuthorizationHeader(config, "Bearer openai-token"), true);
       return okResponse(config, { hard_limit_usd: 100, soft_limit_usd: 80 });
     }
 
@@ -100,6 +127,7 @@ test("service status marks parse failures unhealthy across providers", async () 
     }
 
     if (requestPath.includes("api.z.ai") && url.includes("/api/monitor/usage/quota/limit")) {
+      assert.equal(hasAuthorizationHeader(config, "Bearer zai-token"), true);
       return okResponse(config, {
         code: 200,
         msg: "ok",
@@ -128,6 +156,7 @@ test("service status marks parse failures unhealthy across providers", async () 
     }
 
     if (requestPath.includes("chatgpt.com") && url.includes("/backend-api/wham/usage")) {
+      assert.equal(hasAuthorizationHeader(config, "Bearer codex-token"), true);
       return okResponse(config, { invalid: true });
     }
 

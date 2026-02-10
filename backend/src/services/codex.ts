@@ -7,6 +7,7 @@ import { nowTs } from "../utils/dates.ts";
 import { logger } from "../utils/logger.ts";
 import { normalizeProviderError, ProviderServiceError } from "./errorNormalization.ts";
 import { CodexUsageResponse } from "../schemas/providerResponses.ts";
+import { normalizeBearerToken } from "../utils/jwt.ts";
 
 /**
  * CodexService - Fetches usage limits for OpenAI Codex CLI
@@ -60,7 +61,8 @@ export class CodexService extends BaseAIService {
 
       // Add Bearer token if provided
       if (this.service.bearerToken) {
-        requestHeaders["Authorization"] = `Bearer ${this.service.bearerToken}`;
+        requestHeaders["Authorization"] =
+          `Bearer ${normalizeBearerToken(this.service.bearerToken)}`;
       }
 
       // Add Cookie if provided (for backward compatibility during testing)

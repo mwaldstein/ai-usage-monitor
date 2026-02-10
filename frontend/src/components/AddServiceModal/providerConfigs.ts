@@ -115,7 +115,7 @@ export const PROVIDER_INSTRUCTIONS: Record<AIProvider, ProviderInstructions> = {
     apiKeyHelp: "Legacy: Session cookie from chatgpt.com",
     bearerTokenLabel: "Bearer Token (Recommended)",
     bearerTokenPlaceholder: "eyJhbGciOiJSUzI1NiIs...",
-    bearerTokenHelp: "JWT token from browser - preferred auth method",
+    bearerTokenHelp: "JWT token from browser. Raw token or full 'Bearer ...' both accepted",
     showBaseUrl: false,
     instructions: {
       title: "How to get your ChatGPT Bearer Token",
@@ -134,9 +134,12 @@ export const PROVIDER_INSTRUCTIONS: Record<AIProvider, ProviderInstructions> = {
     },
   },
   zai: {
-    apiKeyLabel: "Bearer Token",
+    apiKeyLabel: "Legacy Token (Optional)",
     apiKeyPlaceholder: "eyJ...",
-    apiKeyHelp: "Required: Copy from browser localStorage",
+    apiKeyHelp: "Backward compatibility only. Prefer Bearer Token field below",
+    bearerTokenLabel: "Bearer Token (Recommended)",
+    bearerTokenPlaceholder: "eyJhbGciOi...",
+    bearerTokenHelp: "JWT token from localStorage. Raw token or full 'Bearer ...' both accepted",
     showBaseUrl: false,
     instructions: {
       title: "How to get your z.ai Bearer Token",

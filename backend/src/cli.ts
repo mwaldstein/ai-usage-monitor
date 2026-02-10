@@ -1,6 +1,7 @@
 import { Schema as S, Either } from "effect";
 import { CachedStatusResponse } from "shared/api";
 import type { CachedStatusResponse as CachedStatusResponseType } from "shared/api";
+import { normalizeBearerToken } from "./utils/jwt.ts";
 
 const DEFAULT_URL = "http://localhost:3001/api/status/cached";
 
@@ -143,7 +144,7 @@ async function run(): Promise<void> {
   const headers: Record<string, string> = {};
 
   if (options.token) {
-    headers.Authorization = `Bearer ${options.token}`;
+    headers.Authorization = `Bearer ${normalizeBearerToken(options.token)}`;
   } else if (options.auth) {
     headers.Authorization = `Basic ${Buffer.from(options.auth, "utf8").toString("base64")}`;
   }

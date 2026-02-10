@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { getJWTExpiration } from "./jwt.ts";
+import { getJWTExpiration, normalizeBearerToken } from "./jwt.ts";
 
 function toBase64Url(value: string): string {
   return Buffer.from(value)
@@ -21,4 +21,9 @@ test("getJWTExpiration parses bearer-prefixed tokens", () => {
   const exp = 1893456000;
   const token = makeJWT(exp);
   assert.equal(getJWTExpiration(`Bearer ${token}`), exp);
+});
+
+test("normalizeBearerToken strips prefix and whitespace", () => {
+  assert.equal(normalizeBearerToken("  Bearer abc.def.ghi  "), "abc.def.ghi");
+  assert.equal(normalizeBearerToken("abc.def.ghi"), "abc.def.ghi");
 });
