@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 - Fixed z.ai token quotas missing % symbol by changing `tokens_consumption` metric format from `integer` to `percentage`
+- Fixed analytics chart cursor alignment after interval changes by switching the time axis to numeric timestamps instead of formatted string categories
 
 ## [0.7.9] - 2026-02-10
 

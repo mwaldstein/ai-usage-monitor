@@ -62,6 +62,26 @@ function formatNumber(num: number): string {
   return num.toFixed(0);
 }
 
+function formatChartTimestamp(ts: number, interval: Interval): string {
+  const date = new Date(ts * 1000);
+
+  switch (interval) {
+    case "5m":
+    case "15m":
+      return date.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" });
+    case "1h":
+    case "4h":
+      return (
+        date.toLocaleDateString("en-US", { month: "short", day: "numeric" }) +
+        " " +
+        date.toLocaleTimeString("en-US", { hour: "numeric", hour12: true })
+      );
+    case "1d":
+    default:
+      return date.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+  }
+}
+
 interface ChartControlsProps {
   interval: Interval;
   groupBy: GroupBy;
@@ -178,10 +198,14 @@ function TimeSeriesChart({
             <LineChart data={chartData} margin={{ top: 5, right: 20, bottom: 5, left: 0 }}>
               <CartesianGrid strokeDasharray="3 3" stroke="#27272a" />
               <XAxis
-                dataKey="displayTime"
+                dataKey="ts"
+                type="number"
+                domain={["dataMin", "dataMax"]}
+                scale="time"
                 stroke="#71717a"
                 fontSize={10}
                 tickLine={false}
+                tickFormatter={(value) => formatChartTimestamp(value, interval)}
                 angle={interval === "5m" || interval === "15m" ? -45 : 0}
                 textAnchor={interval === "5m" || interval === "15m" ? "end" : "middle"}
                 height={interval === "5m" || interval === "15m" ? 60 : 30}
@@ -200,6 +224,7 @@ function TimeSeriesChart({
                   fontSize: "12px",
                 }}
                 labelStyle={{ color: "#a1a1aa" }}
+                labelFormatter={(value) => formatChartTimestamp(Number(value), interval)}
               />
               <Legend wrapperStyle={{ fontSize: "11px", paddingTop: "10px" }} />
               {chartKeys.map((key, index) => (
