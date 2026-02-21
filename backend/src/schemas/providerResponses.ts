@@ -93,7 +93,7 @@ export const CodexUsageResponse = S.Struct({
   plan_type: S.String,
   rate_limit: CodexRateLimit,
   code_review_rate_limit: CodexCodeReviewRateLimit,
-  additional_rate_limits: S.optional(S.Array(CodexAdditionalRateLimit)),
+  additional_rate_limits: S.optional(S.NullOr(S.Array(CodexAdditionalRateLimit))),
   credits: CodexCredits,
 });
 export type CodexUsageResponse = S.Schema.Type<typeof CodexUsageResponse>;

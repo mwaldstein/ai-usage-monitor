@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.7.11] - 2026-02-21
+
+### Fixed
+- Fixed Codex quota parsing failing when `additional_rate_limits` is `null` (accounts without per-model limits)
+- Fixed missing Codex GPT-5.3-Codex-Spark weekly quota by also parsing the `secondary_window` from additional rate limits
+
 ## [0.7.10] - 2026-02-21
 
 ### Fixed
@@ -349,7 +355,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 - Added missing dependencies (uuid, sqlite) for Docker builds
 
-[Unreleased]: https://github.com/mwaldstein/ai-usage-monitor/compare/v0.7.10...HEAD
+[Unreleased]: https://github.com/mwaldstein/ai-usage-monitor/compare/v0.7.11...HEAD
+[0.7.11]: https://github.com/mwaldstein/ai-usage-monitor/compare/v0.7.10...v0.7.11
 [0.7.10]: https://github.com/mwaldstein/ai-usage-monitor/compare/v0.7.9...v0.7.10
 [0.7.9]: https://github.com/mwaldstein/ai-usage-monitor/compare/v0.7.8...v0.7.9
 [0.7.8]: https://github.com/mwaldstein/ai-usage-monitor/compare/v0.7.7...v0.7.8

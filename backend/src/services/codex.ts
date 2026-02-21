@@ -154,20 +154,40 @@ export class CodexService extends BaseAIService {
       if (data.additional_rate_limits) {
         for (const additionalLimit of data.additional_rate_limits) {
           const rl = additionalLimit.rate_limit;
+          // Convert limit_name to a metric-safe string (e.g., "GPT-5.3-Codex-Spark" → "gpt_5_3_codex_spark")
+          const metricName = additionalLimit.limit_name
+            .toLowerCase()
+            .replace(/[^a-z0-9]+/g, "_")
+            .replace(/^_|_$/g, "");
+
           if (rl.primary_window) {
             const window = rl.primary_window;
             const usedPercent = window.used_percent;
             const burnDownPercent = 100 - usedPercent;
-            // Convert limit_name to a metric-safe string (e.g., "GPT-5.3-Codex-Spark" → "gpt_5_3_codex_spark")
-            const metricName = additionalLimit.limit_name
-              .toLowerCase()
-              .replace(/[^a-z0-9]+/g, "_")
-              .replace(/^_|_$/g, "");
 
             quotas.push({
               id: randomUUID(),
               serviceId: this.service.id,
               metric: metricName,
+              limit: 100,
+              used: usedPercent,
+              remaining: burnDownPercent,
+              resetAt: window.reset_at,
+              createdAt: nowTs(),
+              updatedAt: nowTs(),
+              type: "usage",
+            });
+          }
+
+          if (rl.secondary_window) {
+            const window = rl.secondary_window;
+            const usedPercent = window.used_percent;
+            const burnDownPercent = 100 - usedPercent;
+
+            quotas.push({
+              id: randomUUID(),
+              serviceId: this.service.id,
+              metric: `${metricName}_weekly`,
               limit: 100,
               used: usedPercent,
               remaining: burnDownPercent,

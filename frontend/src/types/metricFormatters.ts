@@ -33,6 +33,24 @@ export function getMetricAnnotation(
     }
   }
 
+  if (provider === "codex" || provider === "Codex") {
+    // Handle dynamic additional rate limit metrics (e.g., "gpt_5_3_codex_spark", "gpt_5_3_codex_spark_weekly")
+    const isWeekly = metric.endsWith("_weekly");
+    const baseName = isWeekly ? metric.replace(/_weekly$/, "") : metric;
+    const displayName = baseName
+      .split("_")
+      .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+      .join(" ");
+    return {
+      format: "percentage",
+      displayName: isWeekly ? `${displayName} Weekly` : displayName,
+      priority: isWeekly ? 36 : 35,
+      warnWhenLow: true,
+      warnThreshold: 25,
+      errorThreshold: 10,
+    };
+  }
+
   if (provider === "zai" || provider === "ZAI" || provider === "z.ai") {
     // Handle dynamic rate limit windows
     if (metric.startsWith("requests_per_") && metric.endsWith("min_window")) {
