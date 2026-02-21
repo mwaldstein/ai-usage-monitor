@@ -11,7 +11,6 @@ export const AMPQuotaResultTuple = S.Tuple(
   S.String,
   S.Number,
   S.Number,
-  S.Number,
   S.String,
   S.Number,
 );

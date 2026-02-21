@@ -15,7 +15,6 @@ interface AMPQuotaData {
   bucket: string;
   quota: number;
   hourlyReplenishment: number;
-  windowHours: number;
   validProviderModels: string;
   used: number;
 }
@@ -41,13 +40,11 @@ export class AMPService extends BaseAIService {
         return null;
       }
 
-      const [, bucket, quota, hourlyReplenishment, windowHours, validProviderModels, used] =
-        resultArray.right;
+      const [, bucket, quota, hourlyReplenishment, validProviderModels, used] = resultArray.right;
       return {
         bucket,
         quota,
         hourlyReplenishment,
-        windowHours,
         validProviderModels,
         used,
       };
@@ -182,6 +179,11 @@ export class AMPService extends BaseAIService {
 
       // Add the main quota (in dollars)
       // Note: The AMP free tier continuously replenishes at a rate rather than resetting
+      // Derive the replenishment window from quota / hourlyReplenishment
+      const windowHours =
+        quotaData.hourlyReplenishment > 0
+          ? Math.ceil(quotaData.quota / quotaData.hourlyReplenishment)
+          : 24;
       const quotaMetric = `${quotaData.bucket}_quota`;
       quotas.push({
         id: randomUUID(),
@@ -190,7 +192,7 @@ export class AMPService extends BaseAIService {
         limit: quotaDollars,
         used: usedDollars,
         remaining: remainingDollars > 0 ? remainingDollars : 0,
-        resetAt: now + quotaData.windowHours * 60 * 60, // Window for full replenishment
+        resetAt: now + windowHours * 60 * 60, // Derived window for full replenishment
         createdAt: nowTs(),
         updatedAt: nowTs(),
         replenishmentRate: {
