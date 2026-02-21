@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.7.10] - 2026-02-21
+
 ### Fixed
 - Fixed AMP quota parsing after upstream API dropped `windowHours` field from the response tuple
 - Fixed Codex quota parsing after upstream API changed `credits.balance` to string and `approx_*_messages` to arrays
@@ -347,7 +349,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 - Added missing dependencies (uuid, sqlite) for Docker builds
 
-[Unreleased]: https://github.com/mwaldstein/ai-usage-monitor/compare/v0.7.8...HEAD
+[Unreleased]: https://github.com/mwaldstein/ai-usage-monitor/compare/v0.7.10...HEAD
+[0.7.10]: https://github.com/mwaldstein/ai-usage-monitor/compare/v0.7.9...v0.7.10
+[0.7.9]: https://github.com/mwaldstein/ai-usage-monitor/compare/v0.7.8...v0.7.9
 [0.7.8]: https://github.com/mwaldstein/ai-usage-monitor/compare/v0.7.7...v0.7.8
 [0.7.7]: https://github.com/mwaldstein/ai-usage-monitor/compare/v0.7.6...v0.7.7
 [0.7.6]: https://github.com/mwaldstein/ai-usage-monitor/compare/v0.7.5...v0.7.6
