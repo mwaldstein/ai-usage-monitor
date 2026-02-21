@@ -8,8 +8,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Fixed
+- Fixed AMP quota parsing after upstream API dropped `windowHours` field from the response tuple
+- Fixed Codex quota parsing after upstream API changed `credits.balance` to string and `approx_*_messages` to arrays
 - Fixed z.ai token quotas missing % symbol by changing `tokens_consumption` metric format from `integer` to `percentage`
 - Fixed analytics chart cursor alignment after interval changes by switching the time axis to numeric timestamps instead of formatted string categories
+
+### Added
+- Added support for Codex per-model rate limits (`additional_rate_limits`) such as GPT-5.3-Codex-Spark
 
 ## [0.7.9] - 2026-02-10
 

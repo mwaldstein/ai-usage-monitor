@@ -76,16 +76,24 @@ export type CodexCodeReviewRateLimit = S.Schema.Type<typeof CodexCodeReviewRateL
 export const CodexCredits = S.Struct({
   has_credits: S.Boolean,
   unlimited: S.Boolean,
-  balance: S.NullOr(S.Number),
-  approx_local_messages: S.NullOr(S.Number),
-  approx_cloud_messages: S.NullOr(S.Number),
+  balance: S.NullOr(S.Union(S.Number, S.String)),
+  approx_local_messages: S.NullOr(S.Union(S.Number, S.Array(S.Number))),
+  approx_cloud_messages: S.NullOr(S.Union(S.Number, S.Array(S.Number))),
 });
 export type CodexCredits = S.Schema.Type<typeof CodexCredits>;
+
+export const CodexAdditionalRateLimit = S.Struct({
+  limit_name: S.String,
+  metered_feature: S.String,
+  rate_limit: CodexRateLimit,
+});
+export type CodexAdditionalRateLimit = S.Schema.Type<typeof CodexAdditionalRateLimit>;
 
 export const CodexUsageResponse = S.Struct({
   plan_type: S.String,
   rate_limit: CodexRateLimit,
   code_review_rate_limit: CodexCodeReviewRateLimit,
+  additional_rate_limits: S.optional(S.Array(CodexAdditionalRateLimit)),
   credits: CodexCredits,
 });
 export type CodexUsageResponse = S.Schema.Type<typeof CodexUsageResponse>;

@@ -150,20 +150,56 @@ export class CodexService extends BaseAIService {
         });
       }
 
+      // Add additional rate limits (e.g., per-model limits like GPT-5.3-Codex-Spark)
+      if (data.additional_rate_limits) {
+        for (const additionalLimit of data.additional_rate_limits) {
+          const rl = additionalLimit.rate_limit;
+          if (rl.primary_window) {
+            const window = rl.primary_window;
+            const usedPercent = window.used_percent;
+            const burnDownPercent = 100 - usedPercent;
+            // Convert limit_name to a metric-safe string (e.g., "GPT-5.3-Codex-Spark" → "gpt_5_3_codex_spark")
+            const metricName = additionalLimit.limit_name
+              .toLowerCase()
+              .replace(/[^a-z0-9]+/g, "_")
+              .replace(/^_|_$/g, "");
+
+            quotas.push({
+              id: randomUUID(),
+              serviceId: this.service.id,
+              metric: metricName,
+              limit: 100,
+              used: usedPercent,
+              remaining: burnDownPercent,
+              resetAt: window.reset_at,
+              createdAt: nowTs(),
+              updatedAt: nowTs(),
+              type: "usage",
+            });
+          }
+        }
+      }
+
       // Add credits info if available
       if (data.credits?.balance !== null && data.credits?.balance !== undefined) {
-        quotas.push({
-          id: randomUUID(),
-          serviceId: this.service.id,
-          metric: "credits",
-          limit: data.credits.balance,
-          used: 0,
-          remaining: data.credits.balance,
-          resetAt: now + 86400 * 365,
-          createdAt: nowTs(),
-          updatedAt: nowTs(),
-          type: "credits",
-        });
+        const balance =
+          typeof data.credits.balance === "string"
+            ? parseFloat(data.credits.balance)
+            : data.credits.balance;
+        if (!isNaN(balance) && balance > 0) {
+          quotas.push({
+            id: randomUUID(),
+            serviceId: this.service.id,
+            metric: "credits",
+            limit: balance,
+            used: 0,
+            remaining: balance,
+            resetAt: now + 86400 * 365,
+            createdAt: nowTs(),
+            updatedAt: nowTs(),
+            type: "credits",
+          });
+        }
       }
     } catch (error) {
       const normalizedError = normalizeProviderError(error);
