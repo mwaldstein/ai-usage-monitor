@@ -120,22 +120,25 @@ export const PROVIDER_INSTRUCTIONS: Record<AIProvider, ProviderInstructions> = {
     },
   },
   claude: {
-    apiKeyLabel: "Session Cookie",
-    apiKeyPlaceholder: "sessionKey=sk-ant-sid02-...; lastActiveOrg=...",
-    apiKeyHelp:
-      "Required: Cookie string must include 'sessionKey' and 'lastActiveOrg' (for team accounts)",
+    apiKeyLabel: "Access Token",
+    apiKeyPlaceholder: "sk-ant-oat01-...",
+    apiKeyHelp: "Required: OAuth access token from ~/.claude/.credentials.json",
+    bearerTokenLabel: "Refresh Token",
+    bearerTokenPlaceholder: "sk-ant-ort01-...",
+    bearerTokenHelp:
+      "Required: OAuth refresh token — used to automatically renew the access token",
     showBaseUrl: false,
     instructions: {
-      title: "How to get your Claude Session Cookie",
+      title: "How to get your Claude OAuth tokens",
       steps: [
-        "Open https://claude.ai/settings/usage in your browser",
-        "Log in to your account",
-        "Open DevTools (F12) → Application → Cookies → claude.ai",
-        'Find "sessionKey" and "lastActiveOrg" cookies',
-        "Copy them as: sessionKey=VALUE; lastActiveOrg=VALUE",
-        "Paste the combined string in the field above",
+        "Install Claude Code CLI: npm install -g @anthropic-ai/claude-code",
+        "Run: claude (and log in if prompted)",
+        "On Linux/macOS: cat ~/.claude/.credentials.json",
+        'Copy the "accessToken" value → paste into Access Token field',
+        'Copy the "refreshToken" value → paste into Refresh Token field',
+        "Tokens are auto-refreshed, so you only need to do this once",
       ],
-      link: { text: "Open Claude Settings", url: "https://claude.ai/settings/usage" },
+      link: { text: "Get Claude Code", url: "https://claude.ai/download" },
     },
   },
 };

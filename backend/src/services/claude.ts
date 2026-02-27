@@ -7,23 +7,103 @@ import { nowTs, dateToTs } from "../utils/dates.ts";
 import { logger } from "../utils/logger.ts";
 import { normalizeProviderError, ProviderServiceError } from "./errorNormalization.ts";
 import { ClaudeUsageResponse } from "../schemas/providerResponses.ts";
+import { getDatabase } from "../database/index.ts";
+
+const OAUTH_USAGE_URL = "https://api.anthropic.com/api/oauth/usage";
+const OAUTH_TOKEN_URL = "https://console.anthropic.com/v1/oauth/token";
+const OAUTH_CLIENT_ID = "9d1c250a-e61b-44d9-88ed-5944d1962f5e";
 
 /**
- * ClaudeService - Fetches usage limits for Claude.ai web interface
- *
- * This is separate from the Anthropic API service. Claude.ai has its own
- * session-based authentication and usage tracking for the web/chat product.
+ * ClaudeService - Fetches usage limits for Claude.ai via the Anthropic OAuth API.
  *
  * Authentication:
- * - Session cookie (service.apiKey) - Cookie string from browser (must include `sessionKey`)
- * - The `lastActiveOrg` cookie provides the organization UUID for team accounts
+ * - Access token  (service.apiKey)      — OAuth token starting with sk-ant-oat01-
+ * - Refresh token (service.bearerToken) — OAuth token starting with sk-ant-ort01-
  *
- * Endpoint: GET https://claude.ai/api/organizations/{orgId}/usage
+ * The access token expires after ~8 hours. When a 401 is received the refresh
+ * token is used to obtain a new pair of tokens, which are then persisted back to
+ * the database so subsequent poll cycles work without user intervention.
+ *
+ * Endpoint: GET https://api.anthropic.com/api/oauth/usage
+ * Required header: anthropic-beta: oauth-2025-04-20
  */
 export class ClaudeService extends BaseAIService {
-  private extractOrgId(cookieString: string): string {
-    const match = cookieString.match(/(?:^|;\s*)lastActiveOrg=([^;]+)/);
-    return match?.[1]?.trim() || "";
+  private async refreshAccessToken(): Promise<string | null> {
+    const refreshToken = this.service.bearerToken;
+    if (!refreshToken) return null;
+
+    const serviceName = this.service.name;
+    try {
+      const response = await axios.post(
+        OAUTH_TOKEN_URL,
+        new URLSearchParams({
+          grant_type: "refresh_token",
+          refresh_token: refreshToken,
+          client_id: OAUTH_CLIENT_ID,
+        }).toString(),
+        {
+          headers: { "Content-Type": "application/x-www-form-urlencoded" },
+          timeout: 10000,
+        },
+      );
+
+      const newAccessToken: string | undefined = response.data?.access_token;
+      const newRefreshToken: string | undefined = response.data?.refresh_token;
+
+      if (!newAccessToken) {
+        logger.warn(`[Claude:${serviceName}] Token refresh response missing access_token`);
+        return null;
+      }
+
+      logger.info(`[Claude:${serviceName}] Access token refreshed successfully`);
+
+      // Update in-memory service so the retry in fetchQuotas() uses the new token
+      this.service = { ...this.service, apiKey: newAccessToken };
+      if (newRefreshToken) {
+        this.service = { ...this.service, bearerToken: newRefreshToken };
+      }
+
+      // Persist to database so subsequent poll cycles start with a valid token
+      try {
+        const db = getDatabase();
+        const updatedAt = nowTs();
+        if (newRefreshToken) {
+          await db.run(
+            "UPDATE services SET api_key = ?, bearer_token = ?, updated_at = ? WHERE id = ?",
+            [newAccessToken, newRefreshToken, updatedAt, this.service.id],
+          );
+        } else {
+          await db.run(
+            "UPDATE services SET api_key = ?, updated_at = ? WHERE id = ?",
+            [newAccessToken, updatedAt, this.service.id],
+          );
+        }
+      } catch (dbError) {
+        // Non-fatal: the in-memory token is still updated for this cycle
+        logger.warn(
+          { err: dbError },
+          `[Claude:${serviceName}] Failed to persist refreshed token to database`,
+        );
+      }
+
+      return newAccessToken;
+    } catch (error) {
+      logger.error({ err: error }, `[Claude:${serviceName}] Token refresh request failed`);
+      return null;
+    }
+  }
+
+  private async fetchUsageData(accessToken: string): Promise<unknown> {
+    const response = await axios.get(OAUTH_USAGE_URL, {
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        "anthropic-beta": "oauth-2025-04-20",
+        "User-Agent": "claude-code/2.0.37",
+        Accept: "application/json",
+      },
+      timeout: 10000,
+    });
+    return response.data;
   }
 
   async fetchQuotas(): Promise<UsageQuota[]> {
@@ -34,35 +114,38 @@ export class ClaudeService extends BaseAIService {
     try {
       if (!this.service.apiKey) {
         logger.error(
-          `[Claude:${serviceName}] ERROR: No session cookie provided. Please provide your claude.ai session cookie.`,
+          `[Claude:${serviceName}] ERROR: No access token provided. Add your OAuth access token (sk-ant-oat01-...).`,
         );
         return quotas;
       }
 
-      const orgId = this.extractOrgId(this.service.apiKey);
-      if (!orgId) {
+      if (!this.service.bearerToken) {
         logger.error(
-          `[Claude:${serviceName}] ERROR: Could not extract organization ID from cookies. Ensure the 'lastActiveOrg' cookie is included.`,
+          `[Claude:${serviceName}] ERROR: No refresh token provided. Add your OAuth refresh token (sk-ant-ort01-...).`,
         );
         return quotas;
       }
 
-      const claudeClient = axios.create({
-        baseURL: "https://claude.ai",
-        timeout: 10000,
-        headers: {
-          Accept: "application/json",
-          "Content-Type": "application/json",
-          "Accept-Language": "en-US,en;q=0.9",
-          "Cache-Control": "no-cache",
-          Referer: "https://claude.ai/settings/usage",
-          Cookie: this.service.apiKey,
-        },
-      });
+      let responseData: unknown;
+      try {
+        responseData = await this.fetchUsageData(this.service.apiKey);
+      } catch (error) {
+        if (axios.isAxiosError(error) && error.response?.status === 401) {
+          logger.info(`[Claude:${serviceName}] Access token expired, attempting refresh...`);
+          const newToken = await this.refreshAccessToken();
+          if (!newToken) {
+            throw new ProviderServiceError(
+              "OAuth access token expired and refresh failed. Please update your tokens.",
+              "AUTH_ERROR",
+            );
+          }
+          responseData = await this.fetchUsageData(newToken);
+        } else {
+          throw error;
+        }
+      }
 
-      const response = await claudeClient.get(`/api/organizations/${orgId}/usage`);
-
-      const decoded = S.decodeUnknownEither(ClaudeUsageResponse)(response.data);
+      const decoded = S.decodeUnknownEither(ClaudeUsageResponse)(responseData);
       if (Either.isLeft(decoded)) {
         logger.warn(
           { err: decoded.left },
@@ -74,7 +157,7 @@ export class ClaudeService extends BaseAIService {
 
       // 5-hour rolling window
       if (data.five_hour) {
-        const usedPercent = data.five_hour.utilization * 100;
+        const usedPercent = data.five_hour.utilization;
         quotas.push({
           id: randomUUID(),
           serviceId: this.service.id,
@@ -83,15 +166,15 @@ export class ClaudeService extends BaseAIService {
           used: usedPercent,
           remaining: 100 - usedPercent,
           resetAt: dateToTs(new Date(data.five_hour.resets_at)),
-          createdAt: nowTs(),
-          updatedAt: nowTs(),
+          createdAt: now,
+          updatedAt: now,
           type: "usage",
         });
       }
 
       // 7-day rolling window
       if (data.seven_day) {
-        const usedPercent = data.seven_day.utilization * 100;
+        const usedPercent = data.seven_day.utilization;
         quotas.push({
           id: randomUUID(),
           serviceId: this.service.id,
@@ -100,15 +183,15 @@ export class ClaudeService extends BaseAIService {
           used: usedPercent,
           remaining: 100 - usedPercent,
           resetAt: dateToTs(new Date(data.seven_day.resets_at)),
-          createdAt: nowTs(),
-          updatedAt: nowTs(),
+          createdAt: now,
+          updatedAt: now,
           type: "usage",
         });
       }
 
       // 7-day OAuth apps window
       if (data.seven_day_oauth_apps) {
-        const usedPercent = data.seven_day_oauth_apps.utilization * 100;
+        const usedPercent = data.seven_day_oauth_apps.utilization;
         quotas.push({
           id: randomUUID(),
           serviceId: this.service.id,
@@ -117,15 +200,15 @@ export class ClaudeService extends BaseAIService {
           used: usedPercent,
           remaining: 100 - usedPercent,
           resetAt: dateToTs(new Date(data.seven_day_oauth_apps.resets_at)),
-          createdAt: nowTs(),
-          updatedAt: nowTs(),
+          createdAt: now,
+          updatedAt: now,
           type: "usage",
         });
       }
 
       // 7-day Opus window
       if (data.seven_day_opus) {
-        const usedPercent = data.seven_day_opus.utilization * 100;
+        const usedPercent = data.seven_day_opus.utilization;
         quotas.push({
           id: randomUUID(),
           serviceId: this.service.id,
@@ -134,15 +217,15 @@ export class ClaudeService extends BaseAIService {
           used: usedPercent,
           remaining: 100 - usedPercent,
           resetAt: dateToTs(new Date(data.seven_day_opus.resets_at)),
-          createdAt: nowTs(),
-          updatedAt: nowTs(),
+          createdAt: now,
+          updatedAt: now,
           type: "usage",
         });
       }
 
       // 7-day Sonnet window
       if (data.seven_day_sonnet) {
-        const usedPercent = data.seven_day_sonnet.utilization * 100;
+        const usedPercent = data.seven_day_sonnet.utilization;
         quotas.push({
           id: randomUUID(),
           serviceId: this.service.id,
@@ -151,15 +234,15 @@ export class ClaudeService extends BaseAIService {
           used: usedPercent,
           remaining: 100 - usedPercent,
           resetAt: dateToTs(new Date(data.seven_day_sonnet.resets_at)),
-          createdAt: nowTs(),
-          updatedAt: nowTs(),
+          createdAt: now,
+          updatedAt: now,
           type: "usage",
         });
       }
 
       // 7-day Cowork window
       if (data.seven_day_cowork) {
-        const usedPercent = data.seven_day_cowork.utilization * 100;
+        const usedPercent = data.seven_day_cowork.utilization;
         quotas.push({
           id: randomUUID(),
           serviceId: this.service.id,
@@ -168,8 +251,8 @@ export class ClaudeService extends BaseAIService {
           used: usedPercent,
           remaining: 100 - usedPercent,
           resetAt: dateToTs(new Date(data.seven_day_cowork.resets_at)),
-          createdAt: nowTs(),
-          updatedAt: nowTs(),
+          createdAt: now,
+          updatedAt: now,
           type: "usage",
         });
       }
@@ -186,8 +269,8 @@ export class ClaudeService extends BaseAIService {
           used: usedCredits,
           remaining: monthlyLimit - usedCredits,
           resetAt: now + 30 * 24 * 60 * 60,
-          createdAt: nowTs(),
-          updatedAt: nowTs(),
+          createdAt: now,
+          updatedAt: now,
           type: "credits",
         });
       }

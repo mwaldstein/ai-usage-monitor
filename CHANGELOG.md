@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.8.1] - 2026-02-27
+
+### Changed
+- Replaced Claude session-cookie authentication with Anthropic OAuth token authentication
+  - Access token (`sk-ant-oat01-...`) and refresh token (`sk-ant-ort01-...`) replace the session cookie and organization ID fields
+  - Requests now go to `https://api.anthropic.com/api/oauth/usage` (no Cloudflare, no IP binding) instead of `https://claude.ai/api/organizations/{orgId}/usage`
+  - Required `anthropic-beta: oauth-2025-04-20` header discovered from open-source projects (`claude-monitor`, `CodeQuota`)
+  - Access tokens are automatically refreshed on 401 and the new token pair is persisted to the database
+  - Credentials are obtained once from `~/.claude/.credentials.json` (written by Claude Code CLI)
+
 ## [0.8.0] - 2026-02-27
 
 ### Added
