@@ -1,6 +1,6 @@
 import { Schema as S } from "effect";
 
-export const AIProvider = S.Literal("openai", "anthropic", "opencode", "amp", "zai", "codex");
+export const AIProvider = S.Literal("opencode", "amp", "zai", "codex", "claude");
 export type AIProvider = S.Schema.Type<typeof AIProvider>;
 
 export const AIService = S.Struct({

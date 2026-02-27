@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- Added Claude.ai provider for monitoring web chat usage quotas (5-hour rolling, 7-day, per-model, and extra usage windows) via session cookie authentication with organization support
+
+### Fixed
+- Fixed analytics "Group by provider" mode merging multiple accounts of the same provider type by using service names instead of provider names for data grouping and chart keys
+
+### Removed
+- Removed Anthropic API provider — was a stub that only read rate-limit headers from `/models`, replaced by the real Claude.ai provider
+- Removed OpenAI API provider — was a stub using deprecated `/dashboard/billing` endpoints
+
 ## [0.7.11] - 2026-02-21
 
 ### Fixed

@@ -22,7 +22,7 @@ export function AddServiceModal({
   disabled,
 }: AddServiceModalProps) {
   const [name, setName] = useState("");
-  const [provider, setProvider] = useState<AIProvider>("openai");
+  const [provider, setProvider] = useState<AIProvider>("codex");
   const [apiKey, setApiKey] = useState("");
   const [bearerToken, setBearerToken] = useState("");
   const [baseUrl, setBaseUrl] = useState("");
@@ -39,7 +39,7 @@ export function AddServiceModal({
       setBaseUrl(editingService.baseUrl || "");
     } else {
       setName("");
-      setProvider("openai");
+      setProvider("codex");
       setApiKey("");
       setBearerToken("");
       setBaseUrl("");

@@ -20,6 +20,7 @@ export function getProviderColor(provider: string): string {
     amp: "#06b6d4",
     zai: "#10b981",
     codex: "#f59e0b",
+    claude: "#d97757",
   };
   return colors[provider.toLowerCase()] || "#71717a";
 }

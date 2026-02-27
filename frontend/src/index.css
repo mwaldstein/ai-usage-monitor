@@ -220,6 +220,9 @@ body {
 .provider-codex {
   --provider-color: #f59e0b;
 }
+.provider-claude {
+  --provider-color: #d97757;
+}
 .provider-default {
   --provider-color: #71717a;
 }

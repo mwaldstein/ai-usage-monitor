@@ -1,28 +1,6 @@
 import type { AIProvider, ProviderConfig } from "../types/index.ts";
 
 export const providerConfigs: Record<AIProvider, ProviderConfig> = {
-  openai: {
-    name: "OpenAI",
-    baseUrl: "https://api.openai.com/v1",
-    quotaEndpoints: {
-      usage: "/usage",
-      limits: "/dashboard/billing/limits",
-    },
-    headers: {
-      Authorization: "Bearer {apiKey}",
-    },
-  },
-  anthropic: {
-    name: "Anthropic",
-    baseUrl: "https://api.anthropic.com/v1",
-    quotaEndpoints: {
-      usage: "/usage",
-    },
-    headers: {
-      "x-api-key": "{apiKey}",
-      "anthropic-version": "2023-06-01",
-    },
-  },
   opencode: {
     name: "opencode zen",
     baseUrl: "https://api.opencode.ai/v1",
@@ -61,6 +39,16 @@ export const providerConfigs: Record<AIProvider, ProviderConfig> = {
     },
     headers: {
       // Codex uses session cookie auth
+    },
+  },
+  claude: {
+    name: "Claude",
+    baseUrl: "https://claude.ai",
+    quotaEndpoints: {
+      usage: "/api/organizations/{orgId}/usage",
+    },
+    headers: {
+      // Claude uses session cookie auth
     },
   },
 };

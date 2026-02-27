@@ -34,7 +34,7 @@ function decodeProvider(value: unknown): AIService["provider"] {
   if (Either.isRight(decoded)) return decoded.right;
 
   // Defensive fallback: DB should only contain valid provider values.
-  return "openai";
+  return "codex";
 }
 
 function mapDerivedQuotaValues(row: Record<string, unknown>): {

@@ -71,10 +71,10 @@ async function createLegacyDatabase(): Promise<TestDatabaseContext> {
     "INSERT INTO services (id, name, provider, api_key, base_url, enabled, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
     [
       "svc_legacy",
-      "Legacy OpenAI",
-      "openai",
+      "Legacy Codex",
+      "codex",
       "legacy-key",
-      "https://api.openai.com/v1",
+      "https://chatgpt.com",
       1,
       "2026-01-01T00:00:00Z",
       "2026-01-01T00:05:00Z",
@@ -142,7 +142,7 @@ test("transaction rolls back when effect fails", async () => {
         Effect.gen(function* () {
           yield* txDb.run(
             "INSERT INTO services (id, name, provider, enabled, display_order, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?)",
-            ["svc_tx_1", "Tx Service", "openai", 1, 1, 100, 100],
+            ["svc_tx_1", "Tx Service", "codex", 1, 1, 100, 100],
           );
           return yield* Effect.fail(new Error("force rollback"));
         }),

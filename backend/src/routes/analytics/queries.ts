@@ -28,11 +28,11 @@ function getTimeSeriesSelection(
   if (groupBy === "provider") {
     return {
       selectColumns: `
-        s.provider as service_name,
+        s.name as service_name,
         s.provider as provider,
-        s.provider as serviceId,
+        uh.service_id as serviceId,
         uh.metric as metric`,
-      groupByClause: `s.provider, uh.metric, ${timeBucket}`,
+      groupByClause: `uh.service_id, s.name, s.provider, uh.metric, ${timeBucket}`,
     };
   }
 

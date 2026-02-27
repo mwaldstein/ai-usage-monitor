@@ -98,6 +98,32 @@ export const CodexUsageResponse = S.Struct({
 });
 export type CodexUsageResponse = S.Schema.Type<typeof CodexUsageResponse>;
 
+export const ClaudeUsageWindow = S.Struct({
+  utilization: S.Number,
+  resets_at: S.String,
+});
+export type ClaudeUsageWindow = S.Schema.Type<typeof ClaudeUsageWindow>;
+
+export const ClaudeExtraUsage = S.Struct({
+  is_enabled: S.Boolean,
+  monthly_limit: S.NullOr(S.Number),
+  used_credits: S.NullOr(S.Number),
+  utilization: S.NullOr(S.Number),
+});
+export type ClaudeExtraUsage = S.Schema.Type<typeof ClaudeExtraUsage>;
+
+export const ClaudeUsageResponse = S.Struct({
+  five_hour: S.NullOr(ClaudeUsageWindow),
+  seven_day: S.NullOr(ClaudeUsageWindow),
+  seven_day_oauth_apps: S.NullOr(ClaudeUsageWindow),
+  seven_day_opus: S.NullOr(ClaudeUsageWindow),
+  seven_day_sonnet: S.NullOr(ClaudeUsageWindow),
+  seven_day_cowork: S.NullOr(ClaudeUsageWindow),
+  iguana_necktie: S.NullOr(ClaudeUsageWindow),
+  extra_usage: S.NullOr(ClaudeExtraUsage),
+});
+export type ClaudeUsageResponse = S.Schema.Type<typeof ClaudeUsageResponse>;
+
 export const ZAIUsageDetail = S.Struct({
   modelCode: S.String,
   usage: S.Number,

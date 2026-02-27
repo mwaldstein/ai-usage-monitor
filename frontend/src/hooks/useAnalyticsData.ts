@@ -75,12 +75,7 @@ export function useChartData(
 
     if (quotas) {
       quotas.forEach((quota) => {
-        const key =
-          groupBy === "metric"
-            ? quota.metric
-            : groupBy === "provider"
-              ? quota.provider
-              : `${quota.service_name}:${quota.metric}`;
+        const key = groupBy === "metric" ? quota.metric : `${quota.service_name}:${quota.metric}`;
 
         if (!quotaLimits.has(key)) {
           quotaLimits.set(key, quota.limit);
@@ -105,8 +100,6 @@ export function useChartData(
       let key: string;
       if (groupBy === "metric") {
         key = point.metric;
-      } else if (groupBy === "provider") {
-        key = point.provider;
       } else {
         key =
           point.service_name === "All Services"

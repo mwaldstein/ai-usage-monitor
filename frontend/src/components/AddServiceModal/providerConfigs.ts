@@ -24,49 +24,14 @@ export interface ProviderInstructions {
 }
 
 export const PROVIDERS: ProviderConfig[] = [
-  { value: "openai", label: "OpenAI", color: "#10a37f" },
   { value: "codex", label: "OpenAI Codex", color: "#10a37f" },
-  { value: "anthropic", label: "Anthropic", color: "#d97757" },
   { value: "opencode", label: "opencode zen", color: "#8b5cf6" },
   { value: "amp", label: "AMP", color: "#06b6d4" },
   { value: "zai", label: "z.ai", color: "#10b981" },
+  { value: "claude", label: "Claude", color: "#d97757" },
 ];
 
 export const PROVIDER_INSTRUCTIONS: Record<AIProvider, ProviderInstructions> = {
-  openai: {
-    apiKeyLabel: "API Key",
-    apiKeyPlaceholder: "sk-...",
-    apiKeyHelp: "Your OpenAI API key from platform.openai.com",
-    showBaseUrl: true,
-    instructions: {
-      title: "How to get your OpenAI API Key",
-      steps: [
-        "Go to https://platform.openai.com/api-keys",
-        "Log in to your OpenAI account",
-        'Click "Create new secret key"',
-        'Copy the key (it starts with "sk-")',
-        "Paste it here",
-      ],
-      link: { text: "Open OpenAI API Keys", url: "https://platform.openai.com/api-keys" },
-    },
-  },
-  anthropic: {
-    apiKeyLabel: "API Key",
-    apiKeyPlaceholder: "sk-ant-...",
-    apiKeyHelp: "Your Anthropic API key from console.anthropic.com",
-    showBaseUrl: true,
-    instructions: {
-      title: "How to get your Anthropic API Key",
-      steps: [
-        "Go to https://console.anthropic.com/settings/keys",
-        "Log in to your Anthropic account",
-        'Click "Create Key"',
-        'Copy the key (it starts with "sk-ant-")',
-        "Paste it here",
-      ],
-      link: { text: "Open Anthropic Console", url: "https://console.anthropic.com/settings/keys" },
-    },
-  },
   opencode: {
     apiKeyLabel: "Auth Cookie",
     apiKeyPlaceholder: "auth=Fe26.2**...",
@@ -152,6 +117,25 @@ export const PROVIDER_INSTRUCTIONS: Record<AIProvider, ProviderInstructions> = {
         "Paste it in the field above",
       ],
       link: { text: "Open z.ai", url: "https://z.ai" },
+    },
+  },
+  claude: {
+    apiKeyLabel: "Session Cookie",
+    apiKeyPlaceholder: "sessionKey=sk-ant-sid02-...; lastActiveOrg=...",
+    apiKeyHelp:
+      "Required: Cookie string must include 'sessionKey' and 'lastActiveOrg' (for team accounts)",
+    showBaseUrl: false,
+    instructions: {
+      title: "How to get your Claude Session Cookie",
+      steps: [
+        "Open https://claude.ai/settings/usage in your browser",
+        "Log in to your account",
+        "Open DevTools (F12) → Application → Cookies → claude.ai",
+        'Find "sessionKey" and "lastActiveOrg" cookies',
+        "Copy them as: sessionKey=VALUE; lastActiveOrg=VALUE",
+        "Paste the combined string in the field above",
+      ],
+      link: { text: "Open Claude Settings", url: "https://claude.ai/settings/usage" },
     },
   },
 };

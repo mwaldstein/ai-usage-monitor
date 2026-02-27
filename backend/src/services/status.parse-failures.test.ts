@@ -17,13 +17,6 @@ function makeService(provider: AIProvider): AIService {
     updatedAt: now,
   };
 
-  if (provider === "openai") {
-    return {
-      ...common,
-      apiKey: "Bearer openai-token",
-    };
-  }
-
   if (provider === "zai") {
     return {
       ...common,
@@ -43,6 +36,13 @@ function makeService(provider: AIProvider): AIService {
     return {
       ...common,
       bearerToken: "Bearer codex-token",
+    };
+  }
+
+  if (provider === "claude") {
+    return {
+      ...common,
+      apiKey: "sessionKey=sk-ant-test; lastActiveOrg=test-org-id",
     };
   }
 
@@ -85,31 +85,6 @@ test("service status marks parse failures unhealthy across providers", async () 
     const baseUrl = config.baseURL ?? "";
     const url = config.url ?? "";
     const requestPath = `${baseUrl}${url}`;
-
-    if (requestPath.includes("api.openai.com") && url.includes("/dashboard/billing/usage")) {
-      assert.equal(hasAuthorizationHeader(config, "Bearer openai-token"), true);
-      return okResponse(config, { total_usage: 2500 });
-    }
-
-    if (requestPath.includes("api.openai.com") && url.includes("/dashboard/billing/subscription")) {
-      assert.equal(hasAuthorizationHeader(config, "Bearer openai-token"), true);
-      return okResponse(config, { hard_limit_usd: 100, soft_limit_usd: 80 });
-    }
-
-    if (requestPath.includes("api.anthropic.com") && url.includes("/models")) {
-      return okResponse(
-        config,
-        {},
-        {
-          "anthropic-ratelimit-requests-limit": "100",
-          "anthropic-ratelimit-requests-remaining": "80",
-          "anthropic-ratelimit-requests-reset": "1700003600",
-          "anthropic-ratelimit-tokens-limit": "1000",
-          "anthropic-ratelimit-tokens-remaining": "900",
-          "anthropic-ratelimit-tokens-reset": "1700003600",
-        },
-      );
-    }
 
     if (requestPath.includes("opencode.ai") && url.includes("/billing")) {
       return okResponse(config, "<html><body>no hydration data</body></html>");
@@ -157,11 +132,15 @@ test("service status marks parse failures unhealthy across providers", async () 
       return okResponse(config, { invalid: true });
     }
 
+    if (requestPath.includes("claude.ai") && url.includes("/api/organizations/test-org-id/usage")) {
+      return okResponse(config, { invalid: true });
+    }
+
     throw new Error(`Unhandled request in test adapter: ${requestPath}`);
   };
 
   try {
-    const providers: AIProvider[] = ["openai", "anthropic", "opencode", "amp", "zai", "codex"];
+    const providers: AIProvider[] = ["opencode", "amp", "zai", "codex", "claude"];
     const statuses: ServiceStatus[] = await Promise.all(
       providers.map((provider) => ServiceFactory.getServiceStatus(makeService(provider))),
     );
@@ -169,9 +148,6 @@ test("service status marks parse failures unhealthy across providers", async () 
     const byProvider = new Map<AIProvider, ServiceStatus>(
       statuses.map((status) => [status.service.provider, status]),
     );
-
-    assert.equal(byProvider.get("openai")?.isHealthy, true);
-    assert.equal(byProvider.get("anthropic")?.isHealthy, true);
 
     assert.equal(byProvider.get("opencode")?.isHealthy, false);
     assert.equal(byProvider.get("amp")?.isHealthy, false);
@@ -183,6 +159,7 @@ test("service status marks parse failures unhealthy across providers", async () 
     assert.equal(tokenQuota?.used, 0);
     assert.equal(tokenQuota?.remaining, 5);
     assert.equal(byProvider.get("codex")?.isHealthy, false);
+    assert.equal(byProvider.get("claude")?.isHealthy, false);
 
     assert.equal(byProvider.get("opencode")?.error === undefined, false);
     assert.equal(
@@ -192,6 +169,10 @@ test("service status marks parse failures unhealthy across providers", async () 
     assert.equal(byProvider.get("zai")?.error, undefined);
     assert.equal(
       byProvider.get("codex")?.error?.includes("Invalid Codex usage response payload"),
+      true,
+    );
+    assert.equal(
+      byProvider.get("claude")?.error?.includes("Invalid Claude usage response payload"),
       true,
     );
   } finally {
