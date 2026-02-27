@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.8.0] - 2026-02-27
+
 ### Added
 - Added Claude.ai provider for monitoring web chat usage quotas (5-hour rolling, 7-day, per-model, and extra usage windows) via session cookie authentication with organization support
 
@@ -365,7 +367,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 - Added missing dependencies (uuid, sqlite) for Docker builds
 
-[Unreleased]: https://github.com/mwaldstein/ai-usage-monitor/compare/v0.7.11...HEAD
+[Unreleased]: https://github.com/mwaldstein/ai-usage-monitor/compare/v0.8.0...HEAD
+[0.8.0]: https://github.com/mwaldstein/ai-usage-monitor/compare/v0.7.11...v0.8.0
 [0.7.11]: https://github.com/mwaldstein/ai-usage-monitor/compare/v0.7.10...v0.7.11
 [0.7.10]: https://github.com/mwaldstein/ai-usage-monitor/compare/v0.7.9...v0.7.10
 [0.7.9]: https://github.com/mwaldstein/ai-usage-monitor/compare/v0.7.8...v0.7.9
