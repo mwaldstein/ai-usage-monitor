@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+- Empty quota gauges now show a light red tint on the track and red center label when critically depleted
+
 ## [0.8.2] - 2026-02-27
 
 ### Fixed

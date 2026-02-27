@@ -113,9 +113,10 @@ export function CompactQuota({
   const displayUsed = formatMetricValue(used, annotation);
   const displayLimit = formatMetricValue(limit, annotation);
   const radialLabel = isBalanceMetric ? displayRemaining : `${Math.round(percentage)}%`;
+  const labelTextColor = percentage === 0 && isCritical ? "text-red-400" : "text-white";
   const radialLabelClass = isBalanceMetric
-    ? "text-[10px] font-semibold text-white"
-    : "text-sm font-bold text-white";
+    ? `text-[10px] font-semibold ${labelTextColor}`
+    : `text-sm font-bold ${labelTextColor}`;
 
   return (
     <div className="flex flex-wrap items-center gap-3 p-3 rounded-lg bg-white/5 hover:bg-white/10 transition-colors">

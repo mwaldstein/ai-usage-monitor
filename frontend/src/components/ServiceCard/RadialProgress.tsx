@@ -17,6 +17,8 @@ export function RadialProgress({
   const circumference = radius * 2 * Math.PI;
   const offset = circumference - (percentage / 100) * circumference;
 
+  const bgStroke = percentage === 0 ? `${color}26` : "rgba(255,255,255,0.1)";
+
   return (
     <div className="relative" style={{ width: size, height: size }}>
       <svg width={size} height={size} className="radial-progress">
@@ -25,7 +27,7 @@ export function RadialProgress({
           cy={size / 2}
           r={radius}
           fill="none"
-          stroke="rgba(255,255,255,0.1)"
+          stroke={bgStroke}
           strokeWidth={strokeWidth}
         />
         <circle
