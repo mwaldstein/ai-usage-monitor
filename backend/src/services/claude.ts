@@ -1,7 +1,7 @@
 import { BaseAIService } from "./base.ts";
 import type { UsageQuota } from "../types/index.ts";
 import { randomUUID } from "crypto";
-import axios from "axios";
+import axios, { isAxiosError } from "axios";
 import { Either, Schema as S } from "effect";
 import { nowTs, dateToTs } from "../utils/dates.ts";
 import { logger } from "../utils/logger.ts";
@@ -73,10 +73,11 @@ export class ClaudeService extends BaseAIService {
             [newAccessToken, newRefreshToken, updatedAt, this.service.id],
           );
         } else {
-          await db.run(
-            "UPDATE services SET api_key = ?, updated_at = ? WHERE id = ?",
-            [newAccessToken, updatedAt, this.service.id],
-          );
+          await db.run("UPDATE services SET api_key = ?, updated_at = ? WHERE id = ?", [
+            newAccessToken,
+            updatedAt,
+            this.service.id,
+          ]);
         }
       } catch (dbError) {
         // Non-fatal: the in-memory token is still updated for this cycle
@@ -130,7 +131,7 @@ export class ClaudeService extends BaseAIService {
       try {
         responseData = await this.fetchUsageData(this.service.apiKey);
       } catch (error) {
-        if (axios.isAxiosError(error) && error.response?.status === 401) {
+        if (isAxiosError(error) && error.response?.status === 401) {
           logger.info(`[Claude:${serviceName}] Access token expired, attempting refresh...`);
           const newToken = await this.refreshAccessToken();
           if (!newToken) {

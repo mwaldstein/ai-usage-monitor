@@ -125,8 +125,7 @@ export const PROVIDER_INSTRUCTIONS: Record<AIProvider, ProviderInstructions> = {
     apiKeyHelp: "Required: OAuth access token from ~/.claude/.credentials.json",
     bearerTokenLabel: "Refresh Token",
     bearerTokenPlaceholder: "sk-ant-ort01-...",
-    bearerTokenHelp:
-      "Required: OAuth refresh token — used to automatically renew the access token",
+    bearerTokenHelp: "Required: OAuth refresh token — used to automatically renew the access token",
     showBaseUrl: false,
     instructions: {
       title: "How to get your Claude OAuth tokens",
