@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.8.3] - 2026-02-27
+
 ### Fixed
 - Fixed Claude provider parse failure when usage is 0% and API returns `resets_at: null` instead of a date string
 
@@ -390,7 +392,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 - Added missing dependencies (uuid, sqlite) for Docker builds
 
-[Unreleased]: https://github.com/mwaldstein/ai-usage-monitor/compare/v0.8.2...HEAD
+[Unreleased]: https://github.com/mwaldstein/ai-usage-monitor/compare/v0.8.3...HEAD
+[0.8.3]: https://github.com/mwaldstein/ai-usage-monitor/compare/v0.8.2...v0.8.3
 [0.8.2]: https://github.com/mwaldstein/ai-usage-monitor/compare/v0.8.1...v0.8.2
 [0.8.1]: https://github.com/mwaldstein/ai-usage-monitor/compare/v0.8.0...v0.8.1
 [0.8.0]: https://github.com/mwaldstein/ai-usage-monitor/compare/v0.7.11...v0.8.0
