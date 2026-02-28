@@ -13,6 +13,11 @@ const OAUTH_USAGE_URL = "https://api.anthropic.com/api/oauth/usage";
 const OAUTH_TOKEN_URL = "https://console.anthropic.com/v1/oauth/token";
 const OAUTH_CLIENT_ID = "9d1c250a-e61b-44d9-88ed-5944d1962f5e";
 
+/** Convert a nullable ISO date string to a unix timestamp. Returns 0 when null (no reset scheduled). */
+function resetsAtToTs(resetsAt: string | null): number {
+  return resetsAt !== null ? dateToTs(new Date(resetsAt)) : 0;
+}
+
 /**
  * ClaudeService - Fetches usage limits for Claude.ai via the Anthropic OAuth API.
  *
@@ -166,7 +171,7 @@ export class ClaudeService extends BaseAIService {
           limit: 100,
           used: usedPercent,
           remaining: 100 - usedPercent,
-          resetAt: dateToTs(new Date(data.five_hour.resets_at)),
+          resetAt: resetsAtToTs(data.five_hour.resets_at),
           createdAt: now,
           updatedAt: now,
           type: "usage",
@@ -183,7 +188,7 @@ export class ClaudeService extends BaseAIService {
           limit: 100,
           used: usedPercent,
           remaining: 100 - usedPercent,
-          resetAt: dateToTs(new Date(data.seven_day.resets_at)),
+          resetAt: resetsAtToTs(data.seven_day.resets_at),
           createdAt: now,
           updatedAt: now,
           type: "usage",
@@ -200,7 +205,7 @@ export class ClaudeService extends BaseAIService {
           limit: 100,
           used: usedPercent,
           remaining: 100 - usedPercent,
-          resetAt: dateToTs(new Date(data.seven_day_oauth_apps.resets_at)),
+          resetAt: resetsAtToTs(data.seven_day_oauth_apps.resets_at),
           createdAt: now,
           updatedAt: now,
           type: "usage",
@@ -217,7 +222,7 @@ export class ClaudeService extends BaseAIService {
           limit: 100,
           used: usedPercent,
           remaining: 100 - usedPercent,
-          resetAt: dateToTs(new Date(data.seven_day_opus.resets_at)),
+          resetAt: resetsAtToTs(data.seven_day_opus.resets_at),
           createdAt: now,
           updatedAt: now,
           type: "usage",
@@ -234,7 +239,7 @@ export class ClaudeService extends BaseAIService {
           limit: 100,
           used: usedPercent,
           remaining: 100 - usedPercent,
-          resetAt: dateToTs(new Date(data.seven_day_sonnet.resets_at)),
+          resetAt: resetsAtToTs(data.seven_day_sonnet.resets_at),
           createdAt: now,
           updatedAt: now,
           type: "usage",
@@ -251,7 +256,7 @@ export class ClaudeService extends BaseAIService {
           limit: 100,
           used: usedPercent,
           remaining: 100 - usedPercent,
-          resetAt: dateToTs(new Date(data.seven_day_cowork.resets_at)),
+          resetAt: resetsAtToTs(data.seven_day_cowork.resets_at),
           createdAt: now,
           updatedAt: now,
           type: "usage",

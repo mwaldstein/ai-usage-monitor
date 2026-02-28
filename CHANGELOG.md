@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+- Fixed Claude provider parse failure when usage is 0% and API returns `resets_at: null` instead of a date string
+
 ### Changed
 - Empty quota gauges now show a light red tint on the track and red center label when critically depleted
 

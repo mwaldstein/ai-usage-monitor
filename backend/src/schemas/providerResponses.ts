@@ -100,7 +100,7 @@ export type CodexUsageResponse = S.Schema.Type<typeof CodexUsageResponse>;
 
 export const ClaudeUsageWindow = S.Struct({
   utilization: S.Number,
-  resets_at: S.String,
+  resets_at: S.NullOr(S.String),
 });
 export type ClaudeUsageWindow = S.Schema.Type<typeof ClaudeUsageWindow>;
 
